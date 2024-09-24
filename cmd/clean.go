@@ -15,13 +15,9 @@ import (
 // cleanCmd represents the clean command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Clean unused worktrees",
+	Long: `Compare all local worktree branches with the remote branches,
+    allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		getFetch := exec.Command("git", "fetch", "origin")
 		getFetch.Run()
@@ -33,9 +29,10 @@ to quickly create a Cobra application.`,
 		}
 
 		branches := strings.Split(string(allBranches), "\n")
+		var cleanBranches []string
 		for _, branch := range branches {
 			cleanBranch := strings.Replace(branch, "origin/", "", 1)
-			fmt.Println(cleanBranch)
+			cleanBranches = append(cleanBranches, cleanBranch)
 		}
 
 		cmdToRun := exec.Command("git", "worktree", "list")
@@ -55,8 +52,9 @@ to quickly create a Cobra application.`,
 		}
 
 		branchesMap := make(map[string]bool)
-		for _, branch := range branches {
-			branchesMap[branch] = true
+		for _, branch := range cleanBranches {
+			fmt.Printf(branch)
+			branchesMap[strings.TrimSpace(branch)] = true
 		}
 
 		var match []Worktree
@@ -64,6 +62,8 @@ to quickly create a Cobra application.`,
 		for _, worktree := range worktrees {
 
 			branch := ExtractTextInBrackets(worktree.Head)
+			fmt.Printf("Worktree head: %s, extracted branch: %s\n", worktree.Head, branch)
+			branch = strings.TrimSpace(branch)
 			if branchesMap[branch] {
 				match = append(match, worktree)
 			} else {
@@ -71,9 +71,18 @@ to quickly create a Cobra application.`,
 			}
 		}
 
+		fmt.Printf("\n\nNo match branches:\n")
 		for _, tree := range noMatch {
-			fmt.Printf(tree.Head)
+			fmt.Printf(ExtractTextInBrackets(tree.Head))
+			fmt.Printf("\n")
 		}
+
+		fmt.Printf("\n\nMatch branches:\n")
+		for _, tree := range match {
+			fmt.Printf(ExtractTextInBrackets(tree.Head))
+			fmt.Printf("\n")
+		}
+
 		//
 		// for _, wt := range worktrees {
 		// 	// fmt.Printf("Path: %s, Head: %s\n", wt.Path, wt.Head)
