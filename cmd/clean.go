@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	// "github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"log"
 	"os/exec"
@@ -19,28 +19,17 @@ var cleanCmd = &cobra.Command{
 	Long: `Compare all local worktree branches with the remote branches,
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		getFetch := exec.Command("git", "fetch", "origin")
-		getFetch.Run()
 
-		getAllBranchesCmd := exec.Command("git", "branch", "-r")
-		allBranches, err := getAllBranchesCmd.Output()
-		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
-		}
+		cleanBranches := getCleanRemoteBranchNames()
 
-		branches := strings.Split(string(allBranches), "\n")
-		var cleanBranches []string
-		for _, branch := range branches {
-			cleanBranch := strings.Replace(branch, "origin/", "", 1)
-			cleanBranches = append(cleanBranches, cleanBranch)
-		}
-
+		//get all worktrees
 		cmdToRun := exec.Command("git", "worktree", "list")
 		allWorktrees, err := cmdToRun.Output()
 		if err != nil {
 			log.Fatalf("cmd.Run() failed with %s\n", err)
 		}
 
+		//clean worktrees
 		lines := strings.Split(string(allWorktrees), "\n")
 		worktrees := make([]Worktree, 0, len(lines))
 		for _, line := range lines {
@@ -51,9 +40,9 @@ var cleanCmd = &cobra.Command{
 			worktrees = append(worktrees, Worktree{Path: parts[0], Head: parts[1]})
 		}
 
+		// set up branches map
 		branchesMap := make(map[string]bool)
 		for _, branch := range cleanBranches {
-			fmt.Printf(branch)
 			branchesMap[strings.TrimSpace(branch)] = true
 		}
 
@@ -62,55 +51,73 @@ var cleanCmd = &cobra.Command{
 		for _, worktree := range worktrees {
 
 			branch := ExtractTextInBrackets(worktree.Head)
-			fmt.Printf("Worktree head: %s, extracted branch: %s\n", worktree.Head, branch)
 			branch = strings.TrimSpace(branch)
-			if branchesMap[branch] {
+
+			if branch == "" {
+				continue
+			}
+
+			if !branchesMap[branch] {
 				match = append(match, worktree)
 			} else {
 				noMatch = append(noMatch, worktree)
 			}
 		}
 
+		var selection []string
+
 		fmt.Printf("\n\nNo match branches:\n")
 		for _, tree := range noMatch {
-			fmt.Printf(ExtractTextInBrackets(tree.Head))
-			fmt.Printf("\n")
+			localString := ExtractTextInBrackets(tree.Head)
+			selection = append(selection, localString)
 		}
 
-		fmt.Printf("\n\nMatch branches:\n")
-		for _, tree := range match {
-			fmt.Printf(ExtractTextInBrackets(tree.Head))
-			fmt.Printf("\n")
+		var choices []string
+
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Value(&choices).
+					OptionsFunc(func() []huh.Option[string] {
+						return huh.NewOptions(selection...)
+					}, &selection).
+					Title("Local endpoints that do not exist on remote").
+					Height(25),
+			),
+		)
+
+		formErr := form.Run()
+		if err != nil {
+			log.Fatal(formErr)
 		}
 
-		//
-		// for _, wt := range worktrees {
-		// 	// fmt.Printf("Path: %s, Head: %s\n", wt.Path, wt.Head)
-		// 	// splitPath := strings.Split(wt.Path, "/")
-		// 	// fmt.Printf("Folder: %s\n", splitPath[5])
-		//
-		// 	branch := ExtractTextInBrackets(wt.Head)
-		// 	// fmt.Printf("Branch: %s\n", branch)
-		//
-		// 	exists, err := branchExistsRemotely(branch, "origin")
-		// 	if err != nil {
-		// 		// handle error
-		// 	}
-		// 	confirm := false
-		// 	huh.NewConfirm().
-		// 		Title("Do you want to delete %, branch").
-		// 		Affirmative("Yes").
-		// 		Negative("No").
-		// 		Value(&confirm)
-		//
-		// 	if exists {
-		// 		fmt.Println("Branch exists remotely\n")
-		// 	} else {
-		// 		fmt.Println("Branch does not exist remotely\n")
-		// 	}
-		//
-		// }
+		// delete branch
+
+		// remove worktree
+
 	},
+}
+
+func getCleanRemoteBranchNames() []string {
+	// fetch
+	getFetch := exec.Command("git", "fetch", "origin")
+	getFetch.Run()
+
+	//get all branches
+	getAllBranchesCmd := exec.Command("git", "branch", "-r")
+	allBranches, err := getAllBranchesCmd.Output()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+
+	//clean branch names
+	branches := strings.Split(string(allBranches), "\n")
+	var cleanBranches []string
+	for _, branch := range branches {
+		cleanBranch := strings.Replace(branch, "origin/", "", 1)
+		cleanBranches = append(cleanBranches, cleanBranch)
+	}
+	return cleanBranches
 }
 
 func branchExistsRemotely(branchName string, remoteName string) (bool, error) {
