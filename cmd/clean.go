@@ -5,14 +5,20 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/huh"
-	"github.com/spf13/cobra"
 	"log"
 	"os/exec"
+	"strconv"
 	"strings"
+
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/spf13/cobra"
 )
 
-// cleanCmd represents the clean command
+// cleanCmd repesents the clean command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean unused worktrees",
@@ -20,25 +26,17 @@ var cleanCmd = &cobra.Command{
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		execWrap := execwrap.NewExec()
+		shell := shell.NewShell(execWrap)
+		git := git.NewGit(shell)
+
+		branches, error := git.GetRemoteBranches()
+		fmt.Print(branches)
+		fmt.Print(error)
+
 		cleanBranches := getCleanRemoteBranchNames()
 
-		//get all worktrees
-		cmdToRun := exec.Command("git", "worktree", "list")
-		allWorktrees, err := cmdToRun.Output()
-		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
-		}
-
-		//clean worktrees
-		lines := strings.Split(string(allWorktrees), "\n")
-		worktrees := make([]Worktree, 0, len(lines))
-		for _, line := range lines {
-			parts := strings.SplitN(line, " ", 2)
-			if len(parts) < 2 {
-				continue
-			}
-			worktrees = append(worktrees, Worktree{Path: parts[0], Head: parts[1]})
-		}
+		worktrees := getWorktrees()
 
 		// set up branches map
 		branchesMap := make(map[string]bool)
@@ -50,7 +48,7 @@ var cleanCmd = &cobra.Command{
 		var noMatch []Worktree
 		for _, worktree := range worktrees {
 
-			branch := ExtractTextInBrackets(worktree.Head)
+			branch := worktree.Head
 			branch = strings.TrimSpace(branch)
 
 			if branch == "" {
@@ -66,9 +64,8 @@ var cleanCmd = &cobra.Command{
 
 		var selection []string
 
-		fmt.Printf("\n\nNo match branches:\n")
 		for _, tree := range noMatch {
-			localString := ExtractTextInBrackets(tree.Head)
+			localString := tree.Head
 			selection = append(selection, localString)
 		}
 
@@ -87,15 +84,61 @@ var cleanCmd = &cobra.Command{
 		)
 
 		formErr := form.Run()
-		if err != nil {
+		if formErr != nil {
 			log.Fatal(formErr)
 		}
 
-		// delete branch
+		numOfWorktreesRemoved := 0
 
-		// remove worktree
+		action := func() {
+
+			for _, branch := range choices {
+				deleteWorktree := exec.Command("git", "worktree", "remove", branch, "--force")
+				dwErr := deleteWorktree.Run()
+				numOfWorktreesRemoved++
+				if dwErr != nil {
+					log.Fatal(dwErr)
+				}
+
+			}
+		}
+		err := spinner.New().
+			Title("Removing Worktrees").
+			Action(action).
+			Run()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if numOfWorktreesRemoved > 0 {
+			fmt.Printf("%s Worktrees removed!", strconv.Itoa(numOfWorktreesRemoved))
+		}
 
 	},
+}
+
+func getWorktrees() []Worktree {
+
+	//get all worktrees
+	cmdToRun := exec.Command("git", "worktree", "list")
+	allWorktrees, err := cmdToRun.Output()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
+	}
+
+	//clean worktrees
+	lines := strings.Split(string(allWorktrees), "\n")
+	worktrees := make([]Worktree, 0, len(lines))
+	for _, line := range lines {
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		worktrees = append(worktrees, Worktree{Path: parts[0], Head: ExtractTextInBrackets(parts[1])})
+	}
+
+	return worktrees
 }
 
 func getCleanRemoteBranchNames() []string {

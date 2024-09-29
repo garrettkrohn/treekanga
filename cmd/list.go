@@ -5,11 +5,17 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
+
 	"log"
-	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/shell"
+	worktreetransformer "github.com/garrettkrohn/treekanga/worktreeTransformer"
 )
 
 type Worktree struct {
@@ -28,42 +34,23 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmdToRun := exec.Command("git", "worktree", "list")
-		output, err := cmdToRun.Output()
+		shell := shell.NewShell(execwrap.NewExec())
+		git := git.NewGit(shell)
+
+		rawWorktrees, err := git.GetWorktrees()
+
 		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
+			log.Fatal(err)
 		}
 
-		lines := strings.Split(string(output), "\n")
-		worktrees := make([]Worktree, 0, len(lines))
-		for _, line := range lines {
-			parts := strings.SplitN(line, " ", 2)
-			if len(parts) < 2 {
-				continue
-			}
-			worktrees = append(worktrees, Worktree{Path: parts[0], Head: parts[1]})
+		worktreetransformer := worktreetransformer.NewWorktreeTransformer()
+		worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
+
+		for _, worktree := range worktreeObjects {
+			fmt.Println(worktree.BranchName)
 		}
 
-		// Now worktrees contains the results of the command
-		for _, wt := range worktrees {
-			// fmt.Printf("Path: %s, Head: %s\n", wt.Path, wt.Head)
-			splitPath := strings.Split(wt.Path, "/")
-			fmt.Printf("Folder: %s\n", splitPath[5])
-
-			branch := ExtractTextInBrackets(wt.Head)
-			fmt.Printf("Branch: %s\n", branch)
-		}
 	},
-}
-
-func ExtractTextInBrackets(s string) string {
-	re := regexp.MustCompile(`\[(.*?)\]`)
-	matches := re.FindAllStringSubmatch(s, -1)
-	var results []string
-	for _, match := range matches {
-		results = append(results, match[1])
-	}
-	return strings.Join(results, ", ")
 }
 
 func init() {
