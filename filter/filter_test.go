@@ -40,7 +40,7 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 		},
 	}
 
-	t.Run("this is a test", func(t *testing.T) {
+	t.Run("TestFilterWorktreesAndBranches", func(t *testing.T) {
 		f := &RealFilter{}
 		result := f.GetBranchNoMatchList(remoteBranches, worktreeObjs)
 
