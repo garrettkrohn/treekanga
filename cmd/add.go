@@ -4,12 +4,12 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"log"
-	"os/exec"
-	"strings"
+	// "fmt"
+	// "github.com/charmbracelet/huh"
+	// "log"
+	// "os/exec"
+	// "strings"
 )
 
 // addCmd represents the add command
@@ -23,51 +23,51 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cleanBranches := getCleanRemoteBranchNames()
-
-		// set up branches map
-		branchesMap := make(map[string]bool)
-		for _, branch := range cleanBranches {
-			branchesMap[strings.TrimSpace(branch)] = true
-		}
-
-		var branchName string
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewInput().
-					Title("Input branch name").
-					Prompt("?").
-					Value(&branchName),
-			),
-		)
-		formErr := form.Run()
-		if formErr != nil {
-			log.Fatal(formErr)
-		}
-
-		branchExistsRemotely := !branchesMap[branchName]
-
-		newBranch := "../" + branchName
-
-		//TODO: need to check if the worktree exists already
-
-		if branchExistsRemotely {
-			fmt.Print("doesn't exist")
-			cmdToRun := exec.Command("git", "worktree", "add", newBranch, "-b", branchName)
-			fmt.Print(cmdToRun)
-			_, err := cmdToRun.Output()
-			if err != nil {
-				log.Fatalf("cmd.Run() failed with %s\n", err)
-			}
-		} else {
-			fmt.Print("does exist")
-			cmdToRun := exec.Command("git", "worktree", "add", newBranch, branchName)
-			fmt.Print(cmdToRun)
-			_, err := cmdToRun.Output()
-			if err != nil {
-				log.Fatalf("cmd.Run() failed with %s\n", err)
-			}
-		}
+		// cleanBranches := getCleanRemoteBranchNames()
+		//
+		// // set up branches map
+		// branchesMap := make(map[string]bool)
+		// for _, branch := range cleanBranches {
+		// 	branchesMap[strings.TrimSpace(branch)] = true
+		// }
+		//
+		// var branchName string
+		// form := huh.NewForm(
+		// 	huh.NewGroup(
+		// 		huh.NewInput().
+		// 			Title("Input branch name").
+		// 			Prompt("?").
+		// 			Value(&branchName),
+		// 	),
+		// )
+		// formErr := form.Run()
+		// if formErr != nil {
+		// 	log.Fatal(formErr)
+		// }
+		//
+		// branchExistsRemotely := !branchesMap[branchName]
+		//
+		// newBranch := "../" + branchName
+		//
+		// //TODO: need to check if the worktree exists already
+		//
+		// if branchExistsRemotely {
+		// 	fmt.Print("doesn't exist")
+		// 	cmdToRun := exec.Command("git", "worktree", "add", newBranch, "-b", branchName)
+		// 	fmt.Print(cmdToRun)
+		// 	_, err := cmdToRun.Output()
+		// 	if err != nil {
+		// 		log.Fatalf("cmd.Run() failed with %s\n", err)
+		// 	}
+		// } else {
+		// 	fmt.Print("does exist")
+		// 	cmdToRun := exec.Command("git", "worktree", "add", newBranch, branchName)
+		// 	fmt.Print(cmdToRun)
+		// 	_, err := cmdToRun.Output()
+		// 	if err != nil {
+		// 		log.Fatalf("cmd.Run() failed with %s\n", err)
+		// 	}
+		// }
 
 	},
 }

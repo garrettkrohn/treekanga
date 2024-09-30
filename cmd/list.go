@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"log"
-	"regexp"
-	"strings"
+	// "regexp"
+	// "strings"
 
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
