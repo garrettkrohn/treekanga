@@ -11,6 +11,7 @@ type Git interface {
 	Clone(name string) (string, error)
 	GetRemoteBranches() ([]string, error)
 	GetWorktrees() ([]string, error)
+	RemoveWorktree(string) (string, error)
 }
 
 type RealGit struct {
@@ -56,6 +57,14 @@ func (g *RealGit) GetRemoteBranches() ([]string, error) {
 
 func (g *RealGit) GetWorktrees() ([]string, error) {
 	out, err := g.shell.ListCmd("git", "worktree", "list")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return out, nil
+}
+
+func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
+	out, err := g.shell.Cmd("git", "worktree", "remove", worktreeName, "--force")
 	if err != nil {
 		log.Fatal(err)
 	}

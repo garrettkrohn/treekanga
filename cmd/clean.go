@@ -8,15 +8,16 @@ import (
 	"log"
 
 	// "os/exec"
-	// "strconv"
+	"strconv"
 	// "strings"
 	//
-	// "github.com/charmbracelet/huh"
-	// "github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/garrettkrohn/treekanga/worktreeTransformer"
 	"github.com/spf13/cobra"
 )
@@ -50,84 +51,63 @@ var cleanCmd = &cobra.Command{
 		noMatchList := filter.GetBranchNoMatchList(branches, worktrees)
 		fmt.Print(noMatchList)
 
-		// worktrees := getWorktrees()
-		//
-		// // set up branches map
-		// branchesMap := make(map[string]bool)
-		// for _, branch := range cleanBranches {
-		// 	branchesMap[strings.TrimSpace(branch)] = true
-		// }
-		//
-		// var match []Worktree
-		// var noMatch []Worktree
-		// for _, worktree := range worktrees {
-		//
-		// 	branch := worktree.Head
-		// 	branch = strings.TrimSpace(branch)
-		//
-		// 	if branch == "" {
-		// 		continue
-		// 	}
-		//
-		// 	if !branchesMap[branch] {
-		// 		match = append(match, worktree)
-		// 	} else {
-		// 		noMatch = append(noMatch, worktree)
-		// 	}
-		// }
-		//
-		// var selection []string
-		//
-		// for _, tree := range noMatch {
-		// 	localString := tree.Head
-		// 	selection = append(selection, localString)
-		// }
-		//
-		// var choices []string
-		//
-		// form := huh.NewForm(
-		// 	huh.NewGroup(
-		// 		huh.NewMultiSelect[string]().
-		// 			Value(&choices).
-		// 			OptionsFunc(func() []huh.Option[string] {
-		// 				return huh.NewOptions(selection...)
-		// 			}, &selection).
-		// 			Title("Local endpoints that do not exist on remote").
-		// 			Height(25),
-		// 	),
-		// )
-		//
-		// formErr := form.Run()
-		// if formErr != nil {
-		// 	log.Fatal(formErr)
-		// }
-		//
-		// numOfWorktreesRemoved := 0
-		//
-		// action := func() {
-		//
-		// 	for _, branch := range choices {
-		// 		deleteWorktree := exec.Command("git", "worktree", "remove", branch, "--force")
-		// 		dwErr := deleteWorktree.Run()
-		// 		numOfWorktreesRemoved++
-		// 		if dwErr != nil {
-		// 			log.Fatal(dwErr)
-		// 		}
-		//
-		// 	}
-		// }
-		// err := spinner.New().
-		// 	Title("Removing Worktrees").
-		// 	Action(action).
-		// 	Run()
-		//
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-		//
-		// if numOfWorktreesRemoved > 0 {
-		// 	fmt.Printf("%s Worktrees removed!", strconv.Itoa(numOfWorktreesRemoved))
-		// }
+		// transform worktreeobj into strings for selection
+		var stringWorktrees []string
+		for _, worktreeObj := range noMatchList {
+			stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
+		}
+
+		var selections []string
+
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Value(&selections).
+					OptionsFunc(func() []huh.Option[string] {
+						return huh.NewOptions(stringWorktrees...)
+					}, &stringWorktrees).
+					Title("Local endpoints that do not exist on remote").
+					Height(25),
+			),
+		)
+
+		formErr := form.Run()
+		if formErr != nil {
+			log.Fatal(formErr)
+		}
+
+		//transform string selection back to worktreeobjs
+		var selectedWorktreeObj []worktreeobj.WorktreeObj
+		for _, worktreeobj := range noMatchList {
+			for _, str := range selections {
+				if worktreeobj.BranchName == str {
+					selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
+					break
+				}
+			}
+		}
+
+		//remove worktrees
+
+		numOfWorktreesRemoved := 0
+
+		action := func() {
+
+			for _, worktreeObj := range selectedWorktreeObj {
+				git.RemoveWorktree(worktreeObj.Folder)
+				numOfWorktreesRemoved++
+			}
+		}
+		err := spinner.New().
+			Title("Removing Worktrees").
+			Action(action).
+			Run()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
 
 	},
 }
