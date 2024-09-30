@@ -49,7 +49,6 @@ var cleanCmd = &cobra.Command{
 
 		filter := filter.NewFilter()
 		noMatchList := filter.GetBranchNoMatchList(branches, worktrees)
-		fmt.Print(noMatchList)
 
 		// transform worktreeobj into strings for selection
 		var stringWorktrees []string
@@ -111,62 +110,6 @@ var cleanCmd = &cobra.Command{
 
 	},
 }
-
-// func getWorktrees() []Worktree {
-//
-// 	//get all worktrees
-// 	cmdToRun := exec.Command("git", "worktree", "list")
-// 	allWorktrees, err := cmdToRun.Output()
-// 	if err != nil {
-// 		log.Fatalf("cmd.Run() failed with %s\n", err)
-// 	}
-//
-// 	//clean worktrees
-// 	lines := strings.Split(string(allWorktrees), "\n")
-// 	worktrees := make([]Worktree, 0, len(lines))
-// 	for _, line := range lines {
-// 		parts := strings.SplitN(line, " ", 2)
-// 		if len(parts) < 2 {
-// 			continue
-// 		}
-// 		worktrees = append(worktrees, Worktree{Path: parts[0], Head: ExtractTextInBrackets(parts[1])})
-// 	}
-//
-// 	return worktrees
-// }
-//
-// func getCleanRemoteBranchNames() []string {
-// 	// fetch
-// 	getFetch := exec.Command("git", "fetch", "origin")
-// 	getFetch.Run()
-//
-// 	//get all branches
-// 	getAllBranchesCmd := exec.Command("git", "branch", "-r")
-// 	allBranches, err := getAllBranchesCmd.Output()
-// 	if err != nil {
-// 		log.Fatalf("cmd.Run() failed with %s\n", err)
-// 	}
-//
-// 	//clean branch names
-// 	branches := strings.Split(string(allBranches), "\n")
-// 	var cleanBranches []string
-// 	for _, branch := range branches {
-// 		cleanBranch := strings.Replace(branch, "origin/", "", 1)
-// 		cleanBranches = append(cleanBranches, cleanBranch)
-// 	}
-// 	return cleanBranches
-// }
-//
-// func branchExistsRemotely(branchName string, remoteName string) (bool, error) {
-// 	cmd := exec.Command("git", "ls-remote", "--heads", remoteName, branchName)
-// 	output, err := cmd.CombinedOutput()
-// 	if err != nil {
-// 		return false, err
-// 	}
-//
-// 	// If the output is empty, the branch does not exist remotely
-// 	return strings.TrimSpace(string(output)) != "", nil
-// }
 
 func init() {
 	rootCmd.AddCommand(cleanCmd)
