@@ -12,7 +12,7 @@ type worktreeTransformer interface {
 type RealWorktreeTransformer struct {
 }
 
-func NewWorktreeTransformer() worktreeTransformer {
+func NewWorktreeTransformer() *RealWorktreeTransformer {
 	return &RealWorktreeTransformer{}
 }
 
