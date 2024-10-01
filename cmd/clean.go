@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 	"log"
-
+	"os"
 	"strconv"
 
 	"github.com/charmbracelet/huh"
@@ -36,19 +36,23 @@ var cleanCmd = &cobra.Command{
 		if error != nil {
 			log.Fatal(error)
 		}
-		fmt.Println(branches)
+		cleanedBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(branches)
 
 		worktreeStrings, wError := git.GetWorktrees()
 		if wError != nil {
 			log.Fatal(wError)
 		}
 
-		worktreeTransformer := transformer.NewWorktreeTransformer()
-		worktrees := worktreeTransformer.TransformWorktrees(worktreeStrings)
-		fmt.Println(worktrees)
+		transformer := transformer.NewWorktreeTransformer()
+		worktrees := transformer.TransformWorktrees(worktreeStrings)
 
 		filter := filter.NewFilter()
-		noMatchList := filter.GetBranchNoMatchList(branches, worktrees)
+		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
+
+		if len(noMatchList) == 0 {
+			fmt.Println("All local branches exist on remote")
+			os.Exit(1)
+		}
 
 		// transform worktreeobj into strings for selection
 		var stringWorktrees []string
@@ -58,25 +62,21 @@ var cleanCmd = &cobra.Command{
 
 		var selections []string
 
-		if len(noMatchList) > 0 {
-			form := huh.NewForm(
-				huh.NewGroup(
-					huh.NewMultiSelect[string]().
-						Value(&selections).
-						OptionsFunc(func() []huh.Option[string] {
-							return huh.NewOptions(stringWorktrees...)
-						}, &stringWorktrees).
-						Title("Local endpoints that do not exist on remote").
-						Height(25),
-				),
-			)
+		form := huh.NewForm(
+			huh.NewGroup(
+				huh.NewMultiSelect[string]().
+					Value(&selections).
+					OptionsFunc(func() []huh.Option[string] {
+						return huh.NewOptions(stringWorktrees...)
+					}, &stringWorktrees).
+					Title("Local endpoints that do not exist on remote").
+					Height(25),
+			),
+		)
 
-			formErr := form.Run()
-			if formErr != nil {
-				log.Fatal(formErr)
-			}
-		} else {
-			fmt.Print("All local worktrees exist on remote")
+		formErr := form.Run()
+		if formErr != nil {
+			log.Fatal(formErr)
 		}
 
 		//transform string selection back to worktreeobjs

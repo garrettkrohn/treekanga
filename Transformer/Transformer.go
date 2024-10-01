@@ -7,6 +7,7 @@ import (
 
 type transformer interface {
 	TransformWorktrees([]string) []worktreeobj.WorktreeObj
+	RemoveOriginPrefix([]string) []string
 }
 
 type RealTransformer struct {
@@ -46,4 +47,11 @@ func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []worktre
 	}
 
 	return worktrees
+}
+
+func (r *RealTransformer) RemoveOriginPrefix(branchStrings []string) []string {
+	for i, branch := range branchStrings {
+		branchStrings[i] = strings.TrimSpace(strings.Replace(branch, "origin/", "", -1))
+	}
+	return branchStrings
 }
