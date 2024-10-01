@@ -1,22 +1,22 @@
-package worktreetransformer
+package transformer
 
 import (
 	"github.com/garrettkrohn/treekanga/worktreeObj"
 	"strings"
 )
 
-type worktreeTransformer interface {
+type transformer interface {
 	TransformWorktrees([]string) []worktreeobj.WorktreeObj
 }
 
-type RealWorktreeTransformer struct {
+type RealTransformer struct {
 }
 
-func NewWorktreeTransformer() *RealWorktreeTransformer {
-	return &RealWorktreeTransformer{}
+func NewWorktreeTransformer() *RealTransformer {
+	return &RealTransformer{}
 }
 
-func (r *RealWorktreeTransformer) TransformWorktrees(worktreeStrings []string) []worktreeobj.WorktreeObj {
+func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []worktreeobj.WorktreeObj {
 
 	var worktrees []worktreeobj.WorktreeObj
 

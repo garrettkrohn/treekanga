@@ -1,4 +1,4 @@
-package worktreetransformer
+package transformer
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ func Test(t *testing.T) {
 	}
 
 	t.Run("test worktree transformer", func(t *testing.T) {
-		wt := &RealWorktreeTransformer{}
+		wt := &RealTransformer{}
 		result := wt.TransformWorktrees(worktreeStrings)
 		assert.Equal(t, result, expected)
 	})

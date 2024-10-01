@@ -15,7 +15,7 @@ import (
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
-	worktreetransformer "github.com/garrettkrohn/treekanga/worktreeTransformer"
+	"github.com/garrettkrohn/treekanga/transformer"
 )
 
 type Worktree struct {
@@ -43,7 +43,7 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		worktreetransformer := worktreetransformer.NewWorktreeTransformer()
+		worktreetransformer := transformer.NewWorktreeTransformer()
 		worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
 
 		for _, worktree := range worktreeObjects {

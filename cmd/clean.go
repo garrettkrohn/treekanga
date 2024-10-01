@@ -7,18 +7,16 @@ import (
 	"fmt"
 	"log"
 
-	// "os/exec"
 	"strconv"
-	// "strings"
-	//
+
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
-	"github.com/garrettkrohn/treekanga/worktreeTransformer"
 	"github.com/spf13/cobra"
 )
 
@@ -38,14 +36,16 @@ var cleanCmd = &cobra.Command{
 		if error != nil {
 			log.Fatal(error)
 		}
+		fmt.Println(branches)
 
 		worktreeStrings, wError := git.GetWorktrees()
 		if wError != nil {
 			log.Fatal(wError)
 		}
 
-		worktreeTransformer := worktreetransformer.NewWorktreeTransformer()
+		worktreeTransformer := transformer.NewWorktreeTransformer()
 		worktrees := worktreeTransformer.TransformWorktrees(worktreeStrings)
+		fmt.Println(worktrees)
 
 		filter := filter.NewFilter()
 		noMatchList := filter.GetBranchNoMatchList(branches, worktrees)
@@ -58,21 +58,25 @@ var cleanCmd = &cobra.Command{
 
 		var selections []string
 
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewMultiSelect[string]().
-					Value(&selections).
-					OptionsFunc(func() []huh.Option[string] {
-						return huh.NewOptions(stringWorktrees...)
-					}, &stringWorktrees).
-					Title("Local endpoints that do not exist on remote").
-					Height(25),
-			),
-		)
+		if len(noMatchList) > 0 {
+			form := huh.NewForm(
+				huh.NewGroup(
+					huh.NewMultiSelect[string]().
+						Value(&selections).
+						OptionsFunc(func() []huh.Option[string] {
+							return huh.NewOptions(stringWorktrees...)
+						}, &stringWorktrees).
+						Title("Local endpoints that do not exist on remote").
+						Height(25),
+				),
+			)
 
-		formErr := form.Run()
-		if formErr != nil {
-			log.Fatal(formErr)
+			formErr := form.Run()
+			if formErr != nil {
+				log.Fatal(formErr)
+			}
+		} else {
+			fmt.Print("All local worktrees exist on remote")
 		}
 
 		//transform string selection back to worktreeobjs
