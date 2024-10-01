@@ -46,4 +46,18 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 
 		assert.Equal(t, result, expected)
 	})
+	t.Run("Test branch exists on remote", func(t *testing.T) {
+		f := &RealFilter{}
+		result := f.BranchExistsOnRemote(remoteBranches, "branch1")
+
+		assert.Equal(t, result, true)
+	})
+
+	t.Run("Test branch does not exist on remote", func(t *testing.T) {
+		f := &RealFilter{}
+		result := f.BranchExistsOnRemote(remoteBranches, "branch5")
+
+		assert.Equal(t, result, false)
+	})
+
 }
