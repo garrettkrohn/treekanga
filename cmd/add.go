@@ -73,6 +73,8 @@ to quickly create a Cobra application.`,
 		}
 
 		fmt.Printf("worktree %s created", branchName)
+		//TODO: optional kill local session, and open it with the new branch
+		//TODO: zoxide entries
 
 	},
 }
