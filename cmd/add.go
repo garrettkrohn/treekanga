@@ -43,29 +43,25 @@ to quickly create a Cobra application.`,
 		localBranches, _ := git.GetLocalBranches()
 
 		var branchName string
-		var folderName string
 		huh.NewInput().
 			Title("Input branch name").
 			Prompt("?").
 			Value(&branchName).
 			Run()
 
+		var baseBranch string
 		huh.NewInput().
-			Title("Input folder name (leave blank for same as folder)").
+			Title("Input base branch (leave blank for default)").
 			Prompt("?").
-			Value(&folderName).
+			Value(&baseBranch).
 			Run()
 
 		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
 
-		if folderName == "" {
-			folderName = branchName
-		}
+		folderName := "../" + branchName
 
-		folderName = "../" + folderName
-
-		action := func() { git.AddWorktree(folderName, existsLocally, branchName) }
+		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
 		err := spinner.New().
 			Title("Adding Worktree").
