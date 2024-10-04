@@ -6,6 +6,8 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -13,6 +15,7 @@ import (
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/zoxide"
 
 	// "github.com/garrettkrohn/treekanga/transformer"
 	"github.com/spf13/cobra"
@@ -36,6 +39,7 @@ to quickly create a Cobra application.`,
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
 		filter := filter.NewFilter()
+		zoxide := zoxide.NewZoxide(shell)
 
 		//TODO: make this async for performance
 		// remoteBranches, _ := git.GetRemoteBranches()
@@ -61,6 +65,10 @@ to quickly create a Cobra application.`,
 
 		folderName := "../" + branchName
 
+		if baseBranch == "" {
+			baseBranch = "development"
+		}
+
 		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
 		err := spinner.New().
@@ -72,8 +80,19 @@ to quickly create a Cobra application.`,
 		}
 
 		fmt.Printf("worktree %s created", branchName)
-		//TODO: optional kill local session, and open it with the new branch
+
 		//TODO: zoxide entries
+		workingDir, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		parentDir := filepath.Dir(workingDir)
+		zoxide.AddPath(parentDir + "/" + branchName)
+		zoxide.AddPath(parentDir + "/" + branchName + "/ui")
+		zoxide.AddPath(parentDir + "/" + branchName + "/parent")
+
+		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
