@@ -5,12 +5,15 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+
 	// "github.com/garrettkrohn/treekanga/transformer"
 	"github.com/spf13/cobra"
 	// "log"
@@ -69,7 +72,7 @@ to quickly create a Cobra application.`,
 			Action(action).
 			Run()
 		if err != nil {
-			fmt.Print(err)
+			log.Fatal(err)
 		}
 
 		fmt.Printf("worktree %s created", branchName)

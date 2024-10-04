@@ -28,6 +28,7 @@ var cleanCmd = &cobra.Command{
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		//TODO: add spinner for all these calls
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)

@@ -86,7 +86,6 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 }
 
 func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName string) {
-	fmt.Println(folderName, existsOnRemote, branchName)
 	if existsOnRemote {
 		_, err := g.shell.Cmd("git", "worktree", "add", folderName, branchName)
 		if err != nil {
