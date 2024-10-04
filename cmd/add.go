@@ -5,7 +5,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -13,6 +14,8 @@ import (
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+	util "github.com/garrettkrohn/treekanga/utility"
+	"github.com/garrettkrohn/treekanga/zoxide"
 
 	// "github.com/garrettkrohn/treekanga/transformer"
 	"github.com/spf13/cobra"
@@ -36,6 +39,7 @@ to quickly create a Cobra application.`,
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
 		filter := filter.NewFilter()
+		zoxide := zoxide.NewZoxide(shell)
 
 		//TODO: make this async for performance
 		// remoteBranches, _ := git.GetRemoteBranches()
@@ -43,43 +47,62 @@ to quickly create a Cobra application.`,
 		localBranches, _ := git.GetLocalBranches()
 
 		var branchName string
-		var folderName string
-		huh.NewInput().
+		err := huh.NewInput().
 			Title("Input branch name").
 			Prompt("?").
 			Value(&branchName).
 			Run()
+		util.CheckError(err)
 
-		huh.NewInput().
-			Title("Input folder name (leave blank for same as folder)").
+		var baseBranch string
+		err = huh.NewInput().
+			Title("Input base branch (leave blank for default)").
 			Prompt("?").
-			Value(&folderName).
+			Value(&baseBranch).
 			Run()
+		util.CheckError(err)
 
 		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
 
-		if folderName == "" {
-			folderName = branchName
+		folderName := "../" + branchName
+
+		if baseBranch == "" {
+			baseBranch = "development"
 		}
 
-		folderName = "../" + folderName
+		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
-		action := func() { git.AddWorktree(folderName, existsLocally, branchName) }
-
-		err := spinner.New().
+		err = spinner.New().
 			Title("Adding Worktree").
 			Action(action).
 			Run()
-		if err != nil {
-			log.Fatal(err)
-		}
+		util.CheckError(err)
 
 		fmt.Printf("worktree %s created", branchName)
+
+		addZoxideEntries(zoxide, branchName)
+
 		//TODO: optional kill local session, and open it with the new branch
-		//TODO: zoxide entries
 
 	},
+}
+
+func addZoxideEntries(zoxide zoxide.Zoxide, branchName string) {
+	//TODO: zoxide entries
+	workingDir, err := os.Getwd()
+	util.CheckError(err)
+
+	parentDir := filepath.Dir(workingDir)
+	err = zoxide.AddPath(parentDir + "/" + branchName)
+	util.CheckError(err)
+
+	err = zoxide.AddPath(parentDir + "/" + branchName + "/ui")
+	util.CheckError(err)
+
+	err = zoxide.AddPath(parentDir + "/" + branchName + "/parent")
+	util.CheckError(err)
+
 }
 
 func init() {

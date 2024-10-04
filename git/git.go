@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/garrettkrohn/treekanga/shell"
@@ -15,7 +14,7 @@ type Git interface {
 	GetLocalBranches() ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(string, bool, string)
+	AddWorktree(string, bool, string, string) error
 }
 
 type RealGit struct {
@@ -85,16 +84,13 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName string) {
+func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool,
+	branchName string, baseBranch string) error {
 	if existsOnRemote {
 		_, err := g.shell.Cmd("git", "worktree", "add", folderName, branchName)
-		if err != nil {
-			log.Fatal(err)
-		}
+		return err
 	} else {
-		_, err := g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName)
-		if err != nil {
-			log.Fatal(err)
-		}
+		_, err := g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
+		return err
 	}
 }
