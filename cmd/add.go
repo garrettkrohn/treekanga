@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
+	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/garrettkrohn/treekanga/zoxide"
 
 	// "github.com/garrettkrohn/treekanga/transformer"
@@ -47,18 +47,20 @@ to quickly create a Cobra application.`,
 		localBranches, _ := git.GetLocalBranches()
 
 		var branchName string
-		huh.NewInput().
+		err := huh.NewInput().
 			Title("Input branch name").
 			Prompt("?").
 			Value(&branchName).
 			Run()
+		util.CheckError(err)
 
 		var baseBranch string
-		huh.NewInput().
+		err = huh.NewInput().
 			Title("Input base branch (leave blank for default)").
 			Prompt("?").
 			Value(&baseBranch).
 			Run()
+		util.CheckError(err)
 
 		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
@@ -71,30 +73,36 @@ to quickly create a Cobra application.`,
 
 		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
-		err := spinner.New().
+		err = spinner.New().
 			Title("Adding Worktree").
 			Action(action).
 			Run()
-		if err != nil {
-			log.Fatal(err)
-		}
+		util.CheckError(err)
 
 		fmt.Printf("worktree %s created", branchName)
 
-		//TODO: zoxide entries
-		workingDir, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		parentDir := filepath.Dir(workingDir)
-		zoxide.AddPath(parentDir + "/" + branchName)
-		zoxide.AddPath(parentDir + "/" + branchName + "/ui")
-		zoxide.AddPath(parentDir + "/" + branchName + "/parent")
+		addZoxideEntries(zoxide, branchName)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
+}
+
+func addZoxideEntries(zoxide zoxide.Zoxide, branchName string) {
+	//TODO: zoxide entries
+	workingDir, err := os.Getwd()
+	util.CheckError(err)
+
+	parentDir := filepath.Dir(workingDir)
+	err = zoxide.AddPath(parentDir + "/" + branchName)
+	util.CheckError(err)
+
+	err = zoxide.AddPath(parentDir + "/" + branchName + "/ui")
+	util.CheckError(err)
+
+	err = zoxide.AddPath(parentDir + "/" + branchName + "/parent")
+	util.CheckError(err)
+
 }
 
 func init() {
