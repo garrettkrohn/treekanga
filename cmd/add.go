@@ -40,6 +40,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 2 {
+			branchName = args[0]
+			baseBranch = args[1]
+		}
+
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
@@ -118,8 +123,6 @@ func init() {
 
 	// Add optional arguments
 	// func (f *FlagSet) StringVarP(p *string, name, shorthand string, value string, usage string) {
-	addCmd.Flags().StringVarP(&branchName, "branchName", "n", "", "Enter new branch name")
-	addCmd.Flags().StringVarP(&baseBranch, "baseBranch", "b", "", "Enter a base branch")
 
 	// Here you will define your flags and configuration settings.
 
