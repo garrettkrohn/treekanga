@@ -24,6 +24,11 @@ import (
 	// "strings"
 )
 
+var (
+	branchName string
+	baseBranch string
+)
+
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -35,6 +40,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) >= 1 {
+			branchName = args[0]
+		}
+		if len(args) == 2 {
+			baseBranch = args[1]
+		}
+
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
@@ -46,21 +58,24 @@ to quickly create a Cobra application.`,
 		// cleanRemoteBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(remoteBranches)
 		localBranches, _ := git.GetLocalBranches()
 
-		var branchName string
-		err := huh.NewInput().
-			Title("Input branch name").
-			Prompt("?").
-			Value(&branchName).
-			Run()
-		util.CheckError(err)
+		if branchName == "" {
+			err := huh.NewInput().
+				Title("Input branch name").
+				Prompt("?").
+				Value(&branchName).
+				Run()
+			util.CheckError(err)
 
-		var baseBranch string
-		err = huh.NewInput().
-			Title("Input base branch (leave blank for default)").
-			Prompt("?").
-			Value(&baseBranch).
-			Run()
-		util.CheckError(err)
+		}
+
+		if len(args) == 0 {
+			err := huh.NewInput().
+				Title("Input base branch (leave blank for default)").
+				Prompt("?").
+				Value(&baseBranch).
+				Run()
+			util.CheckError(err)
+		}
 
 		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
@@ -73,7 +88,7 @@ to quickly create a Cobra application.`,
 
 		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
-		err = spinner.New().
+		err := spinner.New().
 			Title("Adding Worktree").
 			Action(action).
 			Run()
@@ -107,6 +122,9 @@ func addZoxideEntries(zoxide zoxide.Zoxide, branchName string) {
 
 func init() {
 	rootCmd.AddCommand(addCmd)
+
+	// Add optional arguments
+	// func (f *FlagSet) StringVarP(p *string, name, shorthand string, value string, usage string) {
 
 	// Here you will define your flags and configuration settings.
 
