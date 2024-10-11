@@ -24,6 +24,11 @@ import (
 	// "strings"
 )
 
+var (
+	branchName string
+	baseBranch string
+)
+
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -46,21 +51,24 @@ to quickly create a Cobra application.`,
 		// cleanRemoteBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(remoteBranches)
 		localBranches, _ := git.GetLocalBranches()
 
-		var branchName string
-		err := huh.NewInput().
-			Title("Input branch name").
-			Prompt("?").
-			Value(&branchName).
-			Run()
-		util.CheckError(err)
+		if branchName == "" {
+			err := huh.NewInput().
+				Title("Input branch name").
+				Prompt("?").
+				Value(&branchName).
+				Run()
+			util.CheckError(err)
 
-		var baseBranch string
-		err = huh.NewInput().
-			Title("Input base branch (leave blank for default)").
-			Prompt("?").
-			Value(&baseBranch).
-			Run()
-		util.CheckError(err)
+		}
+
+		if baseBranch == "" {
+			err := huh.NewInput().
+				Title("Input base branch (leave blank for default)").
+				Prompt("?").
+				Value(&baseBranch).
+				Run()
+			util.CheckError(err)
+		}
 
 		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
@@ -73,7 +81,7 @@ to quickly create a Cobra application.`,
 
 		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
-		err = spinner.New().
+		err := spinner.New().
 			Title("Adding Worktree").
 			Action(action).
 			Run()
@@ -107,6 +115,11 @@ func addZoxideEntries(zoxide zoxide.Zoxide, branchName string) {
 
 func init() {
 	rootCmd.AddCommand(addCmd)
+
+	// Add optional arguments
+	// func (f *FlagSet) StringVarP(p *string, name, shorthand string, value string, usage string) {
+	addCmd.Flags().StringVarP(&branchName, "branchName", "n", "", "Enter new branch name")
+	addCmd.Flags().StringVarP(&baseBranch, "baseBranch", "b", "", "Enter a base branch")
 
 	// Here you will define your flags and configuration settings.
 
