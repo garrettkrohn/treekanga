@@ -6,47 +6,32 @@ package cmd
 import (
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
-	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/spf13/cobra"
 )
 
-// cleanCmd repesents the clean command
-var cleanCmd = &cobra.Command{
-	Use:   "clean",
-	Short: "Clean unused worktrees",
-	Long: `Compare all local worktree branches with the remote branches,
-    allow the user to select which worktrees they would like to delete.`,
+// deleteCmd represents the delete command
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete selected worktrees",
+	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		//TODO: add spinner for all these calls
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
 
 		worktrees := getWorktrees(git)
-		cleanedBranches := getRemoteBranches(git)
 
-		filter := filter.NewFilter()
-		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
-
-		if len(noMatchList) == 0 {
-			fmt.Println("All local branches exist on remote")
-			os.Exit(1)
-		}
-
-		// transform worktreeobj into strings for selection
 		var stringWorktrees []string
-		for _, worktreeObj := range noMatchList {
+		for _, worktreeObj := range worktrees {
 			stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
 		}
 
@@ -71,7 +56,7 @@ var cleanCmd = &cobra.Command{
 
 		//transform string selection back to worktreeobjs
 		var selectedWorktreeObj []worktreeobj.WorktreeObj
-		for _, worktreeobj := range noMatchList {
+		for _, worktreeobj := range worktrees {
 			for _, str := range selections {
 				if worktreeobj.BranchName == str {
 					selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
@@ -105,38 +90,16 @@ var cleanCmd = &cobra.Command{
 	},
 }
 
-func getWorktrees(git git.Git) []worktreeobj.WorktreeObj {
-	worktreeStrings, wError := git.GetWorktrees()
-	if wError != nil {
-		log.Fatal(wError)
-	}
-
-	transformer := transformer.NewWorktreeTransformer()
-	worktrees := transformer.TransformWorktrees(worktreeStrings)
-
-	return worktrees
-}
-
-func getRemoteBranches(git git.Git) []string {
-	branches, error := git.GetRemoteBranches()
-	if error != nil {
-		log.Fatal(error)
-	}
-	cleanedBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(branches)
-
-	return cleanedBranches
-}
-
 func init() {
-	rootCmd.AddCommand(cleanCmd)
+	rootCmd.AddCommand(deleteCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// cleanCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// cleanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
