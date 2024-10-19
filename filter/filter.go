@@ -7,6 +7,7 @@ import (
 type Filter interface {
 	GetBranchNoMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
 	BranchExistsInSlice([]string, string) bool
+	GetBranchMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
 }
 
 type RealFilter struct{}
@@ -30,6 +31,19 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 func (f *RealFilter) BranchExistsInSlice(branches []string, newBranch string) bool {
 
 	return contains(branches, newBranch)
+}
+
+func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+	var selectedWorktreeObj []worktreeobj.WorktreeObj
+	for _, worktreeobj := range allWorktrees {
+		for _, str := range selectedBranchNames {
+			if worktreeobj.BranchName == str {
+				selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
+				break
+			}
+		}
+	}
+	return selectedWorktreeObj
 }
 
 // contains checks if a slice contains a specific string.

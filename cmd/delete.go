@@ -5,15 +5,14 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/transformer"
+	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
 )
 
@@ -27,63 +26,28 @@ var deleteCmd = &cobra.Command{
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
+		transformer := transformer.NewTransformer()
 
-		worktrees := getWorktrees(git)
+		worktrees := getWorktrees(git, transformer)
 
-		var stringWorktrees []string
-		for _, worktreeObj := range worktrees {
-			stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
-		}
+		stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
 		var selections []string
 
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewMultiSelect[string]().
-					Value(&selections).
-					OptionsFunc(func() []huh.Option[string] {
-						return huh.NewOptions(stringWorktrees...)
-					}, &stringWorktrees).
-					Title("Local endpoints that do not exist on remote").
-					Height(25),
-			),
-		)
-
-		formErr := form.Run()
-		if formErr != nil {
-			log.Fatal(formErr)
-		}
+		selections = HuhMultiSelect(selections, stringWorktrees)
 
 		//transform string selection back to worktreeobjs
-		var selectedWorktreeObj []worktreeobj.WorktreeObj
-		for _, worktreeobj := range worktrees {
-			for _, str := range selections {
-				if worktreeobj.BranchName == str {
-					selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
-					break
-				}
-			}
-		}
+		selectedWorktreeObj := filter.NewFilter().GetBranchMatchList(selections, worktrees)
 
 		//remove worktrees
-
 		numOfWorktreesRemoved := 0
 
-		action := func() {
-
+		util.UseSpinner("Removing Worktrees", func() {
 			for _, worktreeObj := range selectedWorktreeObj {
 				git.RemoveWorktree(worktreeObj.Folder)
 				numOfWorktreesRemoved++
 			}
-		}
-		err := spinner.New().
-			Title("Removing Worktrees").
-			Action(action).
-			Run()
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		})
 
 		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
 
