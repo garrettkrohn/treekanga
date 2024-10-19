@@ -10,12 +10,12 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
+	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/spf13/cobra"
 )
@@ -32,20 +32,17 @@ var cleanCmd = &cobra.Command{
 		execWrap := execwrap.NewExec()
 		shell := shell.NewShell(execWrap)
 		git := git.NewGit(shell)
+		transformer := transformer.NewTransformer()
 
-		branches, error := git.GetRemoteBranches()
-		if error != nil {
-			log.Fatal(error)
-		}
-		cleanedBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(branches)
+		var worktrees []worktreeobj.WorktreeObj
+		util.UseSpinner("Fetching Worktrees", func() {
+			worktrees = getWorktrees(git, transformer)
+		})
 
-		worktreeStrings, wError := git.GetWorktrees()
-		if wError != nil {
-			log.Fatal(wError)
-		}
-
-		transformer := transformer.NewWorktreeTransformer()
-		worktrees := transformer.TransformWorktrees(worktreeStrings)
+		var cleanedBranches []string
+		util.UseSpinner("Fetching Remote Branches", func() {
+			cleanedBranches = getRemoteBranches(git, transformer)
+		})
 
 		filter := filter.NewFilter()
 		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
@@ -56,64 +53,68 @@ var cleanCmd = &cobra.Command{
 		}
 
 		// transform worktreeobj into strings for selection
-		var stringWorktrees []string
-		for _, worktreeObj := range noMatchList {
-			stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
-		}
+		stringWorktrees := transformer.TransformWorktreesToBranchNames(noMatchList)
 
 		var selections []string
-
-		form := huh.NewForm(
-			huh.NewGroup(
-				huh.NewMultiSelect[string]().
-					Value(&selections).
-					OptionsFunc(func() []huh.Option[string] {
-						return huh.NewOptions(stringWorktrees...)
-					}, &stringWorktrees).
-					Title("Local endpoints that do not exist on remote").
-					Height(25),
-			),
-		)
-
-		formErr := form.Run()
-		if formErr != nil {
-			log.Fatal(formErr)
-		}
+		selections = HuhMultiSelect(selections, stringWorktrees)
 
 		//transform string selection back to worktreeobjs
-		var selectedWorktreeObj []worktreeobj.WorktreeObj
-		for _, worktreeobj := range noMatchList {
-			for _, str := range selections {
-				if worktreeobj.BranchName == str {
-					selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
-					break
-				}
-			}
-		}
+		selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
 
 		//remove worktrees
-
 		numOfWorktreesRemoved := 0
 
-		action := func() {
-
+		util.UseSpinner("Removing Worktrees", func() {
 			for _, worktreeObj := range selectedWorktreeObj {
 				git.RemoveWorktree(worktreeObj.Folder)
 				numOfWorktreesRemoved++
 			}
-		}
-		err := spinner.New().
-			Title("Removing Worktrees").
-			Action(action).
-			Run()
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		})
 
 		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
 
 	},
+}
+
+func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
+	worktreeStrings, wError := git.GetWorktrees()
+	if wError != nil {
+		log.Fatal(wError)
+	}
+
+	worktrees := transformer.TransformWorktrees(worktreeStrings)
+
+	return worktrees
+}
+
+func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []string {
+	branches, error := git.GetRemoteBranches()
+	if error != nil {
+		log.Fatal(error)
+	}
+	cleanedBranches := transformer.RemoveOriginPrefix(branches)
+
+	return cleanedBranches
+}
+
+func HuhMultiSelect(selections []string, stringOptions []string) []string {
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Value(&selections).
+				OptionsFunc(func() []huh.Option[string] {
+					return huh.NewOptions(stringOptions...)
+				}, &stringOptions).
+				Title("Local endpoints that do not exist on remote").
+				Height(25),
+		),
+	)
+
+	formErr := form.Run()
+	if formErr != nil {
+		log.Fatal(formErr)
+	}
+	return selections
 }
 
 func init() {

@@ -43,7 +43,7 @@ to quickly create a Cobra application.`,
 			log.Fatal(err)
 		}
 
-		worktreetransformer := transformer.NewWorktreeTransformer()
+		worktreetransformer := transformer.NewTransformer()
 		worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
 
 		for _, worktree := range worktreeObjects {

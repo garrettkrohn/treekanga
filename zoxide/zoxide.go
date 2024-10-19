@@ -1,8 +1,6 @@
 package zoxide
 
 import (
-	"fmt"
-
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
@@ -19,7 +17,6 @@ func NewZoxide(shell shell.Shell) Zoxide {
 }
 
 func (r *RealZoxide) AddPath(path string) error {
-	fmt.Print(path)
 	_, err := r.shell.Cmd("zoxide", "add", path)
 	return err
 }
