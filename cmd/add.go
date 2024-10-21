@@ -103,16 +103,14 @@ var addCmd = &cobra.Command{
 
 		fmt.Printf("worktree %s created", branchName)
 
-		addZoxideEntries(zoxide, branchName, git, repoName, parentDir)
+		addZoxideEntries(zoxide, branchName, repoName, parentDir)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, git git.Git, repoName string, parentDir string) {
-	//TODO: zoxide entries
-
+func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, repoName string, parentDir string) {
 	folders := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 
 	// add base
