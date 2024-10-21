@@ -4,7 +4,6 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/garrettkrohn/treekanga/cmd"
@@ -24,8 +23,6 @@ func initConfig() {
 
 func main() {
 	initConfig()
-	fmt.Print(viper.GetString("repos.test.defaultBranch"))
-	fmt.Print(viper.GetStringSlice("repos.offensive-security-platform.zoxideFolders"))
 
 	cmd.Execute()
 }

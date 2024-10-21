@@ -17,11 +17,8 @@ import (
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/garrettkrohn/treekanga/zoxide"
 
-	// "github.com/garrettkrohn/treekanga/transformer"
 	"github.com/spf13/cobra"
-	// "log"
-	// "os/exec"
-	// "strings"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -77,7 +74,6 @@ to quickly create a Cobra application.`,
 			util.CheckError(err)
 		}
 
-		// existsOnRemote := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
 
 		folderName := "../" + branchName
@@ -96,27 +92,32 @@ to quickly create a Cobra application.`,
 
 		fmt.Printf("worktree %s created", branchName)
 
-		addZoxideEntries(zoxide, branchName)
+		addZoxideEntries(zoxide, branchName, git)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func addZoxideEntries(zoxide zoxide.Zoxide, branchName string) {
+func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, git git.Git) {
 	//TODO: zoxide entries
 	workingDir, err := os.Getwd()
 	util.CheckError(err)
 
+	repoName, err := git.GetRepoName(workingDir)
+	util.CheckError(err)
+
+	folders := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
+
+	// add base
 	parentDir := filepath.Dir(workingDir)
 	err = zoxide.AddPath(parentDir + "/" + branchName)
-	util.CheckError(err)
 
-	err = zoxide.AddPath(parentDir + "/" + branchName + "/ui")
-	util.CheckError(err)
-
-	err = zoxide.AddPath(parentDir + "/" + branchName + "/parent")
-	util.CheckError(err)
+	// add all from config
+	for _, folder := range folders {
+		err = zoxide.AddPath(parentDir + "/" + branchName + "/" + folder)
+		util.CheckError(err)
+	}
 
 }
 
