@@ -2,6 +2,8 @@ package git
 
 import (
 	"log"
+	"path/filepath"
+	"strings"
 
 	"github.com/garrettkrohn/treekanga/shell"
 )
@@ -15,6 +17,7 @@ type Git interface {
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
 	AddWorktree(string, bool, string, string) error
+	GetRepoName(path string) (string, error)
 }
 
 type RealGit struct {
@@ -93,4 +96,13 @@ func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool,
 		_, err := g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
 		return err
 	}
+}
+
+func (g *RealGit) GetRepoName(path string) (string, error) {
+	out, err := g.shell.Cmd("git", "-C", path, "config", "--get", "remote.origin.url")
+	if err != nil {
+		return "", err
+	}
+	repoName := strings.TrimSuffix(filepath.Base(out), filepath.Ext(out))
+	return repoName, nil
 }
