@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 */
 package cmd
 

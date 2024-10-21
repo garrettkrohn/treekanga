@@ -1,5 +1,5 @@
 /*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
+Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 */
 package cmd
 
@@ -29,13 +29,16 @@ var (
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Add a git worktree",
+	Long: `You may use this command with zero arguments, and you
+    will be prompeted to input the branch name and base branch.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+    Alternatively, you may the branch name as an argument, 
+    treekanga will create this branch off of the defaultBranch 
+    defined in the config, or use the current branch.
+
+    You may also pass in the new branch and the base branch as
+    arguments.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) >= 1 {
 			branchName = args[0]
