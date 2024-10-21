@@ -50,6 +50,14 @@ to quickly create a Cobra application.`,
 		filter := filter.NewFilter()
 		zoxide := zoxide.NewZoxide(shell)
 
+		workingDir, err := os.Getwd()
+		util.CheckError(err)
+
+		repoName, err := git.GetRepoName(workingDir)
+		util.CheckError(err)
+
+		parentDir := filepath.Dir(workingDir)
+
 		//TODO: make this async for performance
 		// remoteBranches, _ := git.GetRemoteBranches()
 		// cleanRemoteBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(remoteBranches)
@@ -79,12 +87,12 @@ to quickly create a Cobra application.`,
 		folderName := "../" + branchName
 
 		if baseBranch == "" {
-			baseBranch = "development"
+			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 		}
 
 		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
-		err := spinner.New().
+		err = spinner.New().
 			Title("Adding Worktree").
 			Action(action).
 			Run()
@@ -92,26 +100,20 @@ to quickly create a Cobra application.`,
 
 		fmt.Printf("worktree %s created", branchName)
 
-		addZoxideEntries(zoxide, branchName, git)
+		addZoxideEntries(zoxide, branchName, git, repoName, parentDir)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, git git.Git) {
+func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, git git.Git, repoName string, parentDir string) {
 	//TODO: zoxide entries
-	workingDir, err := os.Getwd()
-	util.CheckError(err)
-
-	repoName, err := git.GetRepoName(workingDir)
-	util.CheckError(err)
 
 	folders := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 
 	// add base
-	parentDir := filepath.Dir(workingDir)
-	err = zoxide.AddPath(parentDir + "/" + branchName)
+	err := zoxide.AddPath(parentDir + "/" + branchName)
 
 	// add all from config
 	for _, folder := range folders {
