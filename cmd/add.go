@@ -115,6 +115,7 @@ func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, repoName string, 
 
 	// add base
 	err := zoxide.AddPath(parentDir + "/" + branchName)
+	util.CheckError(err)
 
 	// add all from config
 	for _, folder := range folders {
