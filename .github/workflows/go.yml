@@ -21,6 +21,12 @@ jobs:
       with:
         go-version: '1.23.0'
 
+    - name: Clear Go module cache
+      run: go clean -modcache
+
+    - name: Remove vendor directory if it exists
+      run: if [ -d "vendor" ]; then rm -rf vendor; fi
+
     - name: Build
       run: go build -v ./...
 
