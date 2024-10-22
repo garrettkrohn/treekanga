@@ -10,10 +10,8 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/huh"
-	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
@@ -28,20 +26,16 @@ var cleanCmd = &cobra.Command{
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		//TODO: add spinner for all these calls
-		execWrap := execwrap.NewExec()
-		shell := shell.NewShell(execWrap)
-		git := git.NewGit(shell)
 		transformer := transformer.NewTransformer()
 
 		var worktrees []worktreeobj.WorktreeObj
 		util.UseSpinner("Fetching Worktrees", func() {
-			worktrees = getWorktrees(git, transformer)
+			worktrees = getWorktrees(deps.Git, transformer)
 		})
 
 		var cleanedBranches []string
 		util.UseSpinner("Fetching Remote Branches", func() {
-			cleanedBranches = getRemoteBranches(git, transformer)
+			cleanedBranches = getRemoteBranches(deps.Git, transformer)
 		})
 
 		filter := filter.NewFilter()
@@ -66,7 +60,7 @@ var cleanCmd = &cobra.Command{
 
 		util.UseSpinner("Removing Worktrees", func() {
 			for _, worktreeObj := range selectedWorktreeObj {
-				git.RemoveWorktree(worktreeObj.Folder)
+				deps.Git.RemoveWorktree(worktreeObj.Folder)
 				numOfWorktreesRemoved++
 			}
 		})
@@ -118,7 +112,6 @@ func HuhMultiSelect(selections []string, stringOptions []string) []string {
 }
 
 func init() {
-	rootCmd.AddCommand(cleanCmd)
 
 	// Here you will define your flags and configuration settings.
 

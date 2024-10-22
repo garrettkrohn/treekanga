@@ -10,9 +10,6 @@ import (
 
 	"log"
 
-	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 )
 
@@ -32,10 +29,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		shell := shell.NewShell(execwrap.NewExec())
-		git := git.NewGit(shell)
 
-		rawWorktrees, err := git.GetWorktrees()
+		rawWorktrees, err := deps.Git.GetWorktrees()
 
 		if err != nil {
 			log.Fatal(err)
@@ -52,7 +47,6 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
 
 	// Here you will define your flags and configuration settings.
 

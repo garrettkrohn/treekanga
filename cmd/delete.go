@@ -7,10 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
-	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
@@ -23,12 +20,9 @@ var deleteCmd = &cobra.Command{
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		execWrap := execwrap.NewExec()
-		shell := shell.NewShell(execWrap)
-		git := git.NewGit(shell)
 		transformer := transformer.NewTransformer()
 
-		worktrees := getWorktrees(git, transformer)
+		worktrees := getWorktrees(deps.Git, transformer)
 
 		stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
@@ -44,7 +38,7 @@ var deleteCmd = &cobra.Command{
 
 		util.UseSpinner("Removing Worktrees", func() {
 			for _, worktreeObj := range selectedWorktreeObj {
-				git.RemoveWorktree(worktreeObj.Folder)
+				deps.Git.RemoveWorktree(worktreeObj.Folder)
 				numOfWorktreesRemoved++
 			}
 		})
@@ -55,7 +49,6 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
 
 	// Here you will define your flags and configuration settings.
 
