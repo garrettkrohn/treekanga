@@ -1,8 +1,6 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Go
-
 on:
   push:
     branches: [ "main" ]
@@ -14,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Ensure a full checkout
 
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -28,6 +28,16 @@ jobs:
 
     - name: Remove Go build cache
       run: go clean -cache
+
+    - name: Explicitly rename directory to correct case
+      run: |
+        if [ -d "github.com/garrettkrohn/treekanga/Transformer" ]; then
+          mv github.com/garrettkrohn/treekanga/Transformer github.com/garrettkrohn/treekanga/tempname
+          mv github.com/garrettkrohn/treekanga/tempname github.com/garrettkrohn/treekanga/transformer
+        fi
+
+    - name: List directory contents
+      run: ls -lR
 
     - name: Verify case sensitivity
       run: |
