@@ -10,12 +10,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
-	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
-	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
 	util "github.com/garrettkrohn/treekanga/utility"
-	"github.com/garrettkrohn/treekanga/zoxide"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,16 +43,16 @@ var addCmd = &cobra.Command{
 			baseBranch = args[1]
 		}
 
-		execWrap := execwrap.NewExec()
-		shell := shell.NewShell(execWrap)
-		git := git.NewGit(shell)
+		// execWrap := execwrap.NewExec()
+		// shell := shell.NewShell(execWrap)
+		// git := git.NewGit(shell)
 		filter := filter.NewFilter()
-		zoxide := zoxide.NewZoxide(shell)
+		// zoxide := zoxide.NewZoxide(shell)
 
 		workingDir, err := os.Getwd()
 		util.CheckError(err)
 
-		repoName, err := git.GetRepoName(workingDir)
+		repoName, err := deps.Git.GetRepoName(workingDir)
 		util.CheckError(err)
 
 		parentDir := filepath.Dir(workingDir)
@@ -64,7 +60,7 @@ var addCmd = &cobra.Command{
 		//TODO: make this async for performance
 		// remoteBranches, _ := git.GetRemoteBranches()
 		// cleanRemoteBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(remoteBranches)
-		localBranches, _ := git.GetLocalBranches()
+		localBranches, _ := deps.Git.GetLocalBranches()
 
 		if branchName == "" {
 			err := huh.NewInput().
@@ -93,7 +89,7 @@ var addCmd = &cobra.Command{
 			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 		}
 
-		action := func() { git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
+		action := func() { deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
 		err = spinner.New().
 			Title("Adding Worktree").
@@ -103,30 +99,29 @@ var addCmd = &cobra.Command{
 
 		fmt.Printf("worktree %s created", branchName)
 
-		addZoxideEntries(zoxide, branchName, repoName, parentDir)
+		addZoxideEntries(branchName, repoName, parentDir)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func addZoxideEntries(zoxide zoxide.Zoxide, branchName string, repoName string, parentDir string) {
+func addZoxideEntries(branchName string, repoName string, parentDir string) {
 	folders := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 
 	// add base
-	err := zoxide.AddPath(parentDir + "/" + branchName)
+	err := deps.Zoxide.AddPath(parentDir + "/" + branchName)
 	util.CheckError(err)
 
 	// add all from config
 	for _, folder := range folders {
-		err = zoxide.AddPath(parentDir + "/" + branchName + "/" + folder)
+		err = deps.Zoxide.AddPath(parentDir + "/" + branchName + "/" + folder)
 		util.CheckError(err)
 	}
 
 }
 
 func init() {
-	rootCmd.AddCommand(addCmd)
 
 	// Add optional arguments
 	// func (f *FlagSet) StringVarP(p *string, name, shorthand string, value string, usage string) {
