@@ -40,7 +40,6 @@ func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filt
 	form.SetOptions(stringWorktrees)
 	err := form.Run()
 	util.CheckError(err)
-	// selections = HuhMultiSelect(selections, stringWorktrees, form)
 
 	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
@@ -54,13 +53,6 @@ func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filt
 		}
 	})
 	spinner.Run()
-
-	// spinner("Removing Worktrees", func() {
-	// 	for _, worktreeObj := range selectedWorktreeObj {
-	// 		git.RemoveWorktree(worktreeObj.Folder)
-	// 		numOfWorktreesRemoved++
-	// 	}
-	// })
 
 	return len(selectedWorktreeObj), nil
 }

@@ -43,11 +43,7 @@ var addCmd = &cobra.Command{
 			baseBranch = args[1]
 		}
 
-		// execWrap := execwrap.NewExec()
-		// shell := shell.NewShell(execWrap)
-		// git := git.NewGit(shell)
 		filter := filter.NewFilter()
-		// zoxide := zoxide.NewZoxide(shell)
 
 		workingDir, err := os.Getwd()
 		util.CheckError(err)
@@ -57,9 +53,6 @@ var addCmd = &cobra.Command{
 
 		parentDir := filepath.Dir(workingDir)
 
-		//TODO: make this async for performance
-		// remoteBranches, _ := git.GetRemoteBranches()
-		// cleanRemoteBranches := transformer.NewWorktreeTransformer().RemoveOriginPrefix(remoteBranches)
 		localBranches, _ := deps.Git.GetLocalBranches()
 
 		if branchName == "" {

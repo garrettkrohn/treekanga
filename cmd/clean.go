@@ -36,20 +36,13 @@ var cleanCmd = &cobra.Command{
 			worktrees = getWorktrees(deps.Git, transformer)
 		})
 		spinner.Run()
-		// spinner.UseSpinner(spinner, func() {
-		// 	worktrees = getWorktrees(deps.Git, transformer)
-		// })
 
 		var cleanedBranches []string
-		// spinner = spinner.NewRealSpinner()
 		spinner.Title("Fetching Remote Branches")
 		spinner.Action(func() {
 			cleanedBranches = getRemoteBranches(deps.Git, transformer)
 		})
 		spinner.Run()
-		// util.UseSpinner(spinner, func() {
-		// 	cleanedBranches = getRemoteBranches(deps.Git, transformer)
-		// })
 
 		filter := filter.NewFilter()
 		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
@@ -68,7 +61,6 @@ var cleanCmd = &cobra.Command{
 		form.SetOptions(stringWorktrees)
 		err := form.Run()
 		util.CheckError(err)
-		// selections = HuhMultiSelect(selections, stringWorktrees, form)
 
 		//transform string selection back to worktreeobjs
 		selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
@@ -107,14 +99,6 @@ func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []
 
 	return cleanedBranches
 }
-
-// func HuhMultiSelect(selections []string, stringOptions []string, form utility.FormInterface) []string {
-// 	formErr := form.Run()
-// 	if formErr != nil {
-// 		log.Fatal(formErr)
-// 	}
-// 	return selections
-// }
 
 func init() {
 
