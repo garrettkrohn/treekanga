@@ -3,13 +3,19 @@ module github.com/garrettkrohn/treekanga
 go 1.23.0
 
 require (
+	github.com/charmbracelet/huh v0.6.0
+	github.com/charmbracelet/huh/spinner v0.0.0-20240917123815-c9b2c9cdb7b6
+	github.com/spf13/cobra v1.8.1
+	github.com/spf13/viper v1.19.0
+	github.com/stretchr/testify v1.9.0
+)
+
+require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
 	github.com/charmbracelet/bubbles v0.20.0 // indirect
 	github.com/charmbracelet/bubbletea v1.1.1 // indirect
-	github.com/charmbracelet/huh v0.6.0 // indirect
-	github.com/charmbracelet/huh/spinner v0.0.0-20240917123815-c9b2c9cdb7b6 // indirect
 	github.com/charmbracelet/lipgloss v0.13.0 // indirect
 	github.com/charmbracelet/x/ansi v0.2.3 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 // indirect
@@ -38,11 +44,8 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
