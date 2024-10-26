@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
-*/
 package cmd
 
 import (
@@ -19,64 +16,67 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// cleanCmd repesents the clean command
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean unused worktrees",
 	Long: `Compare all local worktree branches with the remote branches,
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		transformer := transformer.NewTransformer()
-
-		var worktrees []worktreeobj.WorktreeObj
-		spinner := spinner.NewRealHuhSpinner()
-		spinner.Title("Fetching Worktrees")
-		spinner.Action(func() {
-			worktrees = getWorktrees(deps.Git, transformer)
-		})
-		spinner.Run()
-
-		var cleanedBranches []string
-		spinner.Title("Fetching Remote Branches")
-		spinner.Action(func() {
-			cleanedBranches = getRemoteBranches(deps.Git, transformer)
-		})
-		spinner.Run()
-
-		filter := filter.NewFilter()
-		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
-
-		if len(noMatchList) == 0 {
-			fmt.Println("All local branches exist on remote")
-			os.Exit(1)
+		numOfWorktreesRemoved, err := cleanWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm())
+		if err != nil {
+			cmd.PrintErrln("Error:", err)
+			return
 		}
-
-		// transform worktreeobj into strings for selection
-		stringWorktrees := transformer.TransformWorktreesToBranchNames(noMatchList)
-
-		var selections []string
-		form := form.NewHuhForm()
-		form.SetSelections(&selections)
-		form.SetOptions(stringWorktrees)
-		err := form.Run()
-		util.CheckError(err)
-
-		//transform string selection back to worktreeobjs
-		selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
-
-		//remove worktrees
-		spinner.Title("Removing Worktrees")
-		spinner.Action(func() {
-			for _, worktreeObj := range selectedWorktreeObj {
-				deps.Git.RemoveWorktree(worktreeObj.Folder)
-			}
-		})
-		spinner.Run()
-
-		fmt.Printf("worktrees removed: %s", strconv.Itoa(len(selectedWorktreeObj)))
-
+		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
 	},
+}
+
+// cleanWorktrees performs the core logic of cleaning worktrees
+func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form) (int, error) {
+	var worktrees []worktreeobj.WorktreeObj
+	spinner.Title("Fetching Worktrees")
+	spinner.Action(func() {
+		worktrees = getWorktrees(git, transformer)
+	})
+	spinner.Run()
+
+	var cleanedBranches []string
+	spinner.Title("Fetching Remote Branches")
+	spinner.Action(func() {
+		cleanedBranches = getRemoteBranches(git, transformer)
+	})
+	spinner.Run()
+
+	noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
+
+	if len(noMatchList) == 0 {
+		fmt.Println("All local branches exist on remote")
+		os.Exit(1)
+	}
+
+	// Transform worktree objects into strings for selection
+	stringWorktrees := transformer.TransformWorktreesToBranchNames(noMatchList)
+
+	var selections []string
+	form.SetSelections(&selections)
+	form.SetOptions(stringWorktrees)
+	err := form.Run()
+	util.CheckError(err)
+
+	// Transform string selection back to worktree objects
+	selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
+
+	// Remove worktrees
+	spinner.Title("Removing Worktrees")
+	spinner.Action(func() {
+		for _, worktreeObj := range selectedWorktreeObj {
+			_, err := git.RemoveWorktree(worktreeObj.Folder)
+			util.CheckError(err)
+		}
+	})
+	spinner.Run()
+
+	return len(selectedWorktreeObj), nil
 }
 
 func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
@@ -101,7 +101,6 @@ func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []
 }
 
 func init() {
-
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
