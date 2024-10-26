@@ -13,19 +13,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestDeleteWorktrees(t *testing.T) {
+func TestDeleteWorktreesWithDelete(t *testing.T) {
 	// Setup dependencies
 	mockGit := git.NewMockGit(t)
 	mockGit.On("GetWorktrees").Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	// Mock the RemoveWorktree method
-	numOfWorktreesRemoved := 0
-	// mockGit.On("RemoveWorktree", mock.Anything, &numOfWorktreesRemoved).Run(func(args mock.Arguments) {
-	// 	numOfWorktreesRemoved++
-	// }).Return(nil)
-
 	transformer := transformer.NewTransformer()
 	mockFilter := filter.NewMockFilter(t)
 
@@ -33,7 +27,6 @@ func TestDeleteWorktrees(t *testing.T) {
 	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
 	mockSpinner.On("Action", mock.Anything).Return(mockSpinner)
 	mockSpinner.On("Run").Run(func(args mock.Arguments) {
-		numOfWorktreesRemoved++
 	}).Return(nil)
 
 	mockForm := form.NewMockHuhForm(t)
