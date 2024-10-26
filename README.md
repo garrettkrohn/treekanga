@@ -9,3 +9,4 @@ TODO:
 [X] have the option to send in new branch and base branch via flag
 [ ] in list add option for detatched head, format is different.
 [ ] fix bug where a branch has a / in it and creates another folder
+[ ] check process to add a branch that already exists

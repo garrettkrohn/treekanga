@@ -1,16 +1,13 @@
-/*
-Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
-*/
 package cmd
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
+	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
+	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
@@ -22,41 +19,45 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete selected worktrees",
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		execWrap := execwrap.NewExec()
-		shell := shell.NewShell(execWrap)
-		git := git.NewGit(shell)
-		transformer := transformer.NewTransformer()
-
-		worktrees := getWorktrees(git, transformer)
-
-		stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
-
-		var selections []string
-
-		selections = HuhMultiSelect(selections, stringWorktrees)
-
-		//transform string selection back to worktreeobjs
-		selectedWorktreeObj := filter.NewFilter().GetBranchMatchList(selections, worktrees)
-
-		//remove worktrees
-		numOfWorktreesRemoved := 0
-
-		util.UseSpinner("Removing Worktrees", func() {
-			for _, worktreeObj := range selectedWorktreeObj {
-				git.RemoveWorktree(worktreeObj.Folder)
-				numOfWorktreesRemoved++
-			}
-		})
-
+		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm())
+		if err != nil {
+			cmd.PrintErrln("Error:", err)
+			return
+		}
 		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
-
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(deleteCmd)
+// deleteWorktrees performs the core logic of deleting worktrees
+func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form) (int, error) {
+	worktrees := getWorktrees(git, transformer)
 
+	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
+
+	var selections []string
+
+	form.SetSelections(&selections)
+	form.SetOptions(stringWorktrees)
+	err := form.Run()
+	util.CheckError(err)
+
+	// Transform string selection back to worktree objects
+	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
+
+	// Remove worktrees
+	spinner.Title("Deleting Worktrees")
+	spinner.Action(func() {
+		for _, worktreeObj := range selectedWorktreeObj {
+			_, err := git.RemoveWorktree(worktreeObj.Folder)
+			util.CheckError(err)
+		}
+	})
+	spinner.Run()
+
+	return len(selectedWorktreeObj), nil
+}
+
+func init() {
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

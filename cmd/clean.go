@@ -9,11 +9,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
-	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/filter"
+	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/shell"
+	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
@@ -28,21 +27,22 @@ var cleanCmd = &cobra.Command{
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		//TODO: add spinner for all these calls
-		execWrap := execwrap.NewExec()
-		shell := shell.NewShell(execWrap)
-		git := git.NewGit(shell)
 		transformer := transformer.NewTransformer()
 
 		var worktrees []worktreeobj.WorktreeObj
-		util.UseSpinner("Fetching Worktrees", func() {
-			worktrees = getWorktrees(git, transformer)
+		spinner := spinner.NewRealHuhSpinner()
+		spinner.Title("Fetching Worktrees")
+		spinner.Action(func() {
+			worktrees = getWorktrees(deps.Git, transformer)
 		})
+		spinner.Run()
 
 		var cleanedBranches []string
-		util.UseSpinner("Fetching Remote Branches", func() {
-			cleanedBranches = getRemoteBranches(git, transformer)
+		spinner.Title("Fetching Remote Branches")
+		spinner.Action(func() {
+			cleanedBranches = getRemoteBranches(deps.Git, transformer)
 		})
+		spinner.Run()
 
 		filter := filter.NewFilter()
 		noMatchList := filter.GetBranchNoMatchList(cleanedBranches, worktrees)
@@ -56,22 +56,25 @@ var cleanCmd = &cobra.Command{
 		stringWorktrees := transformer.TransformWorktreesToBranchNames(noMatchList)
 
 		var selections []string
-		selections = HuhMultiSelect(selections, stringWorktrees)
+		form := form.NewHuhForm()
+		form.SetSelections(&selections)
+		form.SetOptions(stringWorktrees)
+		err := form.Run()
+		util.CheckError(err)
 
 		//transform string selection back to worktreeobjs
 		selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
 
 		//remove worktrees
-		numOfWorktreesRemoved := 0
-
-		util.UseSpinner("Removing Worktrees", func() {
+		spinner.Title("Removing Worktrees")
+		spinner.Action(func() {
 			for _, worktreeObj := range selectedWorktreeObj {
-				git.RemoveWorktree(worktreeObj.Folder)
-				numOfWorktreesRemoved++
+				deps.Git.RemoveWorktree(worktreeObj.Folder)
 			}
 		})
+		spinner.Run()
 
-		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
+		fmt.Printf("worktrees removed: %s", strconv.Itoa(len(selectedWorktreeObj)))
 
 	},
 }
@@ -97,28 +100,7 @@ func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []
 	return cleanedBranches
 }
 
-func HuhMultiSelect(selections []string, stringOptions []string) []string {
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Value(&selections).
-				OptionsFunc(func() []huh.Option[string] {
-					return huh.NewOptions(stringOptions...)
-				}, &stringOptions).
-				Title("Local endpoints that do not exist on remote").
-				Height(25),
-		),
-	)
-
-	formErr := form.Run()
-	if formErr != nil {
-		log.Fatal(formErr)
-	}
-	return selections
-}
-
 func init() {
-	rootCmd.AddCommand(cleanCmd)
 
 	// Here you will define your flags and configuration settings.
 
