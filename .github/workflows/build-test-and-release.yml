@@ -1,0 +1,65 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: build-test-and-release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Install deps
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+      - name: Run tests
+        run: go test -cover -bench=. -benchmem -race -v 2>&1 ./... | go-junit-report -set-exit-code > report.xml
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: |
+            report.xml
+        if: always()
+
+  goreleaser:
+    name: Build and Publish
+    needs: tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+  check_brew:
+    name: Check Brew Tap
+    needs: goreleaser
+    runs-on: macos-latest
+    steps:
+      - name: Install with brew
+        run: |
+          brew install garrettkrohn/treekanga/treekanga
+      # TODO: assert the latest version was installed
