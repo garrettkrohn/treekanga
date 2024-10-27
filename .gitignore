@@ -4,5 +4,6 @@
 *.so
 *.dylib
 treekanga
+todo.md
 
 dist/
