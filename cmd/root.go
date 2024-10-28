@@ -22,9 +22,10 @@ var deps Dependencies
 
 func NewRootCmd(git git.Git, zoxide zoxide.Zoxide) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "treekanga",
-		Short: "CLI application to manage git worktree",
-		Long:  `CLI application to manage git worktree`,
+		Use:     "treekanga",
+		Short:   "CLI application to manage git worktree",
+		Long:    `CLI application to manage git worktree`,
+		Version: `v0.1.0-beta`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deps = Dependencies{
 				Git:    git,
