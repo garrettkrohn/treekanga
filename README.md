@@ -33,28 +33,34 @@ repos:
 ### Add
 
 `treekanga add example_branch example_base_branch`
+
 You can define the branch and base branch directly from the command line
 
 `treekanga add example_branch`
+
 If a base branch is not defined it will use the defaults base branch from the
 config file, if not present it will use the current branch
 
 `treekanga add`
+
 You can also input via prompts
 
 ### List
 
 `treekanga list`
+
 List of all worktrees of repository
 
 ### Clean
 
 `treekanga clean`
+
 This will check what worktrees do not have a remote branch, ex. local
 branches that have been merged and remote branch deleted
 
 ### Delete
 
 `treekanga delete`
+
 This will bring up all worktrees and allow you to select worktree(s)
 to delete
