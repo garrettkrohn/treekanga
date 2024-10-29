@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/filter"
 	util "github.com/garrettkrohn/treekanga/utility"
 
@@ -93,8 +94,9 @@ var addCmd = &cobra.Command{
 
 		fmt.Printf("worktree %s created", branchName)
 
-		zoxideSlice := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
-		foldersToAdd := getListOfZoxideEntries(branchName, repoName, parentDir, zoxideSlice)
+		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
+		directoryReader := deps.DirectoryReader
+		foldersToAdd := getListOfZoxideEntries(branchName, repoName, parentDir, foldersToAddFromConfig, directoryReader)
 
 		addZoxideEntries(foldersToAdd)
 
@@ -103,22 +105,32 @@ var addCmd = &cobra.Command{
 	},
 }
 
-func getListOfZoxideEntries(branchName string, repoName string, parentDir string, foldersToAddFromConfig []string) []string {
+func getListOfZoxideEntries(branchName string, repoName string, parentDir string, foldersToAddFromConfig []string, directoryReader directoryReader.DirectoryReader) []string {
 	baseName := parentDir + "/" + branchName
 
 	var foldersToAdd []string
 	foldersToAdd = append(foldersToAdd, baseName)
 
-	foldersToAdd = addConfigFolders(foldersToAdd, foldersToAddFromConfig, baseName)
+	foldersToAdd = addConfigFolders(foldersToAdd, foldersToAddFromConfig, baseName, directoryReader)
 
 	return foldersToAdd
 }
 
-func addConfigFolders(foldersToAdd []string, foldersToAddFromConfig []string, baseName string) []string {
+func addConfigFolders(foldersToAdd []string, foldersToAddFromConfig []string, baseName string, directoryReader directoryReader.DirectoryReader) []string {
 	for _, folder := range foldersToAddFromConfig {
 		if !isLastCharWildcard(folder) {
 			newFolderFromConfig := baseName + "/" + folder
 			foldersToAdd = append(foldersToAdd, newFolderFromConfig)
+		} else {
+			pathUpTillWildcard := getPathUntilLastSlash(folder)
+			baseFolderToSearch := baseName + "/" + pathUpTillWildcard
+			configFolders, err := directoryReader.GetFoldersInDirectory(baseFolderToSearch)
+
+			for _, configFolder := range configFolders {
+				newConfigFolder := baseFolderToSearch + "/" + configFolder
+				foldersToAdd = append(foldersToAdd, newConfigFolder)
+			}
+			util.CheckError(err)
 		}
 	}
 	return foldersToAdd
@@ -128,6 +140,14 @@ func isLastCharWildcard(input string) bool {
 	parts := strings.Split(input, "/")
 	lastSegment := parts[len(parts)-1]
 	return strings.HasSuffix(lastSegment, "*")
+}
+
+func getPathUntilLastSlash(input string) string {
+	parts := strings.Split(input, "/")
+	if len(parts) > 1 {
+		return strings.Join(parts[:len(parts)-1], "/")
+	}
+	return ""
 }
 
 func addZoxideEntries(folders []string) {
