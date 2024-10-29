@@ -27,7 +27,7 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 		Use:     "treekanga",
 		Short:   "CLI application to manage git worktree",
 		Long:    `CLI application to manage git worktree`,
-		Version: `v0.1.0-beta`,
+		Version: `v0.1.1-beta`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deps = Dependencies{
 				Git:             git,
