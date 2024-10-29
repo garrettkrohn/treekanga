@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -92,23 +93,46 @@ var addCmd = &cobra.Command{
 
 		fmt.Printf("worktree %s created", branchName)
 
-		addZoxideEntries(branchName, repoName, parentDir)
+		zoxideSlice := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
+		foldersToAdd := getListOfZoxideEntries(branchName, repoName, parentDir, zoxideSlice)
+
+		addZoxideEntries(foldersToAdd)
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func addZoxideEntries(branchName string, repoName string, parentDir string) {
-	folders := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
+func getListOfZoxideEntries(branchName string, repoName string, parentDir string, foldersToAddFromConfig []string) []string {
+	baseName := parentDir + "/" + branchName
 
-	// add base
-	err := deps.Zoxide.AddPath(parentDir + "/" + branchName)
-	util.CheckError(err)
+	var foldersToAdd []string
+	foldersToAdd = append(foldersToAdd, baseName)
 
-	// add all from config
+	foldersToAdd = addConfigFolders(foldersToAdd, foldersToAddFromConfig, baseName)
+
+	return foldersToAdd
+}
+
+func addConfigFolders(foldersToAdd []string, foldersToAddFromConfig []string, baseName string) []string {
+	for _, folder := range foldersToAddFromConfig {
+		if !isLastCharWildcard(folder) {
+			newFolderFromConfig := baseName + "/" + folder
+			foldersToAdd = append(foldersToAdd, newFolderFromConfig)
+		}
+	}
+	return foldersToAdd
+}
+
+func isLastCharWildcard(input string) bool {
+	parts := strings.Split(input, "/")
+	lastSegment := parts[len(parts)-1]
+	return strings.HasSuffix(lastSegment, "*")
+}
+
+func addZoxideEntries(folders []string) {
 	for _, folder := range folders {
-		err = deps.Zoxide.AddPath(parentDir + "/" + branchName + "/" + folder)
+		err := deps.Zoxide.AddPath(folder)
 		util.CheckError(err)
 	}
 
