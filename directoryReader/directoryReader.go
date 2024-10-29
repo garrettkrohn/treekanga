@@ -1,7 +1,6 @@
 package directoryReader
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/garrettkrohn/treekanga/utility"
@@ -20,10 +19,8 @@ func NewDirectoryReader() DirectoryReader {
 func (d DirectoryReaderImpl) GetFoldersInDirectory(dirPath string) ([]string, error) {
 	var folders []string
 
-	fmt.Println(dirPath)
 	entries, err := os.ReadDir(dirPath)
 	utility.CheckError(err)
-	fmt.Println("entries", entries)
 	if err != nil {
 		return nil, err
 	}
