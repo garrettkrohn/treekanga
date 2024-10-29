@@ -19,8 +19,9 @@ repos:
     # This is a list of folders that will be added to zoxide
     zoxideFolders:
       - frontEnd
+      - frontEnd/* # this will add all folders immediately within frontEnd
       - backEnd
-      - backeEnd/application/src/main/resources/db/migration
+      - backEnd/application/src/main/resources/db/migration
   treekanga:
     defaultBranch: main
     zoxideFolders:

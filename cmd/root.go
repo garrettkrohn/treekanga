@@ -6,6 +6,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
@@ -14,13 +15,14 @@ import (
 )
 
 type Dependencies struct {
-	Git    git.Git
-	Zoxide zoxide.Zoxide
+	Git             git.Git
+	Zoxide          zoxide.Zoxide
+	DirectoryReader directoryReader.DirectoryReader
 }
 
 var deps Dependencies
 
-func NewRootCmd(git git.Git, zoxide zoxide.Zoxide) *cobra.Command {
+func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "treekanga",
 		Short:   "CLI application to manage git worktree",
@@ -28,8 +30,9 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide) *cobra.Command {
 		Version: `v0.1.0-beta`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deps = Dependencies{
-				Git:    git,
-				Zoxide: zoxide,
+				Git:             git,
+				Zoxide:          zoxide,
+				DirectoryReader: directoryReader,
 			}
 		},
 	}
@@ -45,8 +48,9 @@ func Execute() {
 	shell := shell.NewShell(execWrap)
 	git := git.NewGit(shell)
 	zoxide := zoxide.NewZoxide(shell)
+	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide)
+	rootCmd := NewRootCmd(git, zoxide, directoryReader)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(cleanCmd)
