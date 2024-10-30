@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/filter"
+	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 
 	"github.com/spf13/cobra"
@@ -55,8 +56,6 @@ var addCmd = &cobra.Command{
 
 		parentDir := filepath.Dir(workingDir)
 
-		localBranches, _ := deps.Git.GetLocalBranches()
-
 		if branchName == "" {
 			err := huh.NewInput().
 				Title("Input branch name").
@@ -76,15 +75,24 @@ var addCmd = &cobra.Command{
 			util.CheckError(err)
 		}
 
-		existsLocally := filter.BranchExistsInSlice(localBranches, branchName)
+		action := func() {
+			remoteBranches, err := deps.Git.GetRemoteBranches()
+			cleanRemoteBranches := transformer.NewTransformer().RemoveOriginPrefix(remoteBranches)
+			util.CheckError(err)
+			existsRemotely := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 
-		folderName := "../" + branchName
+			if existsRemotely {
+				deps.Git.FetchOrigin(branchName)
+			}
 
-		if baseBranch == "" {
-			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+			folderName := "../" + branchName
+
+			if baseBranch == "" {
+				baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+			}
+
+			deps.Git.AddWorktree(folderName, existsRemotely, branchName, baseBranch)
 		}
-
-		action := func() { deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch) }
 
 		err = spinner.New().
 			Title("Adding Worktree").
