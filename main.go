@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var version = "dev"
+
 func initConfig() {
 	viper.SetConfigName("treekanga")
 	viper.SetConfigType("yaml")
@@ -24,5 +26,5 @@ func initConfig() {
 func main() {
 	initConfig()
 
-	cmd.Execute()
+	cmd.Execute(version)
 }

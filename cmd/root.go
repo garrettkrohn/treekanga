@@ -22,12 +22,12 @@ type Dependencies struct {
 
 var deps Dependencies
 
-func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader) *cobra.Command {
+func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader, version string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "treekanga",
 		Short:   "CLI application to manage git worktree",
 		Long:    `CLI application to manage git worktree`,
-		Version: `v0.1.1-beta`,
+		Version: version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			deps = Dependencies{
 				Git:             git,
@@ -42,7 +42,7 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
@@ -50,7 +50,7 @@ func Execute() {
 	zoxide := zoxide.NewZoxide(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader)
+	rootCmd := NewRootCmd(git, zoxide, directoryReader, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(cleanCmd)
