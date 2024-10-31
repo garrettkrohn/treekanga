@@ -55,6 +55,24 @@ func (_m *MockGit) Clone(name string) (string, error) {
 	return r0, r1
 }
 
+// FetchOrigin provides a mock function with given fields: branch
+func (_m *MockGit) FetchOrigin(branch string) error {
+	ret := _m.Called(branch)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchOrigin")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(branch)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetLocalBranches provides a mock function with given fields:
 func (_m *MockGit) GetLocalBranches() ([]string, error) {
 	ret := _m.Called()
