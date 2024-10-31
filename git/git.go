@@ -18,6 +18,7 @@ type Git interface {
 	RemoveWorktree(string) (string, error)
 	AddWorktree(string, bool, string, string) error
 	GetRepoName(path string) (string, error)
+	FetchOrigin(branch string) error
 }
 
 type RealGit struct {
@@ -105,4 +106,12 @@ func (g *RealGit) GetRepoName(path string) (string, error) {
 	}
 	repoName := strings.TrimSuffix(filepath.Base(out), filepath.Ext(out))
 	return repoName, nil
+}
+
+func (g *RealGit) FetchOrigin(branch string) error {
+	_, err := g.shell.Cmd("git", "fetch", "origin", branch)
+	if err != nil {
+		return err
+	}
+	return nil
 }
