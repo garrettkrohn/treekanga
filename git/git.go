@@ -19,6 +19,7 @@ type Git interface {
 	AddWorktree(string, bool, string, string) error
 	GetRepoName(path string) (string, error)
 	FetchOrigin(branch string) error
+	CloneBare(string, string) error
 }
 
 type RealGit struct {
@@ -114,4 +115,13 @@ func (g *RealGit) FetchOrigin(branch string) error {
 		return err
 	}
 	return nil
+}
+
+func (g *RealGit) CloneBare(url string, folderName string) error {
+	_, err := g.shell.Cmd("git", "clone", "--bare", url, folderName)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
