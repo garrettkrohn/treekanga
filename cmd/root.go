@@ -55,6 +55,7 @@ func Execute(version string) {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(cleanCmd)
 	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(cloneCmd)
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
