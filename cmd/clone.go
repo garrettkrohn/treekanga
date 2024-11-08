@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -18,7 +15,6 @@ var (
 	folderName string
 )
 
-// initCmd represents the init command
 var cloneCmd = &cobra.Command{
 	Use:   "clone",
 	Short: "clone a bare repo",
