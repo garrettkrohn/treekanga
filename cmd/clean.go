@@ -13,6 +13,7 @@ import (
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ var cleanCmd = &cobra.Command{
 	Long: `Compare all local worktree branches with the remote branches,
     allow the user to select which worktrees they would like to delete.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		numOfWorktreesRemoved, err := cleanWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm())
+		numOfWorktreesRemoved, err := cleanWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm(), deps.Zoxide)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -32,7 +33,7 @@ var cleanCmd = &cobra.Command{
 }
 
 // cleanWorktrees performs the core logic of cleaning worktrees
-func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form) (int, error) {
+func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form, zoxide zoxide.Zoxide) (int, error) {
 	var worktrees []worktreeobj.WorktreeObj
 	spinner.Title("Fetching Worktrees")
 	spinner.Action(func() {
@@ -66,15 +67,7 @@ func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filte
 	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
 
-	// Remove worktrees
-	spinner.Title("Removing Worktrees")
-	spinner.Action(func() {
-		for _, worktreeObj := range selectedWorktreeObj {
-			_, err := git.RemoveWorktree(worktreeObj.Folder)
-			util.CheckError(err)
-		}
-	})
-	spinner.Run()
+	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
 	return len(selectedWorktreeObj), nil
 }

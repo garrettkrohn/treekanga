@@ -6,6 +6,7 @@ import (
 
 type Zoxide interface {
 	AddPath(path string) error
+	RemovePath(path string) error
 }
 
 type RealZoxide struct {
@@ -18,5 +19,10 @@ func NewZoxide(shell shell.Shell) Zoxide {
 
 func (r *RealZoxide) AddPath(path string) error {
 	_, err := r.shell.Cmd("zoxide", "add", path)
+	return err
+}
+
+func (r *RealZoxide) RemovePath(path string) error {
+	_, err := r.shell.Cmd("zoxide", "remove", path)
 	return err
 }

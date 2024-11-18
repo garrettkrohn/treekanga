@@ -9,6 +9,7 @@ import (
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -20,14 +21,18 @@ func TestDeleteWorktreesWithDelete(t *testing.T) {
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
+	mockGit.On("RemoveWorktree", mock.Anything).Return("", nil)
 	transformer := transformer.NewTransformer()
 	mockFilter := filter.NewMockFilter(t)
 
 	mockSpinner := spinner.NewMockHuhSpinner(t)
 	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
-	mockSpinner.On("Action", mock.Anything).Return(mockSpinner)
+	mockSpinner.On("Action", mock.Anything).Run(func(args mock.Arguments) {
+		// Call the action function
+		args.Get(0).(func())()
+	}).Return(mockSpinner)
 	mockSpinner.On("Run").Run(func(args mock.Arguments) {
-	}).Return(nil)
+	}).Return(nil).Once()
 
 	mockForm := form.NewMockHuhForm(t)
 	mockForm.On("SetSelections", mock.Anything).Run(func(args mock.Arguments) {
@@ -45,9 +50,11 @@ func TestDeleteWorktreesWithDelete(t *testing.T) {
 			CommitHash: "abcdef12345",
 		},
 	})
+	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	// Execute the function
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide)
 	assert.NoError(t, err)
 
 	// Verify the result
@@ -59,4 +66,5 @@ func TestDeleteWorktreesWithDelete(t *testing.T) {
 	mockFilter.AssertExpectations(t)
 	mockForm.AssertExpectations(t)
 	mockSpinner.AssertExpectations(t) // Added to ensure spinner expectations are also checked
+	mockZoxide.AssertExpectations(t)
 }
