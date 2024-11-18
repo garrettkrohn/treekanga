@@ -10,6 +10,7 @@ import (
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
+	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/spf13/cobra"
 )
 
@@ -44,17 +45,23 @@ func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filt
 	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
+	removeWorktrees(selectedWorktreeObj, spinner)
+
+	return len(selectedWorktreeObj), nil
+}
+
+func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner) {
 	// Remove worktrees
 	spinner.Title("Deleting Worktrees")
 	spinner.Action(func() {
-		for _, worktreeObj := range selectedWorktreeObj {
-			_, err := git.RemoveWorktree(worktreeObj.Folder)
+		for _, worktreeObj := range worktrees {
+			_, err := deps.Git.RemoveWorktree(worktreeObj.Folder)
+			_ = deps.Zoxide.RemovePath(worktreeObj.FullPath)
 			util.CheckError(err)
 		}
 	})
 	spinner.Run()
 
-	return len(selectedWorktreeObj), nil
 }
 
 func init() {

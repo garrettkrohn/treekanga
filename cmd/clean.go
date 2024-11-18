@@ -66,15 +66,7 @@ func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filte
 	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, noMatchList)
 
-	// Remove worktrees
-	spinner.Title("Removing Worktrees")
-	spinner.Action(func() {
-		for _, worktreeObj := range selectedWorktreeObj {
-			_, err := git.RemoveWorktree(worktreeObj.Folder)
-			util.CheckError(err)
-		}
-	})
-	spinner.Run()
+	removeWorktrees(selectedWorktreeObj, spinner)
 
 	return len(selectedWorktreeObj), nil
 }
