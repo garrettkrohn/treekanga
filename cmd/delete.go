@@ -11,6 +11,7 @@ import (
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete selected worktrees",
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
-		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm())
+		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm(), deps.Zoxide)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -30,7 +31,7 @@ var deleteCmd = &cobra.Command{
 }
 
 // deleteWorktrees performs the core logic of deleting worktrees
-func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form) (int, error) {
+func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form, zoxide zoxide.Zoxide) (int, error) {
 	worktrees := getWorktrees(git, transformer)
 
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
@@ -45,18 +46,17 @@ func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filt
 	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
-	removeWorktrees(selectedWorktreeObj, spinner)
+	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
 	return len(selectedWorktreeObj), nil
 }
 
-func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner) {
-	// Remove worktrees
+func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
 	spinner.Title("Deleting Worktrees")
 	spinner.Action(func() {
 		for _, worktreeObj := range worktrees {
-			_, err := deps.Git.RemoveWorktree(worktreeObj.Folder)
-			_ = deps.Zoxide.RemovePath(worktreeObj.FullPath)
+			_, err := git.RemoveWorktree(worktreeObj.Folder)
+			_ = zoxide.RemovePath(worktreeObj.FullPath)
 			util.CheckError(err)
 		}
 	})

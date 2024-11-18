@@ -9,6 +9,7 @@ import (
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -50,7 +51,7 @@ func TestDeleteWorktreesWithClean(t *testing.T) {
 		*args.Get(0).(*[]string) = append(*args.Get(0).(*[]string), "branch1")
 	}).Return()
 	mockForm.On("SetOptions", mock.Anything).Once()
-	mockForm.On("Run").Return(nil)
+	mockForm.On("Run", mock.Anything).Return(nil)
 
 	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
 		{
@@ -60,9 +61,11 @@ func TestDeleteWorktreesWithClean(t *testing.T) {
 			CommitHash: "abcdef12345",
 		},
 	})
+	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	// Execute the function
-	numOfWorktreesRemoved, err := cleanWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm)
+	numOfWorktreesRemoved, err := cleanWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide)
 	assert.NoError(t, err)
 
 	// Verify the result
