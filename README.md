@@ -65,3 +65,9 @@ branches that have been merged and remote branch deleted
 
 This will bring up all worktrees and allow you to select worktree(s)
 to delete
+
+### Clone
+
+`treekanga clone https://www.github.com/example/example`
+
+This will create a bare worktree for the given url
