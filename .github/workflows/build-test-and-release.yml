@@ -68,3 +68,4 @@ jobs:
       - name: Check version
         run: |
           /opt/homebrew/bin/treekanga --version
+
