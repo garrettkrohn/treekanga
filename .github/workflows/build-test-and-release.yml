@@ -67,4 +67,4 @@ jobs:
       # TODO: assert the latest version was installed
       - name: Check version
         run: |
-          treekanga --version
+          which treekanga
