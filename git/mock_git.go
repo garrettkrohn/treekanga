@@ -244,6 +244,24 @@ func (_m *MockGit) GitCommonDir(name string) (bool, string, error) {
 	return r0, r1, r2
 }
 
+// PullBranch provides a mock function with given fields: url
+func (_m *MockGit) PullBranch(url string) error {
+	ret := _m.Called(url)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PullBranch")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(url)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // RemoveWorktree provides a mock function with given fields: _a0
 func (_m *MockGit) RemoveWorktree(_a0 string) (string, error) {
 	ret := _m.Called(_a0)

@@ -39,6 +39,7 @@ var addCmd = &cobra.Command{
     You may also pass in the new branch and the base branch as
     arguments.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		if len(args) >= 1 {
 			branchName = args[0]
 		}
@@ -89,6 +90,11 @@ var addCmd = &cobra.Command{
 
 			if baseBranch == "" {
 				baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+			}
+
+			pull, err := cmd.Flags().GetBool("pull")
+			if pull {
+				deps.Git.PullBranch(baseBranch)
 			}
 
 			deps.Git.AddWorktree(folderName, existsRemotely, branchName, baseBranch)
@@ -179,5 +185,5 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 }
