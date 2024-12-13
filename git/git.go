@@ -20,6 +20,7 @@ type Git interface {
 	GetRepoName(path string) (string, error)
 	FetchOrigin(branch string) error
 	CloneBare(string, string) error
+	PullBranch(url string) error
 }
 
 type RealGit struct {
@@ -123,5 +124,12 @@ func (g *RealGit) CloneBare(url string, folderName string) error {
 		return err
 	}
 	return nil
+}
 
+func (g *RealGit) PullBranch(url string) error {
+	_, err := g.shell.Cmd("git", "pull", url)
+	if err != nil {
+		return err
+	}
+	return nil
 }
