@@ -24,6 +24,7 @@ func initConfig() {
 }
 
 func main() {
+
 	initConfig()
 
 	cmd.Execute(version)

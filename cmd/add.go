@@ -10,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
+	"log/slog"
+	// "github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/transformer"
@@ -48,6 +49,7 @@ var addCmd = &cobra.Command{
 		}
 
 		filter := filter.NewFilter()
+		transformer := transformer.NewTransformer()
 
 		workingDir, err := os.Getwd()
 		util.CheckError(err)
@@ -76,37 +78,54 @@ var addCmd = &cobra.Command{
 			util.CheckError(err)
 		}
 
-		action := func() {
-			remoteBranches, err := deps.Git.GetRemoteBranches()
-			cleanRemoteBranches := transformer.NewTransformer().RemoveOriginPrefix(remoteBranches)
-			util.CheckError(err)
-			existsRemotely := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
-
-			if existsRemotely {
-				deps.Git.FetchOrigin(branchName)
-			}
-
-			folderName := "../" + branchName
-
-			if baseBranch == "" {
-				baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
-			}
-
-			pull, err := cmd.Flags().GetBool("pull")
-			if pull {
-				deps.Git.PullBranch(baseBranch)
-			}
-
-			deps.Git.AddWorktree(folderName, existsRemotely, branchName, baseBranch)
-		}
-
-		err = spinner.New().
-			Title("Adding Worktree").
-			Action(action).
-			Run()
+		// action := func() {
+		remoteBranches, err := deps.Git.GetRemoteBranches()
+		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
+		localBranches, err := deps.Git.GetLocalBranches()
+		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
 		util.CheckError(err)
 
-		fmt.Printf("worktree %s created", branchName)
+		existsLocally := filter.BranchExistsInSlice(cleanLocalBranches, branchName)
+		existsRemotely := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
+
+		if existsRemotely {
+			deps.Git.FetchOrigin(branchName)
+			slog.Debug("Branch exists remotely:", "branch name", branchName)
+		} else {
+			slog.Debug("Branch does not exist remotely:", "branch name", branchName)
+		}
+
+		if existsLocally {
+			slog.Debug("Branch exists locally:", "branch name", branchName)
+		} else {
+			slog.Debug("Branch does not exist locally:", "branch name", branchName)
+		}
+
+		folderName := "../" + branchName
+
+		if baseBranch == "" {
+			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+			if baseBranch == "" {
+				panic("There was no baseBranch provided, and no baseBranch in the config file")
+			}
+		}
+
+		pull, err := cmd.Flags().GetBool("pull")
+		if pull {
+			slog.Info("pulling base branch before creating worktree", "base branch", baseBranch)
+			deps.Git.PullBranch(baseBranch)
+		}
+
+		deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch)
+		// }
+
+		// err = spinner.New().
+		// 	Title("Adding Worktree").
+		// 	Action(action).
+		// 	Run()
+		// util.CheckError(err)
+
+		fmt.Printf("\nworktree %s created\n", branchName)
 
 		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 		directoryReader := deps.DirectoryReader

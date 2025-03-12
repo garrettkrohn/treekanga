@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
-*/
 package cmd
 
 import (
@@ -9,6 +6,7 @@ import (
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
@@ -20,7 +18,10 @@ type Dependencies struct {
 	DirectoryReader directoryReader.DirectoryReader
 }
 
-var deps Dependencies
+var (
+	deps     Dependencies
+	logLevel string // Variable to store the log level
+)
 
 func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader, version string) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -34,8 +35,18 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 			}
+			// Set the ENV environment variable based on the log level flag
+			// if logLevel != "" {
+			// 	os.Setenv("ENV", logLevel)
+			// }
+
+			logger.LoggerInit(logLevel)
+
 		},
 	}
+
+	// Add the log level flag
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log", "l", "", "Set the log level (e.g., debug, info, warn, error)")
 
 	return rootCmd
 }

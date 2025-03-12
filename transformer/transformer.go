@@ -9,6 +9,7 @@ type transformer interface {
 	TransformWorktrees([]string) []worktreeobj.WorktreeObj
 	RemoveOriginPrefix([]string) []string
 	TransformWorktreesToBranchNames([]worktreeobj.WorktreeObj) []string
+	RemoveQuotes([]string) []string
 }
 
 type RealTransformer struct {
@@ -63,4 +64,11 @@ func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []worktre
 		stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
 	}
 	return stringWorktrees
+}
+
+func (r *RealTransformer) RemoveQuotes(branchStrings []string) []string {
+	for i, branch := range branchStrings {
+		branchStrings[i] = strings.TrimSpace(strings.Replace(branch, "'", "", -1))
+	}
+	return branchStrings
 }
