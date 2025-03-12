@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"log/slog"
 	// "github.com/charmbracelet/huh/spinner"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/filter"
@@ -82,7 +83,6 @@ var addCmd = &cobra.Command{
 		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
 		localBranches, err := deps.Git.GetLocalBranches()
 		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
-		// fmt.Print(cleanLocalBranches)
 		util.CheckError(err)
 
 		existsLocally := filter.BranchExistsInSlice(cleanLocalBranches, branchName)
@@ -90,15 +90,15 @@ var addCmd = &cobra.Command{
 
 		if existsRemotely {
 			deps.Git.FetchOrigin(branchName)
-			fmt.Printf("\nbranch: %s exists remotely, fetching now", branchName)
+			slog.Debug("Branch exists remotely:", "branch name", branchName)
 		} else {
-			fmt.Printf("\nbranch: %s does not exist remotely", branchName)
+			slog.Debug("Branch does not exist remotely:", "branch name", branchName)
 		}
 
 		if existsLocally {
-			fmt.Printf("\nbranch: %s exists locally", branchName)
+			slog.Debug("Branch exists locally:", "branch name", branchName)
 		} else {
-			fmt.Printf("\nbranch: %s does not exist locally", branchName)
+			slog.Debug("Branch does not exist locally:", "branch name", branchName)
 		}
 
 		folderName := "../" + branchName
@@ -112,7 +112,7 @@ var addCmd = &cobra.Command{
 
 		pull, err := cmd.Flags().GetBool("pull")
 		if pull {
-			fmt.Printf("\npulling base branch (%s) before creating worktree", baseBranch)
+			slog.Info("pulling base branch before creating worktree", "base branch", baseBranch)
 			deps.Git.PullBranch(baseBranch)
 		}
 

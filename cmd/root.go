@@ -1,9 +1,7 @@
-/*
-Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
-*/
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/garrettkrohn/treekanga/directoryReader"
@@ -20,7 +18,10 @@ type Dependencies struct {
 	DirectoryReader directoryReader.DirectoryReader
 }
 
-var deps Dependencies
+var (
+	deps     Dependencies
+	logLevel string // Variable to store the log level
+)
 
 func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader, version string) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -34,8 +35,15 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 			}
+			// Set the ENV environment variable based on the log level flag
+			if logLevel != "" {
+				fmt.Print("env set to: \n", logLevel)
+			}
 		},
 	}
+
+	// Add the log level flag
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log", "l", "", "Set the log level (e.g., debug, info, warn, error)")
 
 	return rootCmd
 }

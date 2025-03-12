@@ -2,7 +2,7 @@ package shell
 
 import (
 	"bytes"
-	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -24,8 +24,8 @@ func NewShell(exec execwrap.Exec) Shell {
 }
 
 func (c *RealShell) Cmd(cmd string, args ...string) (string, error) {
-	// TODO: send this to a log
-	fmt.Print("\n\n"+cmd, args)
+	slog.Debug(cmd, "args", args)
+
 	foundCmd, err := c.exec.LookPath(cmd)
 	if err != nil {
 		return "", err

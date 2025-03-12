@@ -96,10 +96,8 @@ func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName
 	var output string
 
 	if existsOnRemote {
-		fmt.Print("exists locally")
 		output, err = g.shell.Cmd("git", "worktree", "add", folderName, branchName)
 	} else {
-		fmt.Print("doesn't exists locally")
 		output, err = g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
 	}
 
