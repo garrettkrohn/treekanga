@@ -36,11 +36,11 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 				DirectoryReader: directoryReader,
 			}
 			// Set the ENV environment variable based on the log level flag
-			if logLevel != "" {
-				os.Setenv("ENV", logLevel)
-			}
+			// if logLevel != "" {
+			// 	os.Setenv("ENV", logLevel)
+			// }
 
-			logger.LoggerInit()
+			logger.LoggerInit(logLevel)
 
 		},
 	}

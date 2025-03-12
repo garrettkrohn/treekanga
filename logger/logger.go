@@ -13,7 +13,7 @@ import (
 	"time"    // This is used to get the current date and create the log file
 )
 
-func LoggerInit() {
+func LoggerInit(logLevel string) {
 	var f *os.File
 	var err error
 	fileOnly := false
@@ -23,10 +23,10 @@ func LoggerInit() {
 		os.Exit(1)
 	}
 
-	env := os.Getenv("ENV")
+	// env := os.Getenv("ENV")
 	handlerOptions := &slog.HandlerOptions{}
 
-	switch strings.ToLower(env) {
+	switch strings.ToLower(logLevel) {
 	case "debug":
 		handlerOptions.Level = slog.LevelDebug
 	case "info":

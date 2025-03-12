@@ -125,7 +125,7 @@ var addCmd = &cobra.Command{
 		// 	Run()
 		// util.CheckError(err)
 
-		fmt.Printf("\nworktree %s created", branchName)
+		fmt.Printf("\nworktree %s created\n", branchName)
 
 		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 		directoryReader := deps.DirectoryReader
