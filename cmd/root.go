@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
@@ -37,8 +37,11 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 			}
 			// Set the ENV environment variable based on the log level flag
 			if logLevel != "" {
-				fmt.Print("env set to: \n", logLevel)
+				os.Setenv("ENV", logLevel)
 			}
+
+			logger.LoggerInit()
+
 		},
 	}
 
