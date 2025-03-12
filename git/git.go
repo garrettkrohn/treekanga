@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 	"strings"
@@ -63,11 +64,11 @@ func (g *RealGit) GetRemoteBranches() ([]string, error) {
 	g.shell.Cmd("git", "fetch", "origin")
 
 	//get all branches
-	return g.shell.ListCmd("git", "branch", "-r")
+	return g.shell.ListCmd("git", "branch", "-r", "--format=\"%(refname:short)\"")
 }
 
 func (g *RealGit) GetLocalBranches() ([]string, error) {
-	branches, err := g.shell.ListCmd("git", "branch")
+	branches, err := g.shell.ListCmd("git", "branch", "--format='%(refname:short)'")
 	if err != nil {
 		return nil, err
 	}
@@ -90,15 +91,23 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool,
-	branchName string, baseBranch string) error {
+func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName string, baseBranch string) error {
+	var err error
+	var output string
+
 	if existsOnRemote {
-		_, err := g.shell.Cmd("git", "worktree", "add", folderName, branchName)
-		return err
+		fmt.Print("exists locally")
+		output, err = g.shell.Cmd("git", "worktree", "add", folderName, branchName)
 	} else {
-		_, err := g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
-		return err
+		fmt.Print("doesn't exists locally")
+		output, err = g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
 	}
+
+	if err != nil {
+		return fmt.Errorf("failed to add worktree: %v, %s", err, output)
+	}
+
+	return nil
 }
 
 func (g *RealGit) GetRepoName(path string) (string, error) {
