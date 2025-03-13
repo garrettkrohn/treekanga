@@ -40,6 +40,8 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 			// 	os.Setenv("ENV", logLevel)
 			// }
 
+			// slog logger
+			// logger.LoggerInit(logLevel)
 			logger.LoggerInit(logLevel)
 
 		},

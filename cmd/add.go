@@ -10,8 +10,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"log/slog"
-	// "github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/transformer"
@@ -90,15 +89,15 @@ var addCmd = &cobra.Command{
 
 		if existsRemotely {
 			deps.Git.FetchOrigin(branchName)
-			slog.Debug("Branch exists remotely:", "branch name", branchName)
+			log.Debug("Branch exists remotely:", "branch name", branchName)
 		} else {
-			slog.Debug("Branch does not exist remotely:", "branch name", branchName)
+			log.Debug("Branch does not exist remotely:", "branch name", branchName)
 		}
 
 		if existsLocally {
-			slog.Debug("Branch exists locally:", "branch name", branchName)
+			log.Debug("Branch exists locally:", "branch name", branchName)
 		} else {
-			slog.Debug("Branch does not exist locally:", "branch name", branchName)
+			log.Debug("Branch does not exist locally:", "branch name", branchName)
 		}
 
 		folderName := "../" + branchName
@@ -112,7 +111,7 @@ var addCmd = &cobra.Command{
 
 		pull, err := cmd.Flags().GetBool("pull")
 		if pull {
-			slog.Info("pulling base branch before creating worktree", "base branch", baseBranch)
+			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
 			deps.Git.PullBranch(baseBranch)
 		}
 
@@ -125,7 +124,7 @@ var addCmd = &cobra.Command{
 		// 	Run()
 		// util.CheckError(err)
 
-		fmt.Printf("\nworktree %s created\n", branchName)
+		log.Info(fmt.Sprintf("worktree %s created", branchName))
 
 		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 		directoryReader := deps.DirectoryReader
