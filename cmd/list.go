@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"log"
+	"github.com/charmbracelet/log"
 
 	"github.com/garrettkrohn/treekanga/transformer"
 )
