@@ -105,7 +105,7 @@ var addCmd = &cobra.Command{
 		if baseBranch == "" {
 			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 			if baseBranch == "" {
-				panic("There was no baseBranch provided, and no baseBranch in the config file")
+				log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 			}
 		}
 
