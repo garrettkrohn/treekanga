@@ -7,6 +7,7 @@ import (
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
+	"github.com/garrettkrohn/treekanga/sesh"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ type Dependencies struct {
 	Git             git.Git
 	Zoxide          zoxide.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
+	Sesh            sesh.Sesh
 }
 
 var (
@@ -23,7 +25,11 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryReader.DirectoryReader, version string) *cobra.Command {
+func NewRootCmd(git git.Git,
+	zoxide zoxide.Zoxide,
+	directoryReader directoryReader.DirectoryReader,
+	sesh sesh.Sesh,
+	version string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "treekanga",
 		Short:   "CLI application to manage git worktree",
@@ -34,6 +40,7 @@ func NewRootCmd(git git.Git, zoxide zoxide.Zoxide, directoryReader directoryRead
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
+				Sesh:            sesh,
 			}
 			// Set the ENV environment variable based on the log level flag
 			// if logLevel != "" {
@@ -61,9 +68,10 @@ func Execute(version string) {
 	shell := shell.NewShell(execWrap)
 	git := git.NewGit(shell)
 	zoxide := zoxide.NewZoxide(shell)
+	sesh := sesh.NewSesh(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader, version)
+	rootCmd := NewRootCmd(git, zoxide, directoryReader, sesh, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(cleanCmd)

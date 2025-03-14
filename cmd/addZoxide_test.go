@@ -9,7 +9,7 @@ import (
 
 func TestZoxideAddEntriesNoConfig(t *testing.T) {
 	mockDirectoryReader := directoryReader.NewMockDirectoryReader(t)
-	actualOutput := getListOfZoxideEntries("baseBranch", "repoName", "parentDir", nil, mockDirectoryReader)
+	actualOutput := getListOfZoxideEntries("baseBranch", "parentDir", nil, mockDirectoryReader)
 
 	expectedOutput := []string{"parentDir/baseBranch"}
 
@@ -18,7 +18,7 @@ func TestZoxideAddEntriesNoConfig(t *testing.T) {
 
 func TestZoxideAddEntriesWithConfigNoWildcard(t *testing.T) {
 	mockDirectoryReader := directoryReader.NewMockDirectoryReader(t)
-	actualOutput := getListOfZoxideEntries("baseBranch", "repoName", "parentDir", []string{"test"}, mockDirectoryReader)
+	actualOutput := getListOfZoxideEntries("baseBranch", "parentDir", []string{"test"}, mockDirectoryReader)
 
 	expectedOutput := []string{"parentDir/baseBranch", "parentDir/baseBranch/test"}
 
@@ -31,7 +31,7 @@ func TestZoxideAddEntriesWithConfigWithWildcard(t *testing.T) {
 		"folder1",
 		"folder2",
 	}, nil)
-	actualOutput := getListOfZoxideEntries("baseBranch", "repoName", "parentDir", []string{"test", "test/*"}, mockDirectoryReader)
+	actualOutput := getListOfZoxideEntries("baseBranch", "parentDir", []string{"test", "test/*"}, mockDirectoryReader)
 
 	expectedOutput := []string{
 		"parentDir/baseBranch",

@@ -128,16 +128,22 @@ var addCmd = &cobra.Command{
 
 		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 		directoryReader := deps.DirectoryReader
-		foldersToAdd := getListOfZoxideEntries(branchName, repoName, parentDir, foldersToAddFromConfig, directoryReader)
+		foldersToAdd := getListOfZoxideEntries(branchName, parentDir, foldersToAddFromConfig, directoryReader)
 
 		addZoxideEntries(foldersToAdd)
+
+		connect, err := cmd.Flags().GetBool("connect")
+		if connect {
+			log.Info(fmt.Sprintf("Sesh connect to %s", foldersToAdd[0]))
+			deps.Sesh.SeshConnect(foldersToAdd[0])
+		}
 
 		//TODO: optional kill local session, and open it with the new branch
 
 	},
 }
 
-func getListOfZoxideEntries(branchName string, repoName string, parentDir string, foldersToAddFromConfig []string, directoryReader directoryReader.DirectoryReader) []string {
+func getListOfZoxideEntries(branchName string, parentDir string, foldersToAddFromConfig []string, directoryReader directoryReader.DirectoryReader) []string {
 	baseName := parentDir + "/" + branchName
 
 	var foldersToAdd []string
@@ -204,4 +210,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
+	addCmd.Flags().BoolP("connect", "c", false, "Automatically connect to a sesh upon creation")
 }
