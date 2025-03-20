@@ -2,7 +2,7 @@ package git
 
 import (
 	"fmt"
-	"log"
+	"github.com/charmbracelet/log"
 	"path/filepath"
 	"strings"
 
@@ -22,6 +22,8 @@ type Git interface {
 	FetchOrigin(branch string) error
 	CloneBare(string, string) error
 	PullBranch(url string) error
+	CreateTempBranch() error
+	DeleteBranch(branch string) error
 }
 
 type RealGit struct {
@@ -96,8 +98,10 @@ func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName
 	var output string
 
 	if existsOnRemote {
+		log.Debug("branch exists on remote")
 		output, err = g.shell.Cmd("git", "worktree", "add", folderName, branchName)
 	} else {
+		log.Debug("branch does not exist on remote")
 		output, err = g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
 	}
 
@@ -134,7 +138,24 @@ func (g *RealGit) CloneBare(url string, folderName string) error {
 }
 
 func (g *RealGit) PullBranch(url string) error {
-	_, err := g.shell.Cmd("git", "pull", url)
+	//TODO: need to make this configurable to be run from a worktree
+	_, err := g.shell.Cmd("git", "-c", "/Users/gkrohn/code/platform_work/development", "pull", url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) CreateTempBranch() error {
+	_, err := g.shell.Cmd("git", "branch", "temp", "FETCH_HEAD")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) DeleteBranch(branch string) error {
+	_, err := g.shell.Cmd("git", "checkout", "-d", branch)
 	if err != nil {
 		return err
 	}

@@ -43,9 +43,9 @@ var addCmd = &cobra.Command{
 		if len(args) >= 1 {
 			branchName = args[0]
 		}
-		if len(args) == 2 {
-			baseBranch = args[1]
-		}
+
+		baseBranch, err := cmd.Flags().GetString("base")
+		util.CheckError(err)
 
 		filter := filter.NewFilter()
 		transformer := transformer.NewTransformer()
@@ -112,10 +112,14 @@ var addCmd = &cobra.Command{
 		pull, err := cmd.Flags().GetBool("pull")
 		if pull {
 			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
-			deps.Git.PullBranch(baseBranch)
+			deps.Git.FetchOrigin(baseBranch)
+			deps.Git.CreateTempBranch()
+			baseBranch = "temp"
 		}
 
-		deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch)
+		deps.Git.AddWorktree(folderName, existsRemotely, branchName, baseBranch)
+
+		deps.Git.DeleteBranch("temp")
 		// }
 
 		// err = spinner.New().
@@ -211,4 +215,5 @@ func init() {
 	// is called directly, e.g.:
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().BoolP("connect", "c", false, "Automatically connect to a sesh upon creation")
+	addCmd.Flags().String("base", "b", "Specify the base branch for the new worktree")
 }
