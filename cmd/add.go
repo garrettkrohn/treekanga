@@ -34,10 +34,7 @@ var addCmd = &cobra.Command{
 
     Alternatively, you may the branch name as an argument, 
     treekanga will create this branch off of the defaultBranch 
-    defined in the config, or use the current branch.
-
-    You may also pass in the new branch and the base branch as
-    arguments.`,
+    defined in the config, or use the current branch.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) >= 1 {
@@ -215,5 +212,5 @@ func init() {
 	// is called directly, e.g.:
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().BoolP("connect", "c", false, "Automatically connect to a sesh upon creation")
-	addCmd.Flags().String("base", "b", "Specify the base branch for the new worktree")
+	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 }

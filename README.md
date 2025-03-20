@@ -33,7 +33,7 @@ repos:
 
 ### Add
 
-`treekanga add example_branch example_base_branch`
+`treekanga add example_branch -b example_base_branch`
 
 You can define the branch and base branch directly from the command line
 
