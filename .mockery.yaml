@@ -1,0 +1,14 @@
+with-expecter: True
+inpackage: True
+testonly: False
+issue-845-fix: True
+resolve-type-alias: False
+dir: "{{.InterfaceDir}}"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+filename: "mock_{{.InterfaceName}}.go"
+all: True
+packages:
+  github.com/garrettkrohn/treekanga:
+    config:
+      recursive: True
