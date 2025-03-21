@@ -84,7 +84,7 @@ func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []workt
 }
 
 func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []string {
-	branches, error := git.GetRemoteBranches()
+	branches, error := git.GetRemoteBranches("")
 	if error != nil {
 		log.Fatal(error)
 	}

@@ -9,21 +9,24 @@ import (
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
+const tempZoxideName = "temp_treekanga_worktree"
+
+// TODO: make a a function to add the directory
 type Git interface {
 	ShowTopLevel(name string) (bool, string, error)
 	GitCommonDir(name string) (bool, string, error)
 	Clone(name string) (string, error)
-	GetRemoteBranches() ([]string, error)
-	GetLocalBranches() ([]string, error)
+	GetRemoteBranches(string) ([]string, error)
+	GetLocalBranches(string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(string, bool, string, string) error
+	AddWorktree(string, bool, string, string, string) error
 	GetRepoName(path string) (string, error)
-	FetchOrigin(branch string) error
+	FetchOrigin(branch string, path string) error
 	CloneBare(string, string) error
 	PullBranch(url string) error
-	CreateTempBranch() error
-	DeleteBranch(branch string) error
+	CreateTempBranch(path string) error
+	DeleteBranch(branch string, path string) error
 }
 
 type RealGit struct {
@@ -58,19 +61,28 @@ func (g *RealGit) Clone(name string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) GetRemoteBranches() ([]string, error) {
+func (g *RealGit) GetRemoteBranches(path string) ([]string, error) {
 	// prune
-	g.shell.Cmd("git", "fetch", "--prune")
+	fetchCmd := getBaseCommandWithOrWithoutPath(path)
+	fetchCmd = append(fetchCmd, "fetch", "--prune")
+	g.shell.Cmd("git", fetchCmd...)
 
 	// fetch
-	g.shell.Cmd("git", "fetch", "origin")
+	fetchCmd2 := getBaseCommandWithOrWithoutPath(path)
+	fetchCmd2 = append(fetchCmd2, "fetch", "origin")
+	g.shell.Cmd("git", fetchCmd2...)
 
 	//get all branches
-	return g.shell.ListCmd("git", "branch", "-r", "--format=\"%(refname:short)\"")
+	branchCmd := getBaseCommandWithOrWithoutPath(path)
+	branchCmd = append(branchCmd, "branch", "-r", "--format=\"%(refname:short)\"")
+	list, err := g.shell.ListCmd("git", branchCmd...)
+	return list, err
 }
 
-func (g *RealGit) GetLocalBranches() ([]string, error) {
-	branches, err := g.shell.ListCmd("git", "branch", "--format='%(refname:short)'")
+func (g *RealGit) GetLocalBranches(path string) ([]string, error) {
+	gitCmd := getBaseCommandWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "branch", "--format='%(refname:short)'")
+	branches, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		return nil, err
 	}
@@ -93,17 +105,18 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsLocally bool, branchName string, baseBranch string) error {
-	var err error
-	var output string
+func (g *RealGit) AddWorktree(folderName string, existsLocally bool,
+	branchName string, baseBranch string, path string) error {
+	gitCommand := getBaseCommandWithOrWithoutPath(path)
+	gitCommand = append(gitCommand, "worktree", "add", folderName)
 
 	if existsLocally {
-		log.Debug("branch exists on remote")
-		output, err = g.shell.Cmd("git", "worktree", "add", folderName, branchName)
+		gitCommand = append(gitCommand, branchName)
 	} else {
-		log.Debug("branch does not exist on remote")
-		output, err = g.shell.Cmd("git", "worktree", "add", folderName, "-b", branchName, baseBranch)
+		gitCommand = append(gitCommand, "-b", branchName, baseBranch)
 	}
+
+	output, err := g.shell.Cmd("git", gitCommand...)
 
 	if err != nil {
 		return fmt.Errorf("failed to add worktree: %v, %s", err, output)
@@ -112,6 +125,7 @@ func (g *RealGit) AddWorktree(folderName string, existsLocally bool, branchName 
 	return nil
 }
 
+// Note: path is figured out in add.go
 func (g *RealGit) GetRepoName(path string) (string, error) {
 	out, err := g.shell.Cmd("git", "-C", path, "config", "--get", "remote.origin.url")
 	if err != nil {
@@ -121,8 +135,10 @@ func (g *RealGit) GetRepoName(path string) (string, error) {
 	return repoName, nil
 }
 
-func (g *RealGit) FetchOrigin(branch string) error {
-	_, err := g.shell.Cmd("git", "fetch", "origin", branch)
+func (g *RealGit) FetchOrigin(branch string, path string) error {
+	gitCmd := getBaseCommandWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "fetch", "origin", branch)
+	_, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
 		return err
 	}
@@ -146,18 +162,32 @@ func (g *RealGit) PullBranch(url string) error {
 	return nil
 }
 
-func (g *RealGit) CreateTempBranch() error {
-	_, err := g.shell.Cmd("git", "branch", "temp", "FETCH_HEAD")
+func (g *RealGit) CreateTempBranch(path string) error {
+	gitCmd := getBaseCommandWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
+	_, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *RealGit) DeleteBranch(branch string) error {
-	_, err := g.shell.Cmd("git", "checkout", "-d", branch)
+func (g *RealGit) DeleteBranch(branch string, path string) error {
+	gitCmd := getBaseCommandWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "checkout", "-d", branch)
+	_, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getBaseCommandWithOrWithoutPath(path string) []string {
+	gitCommand := make([]string, 0)
+
+	if path != "" {
+		gitCommand = append(gitCommand, "-C", path)
+	}
+
+	return gitCommand
 }
