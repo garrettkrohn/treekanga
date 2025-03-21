@@ -93,11 +93,11 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsOnRemote bool, branchName string, baseBranch string) error {
+func (g *RealGit) AddWorktree(folderName string, existsLocally bool, branchName string, baseBranch string) error {
 	var err error
 	var output string
 
-	if existsOnRemote {
+	if existsLocally {
 		log.Debug("branch exists on remote")
 		output, err = g.shell.Cmd("git", "worktree", "add", folderName, branchName)
 	} else {

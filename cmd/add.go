@@ -18,12 +18,15 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"slices"
 )
 
 var (
 	branchName string
 	baseBranch string
 )
+
+const tempZoxideName = "temp_treekanga_worktree"
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
@@ -111,12 +114,15 @@ var addCmd = &cobra.Command{
 			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
 			deps.Git.FetchOrigin(baseBranch)
 			deps.Git.CreateTempBranch()
-			baseBranch = "temp"
+			baseBranch = tempZoxideName
 		}
 
-		deps.Git.AddWorktree(folderName, existsRemotely, branchName, baseBranch)
+		err = deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch)
+		util.CheckError(err)
 
-		deps.Git.DeleteBranch("temp")
+		if pull {
+			deps.Git.DeleteBranch(tempZoxideName)
+		}
 		// }
 
 		// err = spinner.New().
@@ -133,13 +139,23 @@ var addCmd = &cobra.Command{
 
 		addZoxideEntries(foldersToAdd)
 
-		connect, err := cmd.Flags().GetBool("connect")
-		if connect {
-			log.Info(fmt.Sprintf("Sesh connect to %s", foldersToAdd[0]))
-			deps.Sesh.SeshConnect(foldersToAdd[0])
-		}
+		if cmd.Flags().Changed("connect") {
+			connect, err := cmd.Flags().GetString("connect")
+			log.Debug(connect)
+			util.CheckError(err)
 
-		//TODO: optional kill local session, and open it with the new branch
+			// shortestZoxide := findShortestString(foldersToAdd)
+			shortestZoxide := slices.Min(foldersToAdd)
+			subFolderIsValid := slices.Contains(foldersToAddFromConfig, connect)
+			if connect != "" && subFolderIsValid {
+				zoxidePath := shortestZoxide + "/" + connect
+				log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
+				deps.Sesh.SeshConnect(zoxidePath)
+			} else {
+				log.Info(fmt.Sprintf("Sesh connect to %s", shortestZoxide))
+				deps.Sesh.SeshConnect(shortestZoxide)
+			}
+		}
 
 	},
 }
@@ -211,6 +227,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
-	addCmd.Flags().BoolP("connect", "c", false, "Automatically connect to a sesh upon creation")
+	addCmd.Flags().StringP("connect", "c", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 }
