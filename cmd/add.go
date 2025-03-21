@@ -44,6 +44,9 @@ var addCmd = &cobra.Command{
 			branchName = args[0]
 		}
 
+		path, err := cmd.Flags().GetString("directory")
+		log.Debug(path)
+
 		baseBranch, err := cmd.Flags().GetString("base")
 		util.CheckError(err)
 
@@ -52,6 +55,9 @@ var addCmd = &cobra.Command{
 
 		workingDir, err := os.Getwd()
 		util.CheckError(err)
+		if path != "" {
+			workingDir = path
+		}
 
 		repoName, err := deps.Git.GetRepoName(workingDir)
 		util.CheckError(err)
@@ -78,9 +84,10 @@ var addCmd = &cobra.Command{
 		}
 
 		// action := func() {
-		remoteBranches, err := deps.Git.GetRemoteBranches()
+		remoteBranches, err := deps.Git.GetRemoteBranches(path)
 		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
-		localBranches, err := deps.Git.GetLocalBranches()
+		util.CheckError(err)
+		localBranches, err := deps.Git.GetLocalBranches(path)
 		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
 		util.CheckError(err)
 
@@ -88,7 +95,7 @@ var addCmd = &cobra.Command{
 		existsRemotely := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
 
 		if existsRemotely {
-			deps.Git.FetchOrigin(branchName)
+			deps.Git.FetchOrigin(branchName, path)
 			log.Debug("Branch exists remotely:", "branch name", branchName)
 		} else {
 			log.Debug("Branch does not exist remotely:", "branch name", branchName)
@@ -112,16 +119,16 @@ var addCmd = &cobra.Command{
 		pull, err := cmd.Flags().GetBool("pull")
 		if pull {
 			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
-			deps.Git.FetchOrigin(baseBranch)
-			deps.Git.CreateTempBranch()
+			deps.Git.FetchOrigin(baseBranch, path)
+			deps.Git.CreateTempBranch(path)
 			baseBranch = tempZoxideName
 		}
 
-		err = deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch)
+		err = deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch, path)
 		util.CheckError(err)
 
 		if pull {
-			deps.Git.DeleteBranch(tempZoxideName)
+			deps.Git.DeleteBranch(tempZoxideName, path)
 		}
 		// }
 
@@ -229,4 +236,5 @@ func init() {
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().StringP("connect", "c", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
+	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
 }
