@@ -17,17 +17,17 @@ func (_m *MockGit) EXPECT() *MockGit_Expecter {
 	return &MockGit_Expecter{mock: &_m.Mock}
 }
 
-// AddWorktree provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *MockGit) AddWorktree(_a0 string, _a1 bool, _a2 string, _a3 string) error {
-	ret := _m.Called(_a0, _a1, _a2, _a3)
+// AddWorktree provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
+func (_m *MockGit) AddWorktree(_a0 string, _a1 bool, _a2 string, _a3 string, _a4 string) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddWorktree")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, bool, string, string) error); ok {
-		r0 = rf(_a0, _a1, _a2, _a3)
+	if rf, ok := ret.Get(0).(func(string, bool, string, string, string) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3, _a4)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -45,13 +45,14 @@ type MockGit_AddWorktree_Call struct {
 //   - _a1 bool
 //   - _a2 string
 //   - _a3 string
-func (_e *MockGit_Expecter) AddWorktree(_a0 interface{}, _a1 interface{}, _a2 interface{}, _a3 interface{}) *MockGit_AddWorktree_Call {
-	return &MockGit_AddWorktree_Call{Call: _e.mock.On("AddWorktree", _a0, _a1, _a2, _a3)}
+//   - _a4 string
+func (_e *MockGit_Expecter) AddWorktree(_a0 interface{}, _a1 interface{}, _a2 interface{}, _a3 interface{}, _a4 interface{}) *MockGit_AddWorktree_Call {
+	return &MockGit_AddWorktree_Call{Call: _e.mock.On("AddWorktree", _a0, _a1, _a2, _a3, _a4)}
 }
 
-func (_c *MockGit_AddWorktree_Call) Run(run func(_a0 string, _a1 bool, _a2 string, _a3 string)) *MockGit_AddWorktree_Call {
+func (_c *MockGit_AddWorktree_Call) Run(run func(_a0 string, _a1 bool, _a2 string, _a3 string, _a4 string)) *MockGit_AddWorktree_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(bool), args[2].(string), args[3].(string))
+		run(args[0].(string), args[1].(bool), args[2].(string), args[3].(string), args[4].(string))
 	})
 	return _c
 }
@@ -61,7 +62,7 @@ func (_c *MockGit_AddWorktree_Call) Return(_a0 error) *MockGit_AddWorktree_Call 
 	return _c
 }
 
-func (_c *MockGit_AddWorktree_Call) RunAndReturn(run func(string, bool, string, string) error) *MockGit_AddWorktree_Call {
+func (_c *MockGit_AddWorktree_Call) RunAndReturn(run func(string, bool, string, string, string) error) *MockGit_AddWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -169,17 +170,17 @@ func (_c *MockGit_CloneBare_Call) RunAndReturn(run func(string, string) error) *
 	return _c
 }
 
-// CreateTempBranch provides a mock function with no fields
-func (_m *MockGit) CreateTempBranch() error {
-	ret := _m.Called()
+// CreateTempBranch provides a mock function with given fields: path
+func (_m *MockGit) CreateTempBranch(path string) error {
+	ret := _m.Called(path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateTempBranch")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(path)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -193,13 +194,14 @@ type MockGit_CreateTempBranch_Call struct {
 }
 
 // CreateTempBranch is a helper method to define mock.On call
-func (_e *MockGit_Expecter) CreateTempBranch() *MockGit_CreateTempBranch_Call {
-	return &MockGit_CreateTempBranch_Call{Call: _e.mock.On("CreateTempBranch")}
+//   - path string
+func (_e *MockGit_Expecter) CreateTempBranch(path interface{}) *MockGit_CreateTempBranch_Call {
+	return &MockGit_CreateTempBranch_Call{Call: _e.mock.On("CreateTempBranch", path)}
 }
 
-func (_c *MockGit_CreateTempBranch_Call) Run(run func()) *MockGit_CreateTempBranch_Call {
+func (_c *MockGit_CreateTempBranch_Call) Run(run func(path string)) *MockGit_CreateTempBranch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -209,22 +211,22 @@ func (_c *MockGit_CreateTempBranch_Call) Return(_a0 error) *MockGit_CreateTempBr
 	return _c
 }
 
-func (_c *MockGit_CreateTempBranch_Call) RunAndReturn(run func() error) *MockGit_CreateTempBranch_Call {
+func (_c *MockGit_CreateTempBranch_Call) RunAndReturn(run func(string) error) *MockGit_CreateTempBranch_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// DeleteBranch provides a mock function with given fields: branch
-func (_m *MockGit) DeleteBranch(branch string) error {
-	ret := _m.Called(branch)
+// DeleteBranch provides a mock function with given fields: branch, path
+func (_m *MockGit) DeleteBranch(branch string, path string) error {
+	ret := _m.Called(branch, path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteBranch")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(branch)
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(branch, path)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -239,13 +241,14 @@ type MockGit_DeleteBranch_Call struct {
 
 // DeleteBranch is a helper method to define mock.On call
 //   - branch string
-func (_e *MockGit_Expecter) DeleteBranch(branch interface{}) *MockGit_DeleteBranch_Call {
-	return &MockGit_DeleteBranch_Call{Call: _e.mock.On("DeleteBranch", branch)}
+//   - path string
+func (_e *MockGit_Expecter) DeleteBranch(branch interface{}, path interface{}) *MockGit_DeleteBranch_Call {
+	return &MockGit_DeleteBranch_Call{Call: _e.mock.On("DeleteBranch", branch, path)}
 }
 
-func (_c *MockGit_DeleteBranch_Call) Run(run func(branch string)) *MockGit_DeleteBranch_Call {
+func (_c *MockGit_DeleteBranch_Call) Run(run func(branch string, path string)) *MockGit_DeleteBranch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(string), args[1].(string))
 	})
 	return _c
 }
@@ -255,22 +258,22 @@ func (_c *MockGit_DeleteBranch_Call) Return(_a0 error) *MockGit_DeleteBranch_Cal
 	return _c
 }
 
-func (_c *MockGit_DeleteBranch_Call) RunAndReturn(run func(string) error) *MockGit_DeleteBranch_Call {
+func (_c *MockGit_DeleteBranch_Call) RunAndReturn(run func(string, string) error) *MockGit_DeleteBranch_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// FetchOrigin provides a mock function with given fields: branch
-func (_m *MockGit) FetchOrigin(branch string) error {
-	ret := _m.Called(branch)
+// FetchOrigin provides a mock function with given fields: branch, path
+func (_m *MockGit) FetchOrigin(branch string, path string) error {
+	ret := _m.Called(branch, path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchOrigin")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(branch)
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(branch, path)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -285,13 +288,14 @@ type MockGit_FetchOrigin_Call struct {
 
 // FetchOrigin is a helper method to define mock.On call
 //   - branch string
-func (_e *MockGit_Expecter) FetchOrigin(branch interface{}) *MockGit_FetchOrigin_Call {
-	return &MockGit_FetchOrigin_Call{Call: _e.mock.On("FetchOrigin", branch)}
+//   - path string
+func (_e *MockGit_Expecter) FetchOrigin(branch interface{}, path interface{}) *MockGit_FetchOrigin_Call {
+	return &MockGit_FetchOrigin_Call{Call: _e.mock.On("FetchOrigin", branch, path)}
 }
 
-func (_c *MockGit_FetchOrigin_Call) Run(run func(branch string)) *MockGit_FetchOrigin_Call {
+func (_c *MockGit_FetchOrigin_Call) Run(run func(branch string, path string)) *MockGit_FetchOrigin_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(string), args[1].(string))
 	})
 	return _c
 }
@@ -301,14 +305,14 @@ func (_c *MockGit_FetchOrigin_Call) Return(_a0 error) *MockGit_FetchOrigin_Call 
 	return _c
 }
 
-func (_c *MockGit_FetchOrigin_Call) RunAndReturn(run func(string) error) *MockGit_FetchOrigin_Call {
+func (_c *MockGit_FetchOrigin_Call) RunAndReturn(run func(string, string) error) *MockGit_FetchOrigin_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetLocalBranches provides a mock function with no fields
-func (_m *MockGit) GetLocalBranches() ([]string, error) {
-	ret := _m.Called()
+// GetLocalBranches provides a mock function with given fields: _a0
+func (_m *MockGit) GetLocalBranches(_a0 string) ([]string, error) {
+	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetLocalBranches")
@@ -316,19 +320,19 @@ func (_m *MockGit) GetLocalBranches() ([]string, error) {
 
 	var r0 []string
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]string, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(string) ([]string, error)); ok {
+		return rf(_a0)
 	}
-	if rf, ok := ret.Get(0).(func() []string); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -342,13 +346,14 @@ type MockGit_GetLocalBranches_Call struct {
 }
 
 // GetLocalBranches is a helper method to define mock.On call
-func (_e *MockGit_Expecter) GetLocalBranches() *MockGit_GetLocalBranches_Call {
-	return &MockGit_GetLocalBranches_Call{Call: _e.mock.On("GetLocalBranches")}
+//   - _a0 string
+func (_e *MockGit_Expecter) GetLocalBranches(_a0 interface{}) *MockGit_GetLocalBranches_Call {
+	return &MockGit_GetLocalBranches_Call{Call: _e.mock.On("GetLocalBranches", _a0)}
 }
 
-func (_c *MockGit_GetLocalBranches_Call) Run(run func()) *MockGit_GetLocalBranches_Call {
+func (_c *MockGit_GetLocalBranches_Call) Run(run func(_a0 string)) *MockGit_GetLocalBranches_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -358,14 +363,14 @@ func (_c *MockGit_GetLocalBranches_Call) Return(_a0 []string, _a1 error) *MockGi
 	return _c
 }
 
-func (_c *MockGit_GetLocalBranches_Call) RunAndReturn(run func() ([]string, error)) *MockGit_GetLocalBranches_Call {
+func (_c *MockGit_GetLocalBranches_Call) RunAndReturn(run func(string) ([]string, error)) *MockGit_GetLocalBranches_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetRemoteBranches provides a mock function with no fields
-func (_m *MockGit) GetRemoteBranches() ([]string, error) {
-	ret := _m.Called()
+// GetRemoteBranches provides a mock function with given fields: _a0
+func (_m *MockGit) GetRemoteBranches(_a0 string) ([]string, error) {
+	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRemoteBranches")
@@ -373,19 +378,19 @@ func (_m *MockGit) GetRemoteBranches() ([]string, error) {
 
 	var r0 []string
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]string, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(string) ([]string, error)); ok {
+		return rf(_a0)
 	}
-	if rf, ok := ret.Get(0).(func() []string); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -399,13 +404,14 @@ type MockGit_GetRemoteBranches_Call struct {
 }
 
 // GetRemoteBranches is a helper method to define mock.On call
-func (_e *MockGit_Expecter) GetRemoteBranches() *MockGit_GetRemoteBranches_Call {
-	return &MockGit_GetRemoteBranches_Call{Call: _e.mock.On("GetRemoteBranches")}
+//   - _a0 string
+func (_e *MockGit_Expecter) GetRemoteBranches(_a0 interface{}) *MockGit_GetRemoteBranches_Call {
+	return &MockGit_GetRemoteBranches_Call{Call: _e.mock.On("GetRemoteBranches", _a0)}
 }
 
-func (_c *MockGit_GetRemoteBranches_Call) Run(run func()) *MockGit_GetRemoteBranches_Call {
+func (_c *MockGit_GetRemoteBranches_Call) Run(run func(_a0 string)) *MockGit_GetRemoteBranches_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -415,7 +421,7 @@ func (_c *MockGit_GetRemoteBranches_Call) Return(_a0 []string, _a1 error) *MockG
 	return _c
 }
 
-func (_c *MockGit_GetRemoteBranches_Call) RunAndReturn(run func() ([]string, error)) *MockGit_GetRemoteBranches_Call {
+func (_c *MockGit_GetRemoteBranches_Call) RunAndReturn(run func(string) ([]string, error)) *MockGit_GetRemoteBranches_Call {
 	_c.Call.Return(run)
 	return _c
 }

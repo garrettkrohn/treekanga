@@ -21,7 +21,7 @@ func TestDeleteWorktreesWithClean(t *testing.T) {
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	mockGit.On("GetRemoteBranches").Return([]string{
+	mockGit.On("GetRemoteBranches", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 	}, nil)
 	mockGit.On("RemoveWorktree", "development").Return("", nil)
