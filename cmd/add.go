@@ -26,6 +26,8 @@ var (
 	baseBranch string
 )
 
+const tempZoxideName = "temp_treekanga_worktree"
+
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -112,14 +114,14 @@ var addCmd = &cobra.Command{
 			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
 			deps.Git.FetchOrigin(baseBranch)
 			deps.Git.CreateTempBranch()
-			baseBranch = "temp"
+			baseBranch = tempZoxideName
 		}
 
 		err = deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch)
 		util.CheckError(err)
 
 		if pull {
-			deps.Git.DeleteBranch("temp")
+			deps.Git.DeleteBranch(tempZoxideName)
 		}
 		// }
 
