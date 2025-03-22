@@ -45,13 +45,12 @@ var addCmd = &cobra.Command{
 		}
 
 		path, err := cmd.Flags().GetString("directory")
-		if cmd.Flags().Changed("directory") {
+		if cmd.Flags().Changed("directory") && path == "" {
 			log.Debug(fmt.Sprintf("inputted path: %s ", path))
-		}
-
-		_, err = os.Stat(path)
-		if err != nil {
-			log.Fatal("path does not exist")
+			_, err = os.Stat(path)
+			if err != nil {
+				log.Fatal("path does not exist")
+			}
 		}
 
 		baseBranch, err := cmd.Flags().GetString("base")
