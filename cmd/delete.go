@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/charmbracelet/log"
@@ -26,7 +28,8 @@ var deleteCmd = &cobra.Command{
 			filter.NewFilter(),
 			spinner.NewRealHuhSpinner(),
 			form.NewHuhForm(),
-			deps.Zoxide)
+			deps.Zoxide,
+			args)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -41,24 +44,49 @@ func deleteWorktrees(git git.Git,
 	filter filter.Filter,
 	spinner spinner.HuhSpinner,
 	form form.Form,
-	zoxide zoxide.Zoxide) (int, error) {
+	zoxide zoxide.Zoxide,
+	listOfBranchesToDelete []string) (int, error) {
+
+	var selections []string
+	treesToDeleteAreValid := false
+
 	worktrees := getWorktrees(git, transformer)
 
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
-	var selections []string
+	if len(listOfBranchesToDelete) > 0 {
+		log.Debug(fmt.Sprintf("branch(es) submitted as argument(s): %s ", listOfBranchesToDelete))
+		treesToDeleteAreValid = validateAllBranchesToDelete(stringWorktrees, listOfBranchesToDelete)
+		if !treesToDeleteAreValid {
+			log.Error("At least one of the branches provided were not valid, please select a branch")
+		} else {
+			log.Info("All branches are valid")
+			selections = listOfBranchesToDelete
+		}
+	}
 
-	form.SetSelections(&selections)
-	form.SetOptions(stringWorktrees)
-	err := form.Run()
-	util.CheckError(err)
+	if !treesToDeleteAreValid {
+		log.Debug("activating selection form")
+		form.SetSelections(&selections)
+		form.SetOptions(stringWorktrees)
+		err := form.Run()
+		util.CheckError(err)
+	}
 
-	// Transform string selection back to worktree objects
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
 	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
 	return len(selectedWorktreeObj), nil
+}
+
+func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelete []string) bool {
+	for _, branch := range listOfBranchesToDelete {
+		if !slices.Contains(stringWorktrees, branch) {
+			return false
+		}
+	}
+	return true
 }
 
 func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
