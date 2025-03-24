@@ -14,33 +14,17 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestDeleteWorktreesWithDelete(t *testing.T) {
-	// Setup dependencies
-	mockGit := git.NewMockGit(t)
-	mockGit.On("GetWorktrees").Return([]string{
-		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
-		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
-	}, nil)
-	mockGit.On("RemoveWorktree", mock.Anything).Return("", nil)
+func TestDeleteWorktreesWithoutArgs(t *testing.T) {
+	// Arrange
+
+	mockGit := getMockGit(t)
+
 	transformer := transformer.NewTransformer()
 	mockFilter := filter.NewMockFilter(t)
 
-	mockSpinner := spinner.NewMockHuhSpinner(t)
-	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
-	mockSpinner.On("Action", mock.Anything).Run(func(args mock.Arguments) {
-		// Call the action function
-		args.Get(0).(func())()
-	}).Return(mockSpinner)
-	mockSpinner.On("Run").Run(func(args mock.Arguments) {
-	}).Return(nil).Once()
+	mockSpinner := getMockSpinner(t)
 
-	mockForm := form.NewMockHuhForm(t)
-	mockForm.On("SetSelections", mock.Anything).Run(func(args mock.Arguments) {
-		// Modify the selections variable
-		*args.Get(0).(*[]string) = append(*args.Get(0).(*[]string), "branch1")
-	}).Return()
-	mockForm.On("SetOptions", mock.Anything).Once()
-	mockForm.On("Run").Return(nil)
+	mockForm := getMockForm(t)
 
 	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
 		{
@@ -53,8 +37,12 @@ func TestDeleteWorktreesWithDelete(t *testing.T) {
 	mockZoxide := zoxide.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
-	// Execute the function
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide)
+	var branches []string
+
+	// Act
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches)
+
+	// Assert
 	assert.NoError(t, err)
 
 	// Verify the result
@@ -67,4 +55,77 @@ func TestDeleteWorktreesWithDelete(t *testing.T) {
 	mockForm.AssertExpectations(t)
 	mockSpinner.AssertExpectations(t) // Added to ensure spinner expectations are also checked
 	mockZoxide.AssertExpectations(t)
+}
+
+func TestDeleteWorktreesWithArgs(t *testing.T) {
+
+	// Arrange
+	mockGit := getMockGit(t)
+
+	transformer := transformer.NewTransformer()
+	mockFilter := filter.NewMockFilter(t)
+	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
+		{
+			FullPath:   "/Users/gkrohn/code/development",
+			Folder:     "development",
+			BranchName: "branch1",
+			CommitHash: "abcdef12345",
+		},
+	})
+
+	mockSpinner := getMockSpinner(t)
+
+	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
+
+	branches := []string{"branch1"}
+
+	// Act
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches)
+
+	// Assert
+	assert.NoError(t, err)
+
+	// Verify the result
+	expectedNumOfWorktreesRemoved := 1 // Adjust based on your test case
+	assert.Equal(t, expectedNumOfWorktreesRemoved, numOfWorktreesRemoved)
+
+	// Ensure all expectations are met
+	mockGit.AssertExpectations(t)
+	mockFilter.AssertExpectations(t)
+	mockSpinner.AssertExpectations(t) // Added to ensure spinner expectations are also checked
+	mockZoxide.AssertExpectations(t)
+}
+
+func getMockGit(t *testing.T) *git.MockGit {
+	mockGit := git.NewMockGit(t)
+	mockGit.On("GetWorktrees").Return([]string{
+		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
+		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
+	}, nil)
+	mockGit.On("RemoveWorktree", mock.Anything).Return("", nil)
+	return mockGit
+}
+
+func getMockSpinner(t *testing.T) *spinner.MockHuhSpinner {
+	mockSpinner := spinner.NewMockHuhSpinner(t)
+	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
+	mockSpinner.On("Action", mock.Anything).Run(func(args mock.Arguments) {
+		// Call the action function
+		args.Get(0).(func())()
+	}).Return(mockSpinner)
+	mockSpinner.On("Run").Run(func(args mock.Arguments) {
+	}).Return(nil).Once()
+	return mockSpinner
+}
+
+func getMockForm(t *testing.T) *form.MockHuhForm {
+	mockForm := form.NewMockHuhForm(t)
+	mockForm.On("SetSelections", mock.Anything).Run(func(args mock.Arguments) {
+		// Modify the selections variable
+		*args.Get(0).(*[]string) = append(*args.Get(0).(*[]string), "branch1")
+	}).Return()
+	mockForm.On("SetOptions", mock.Anything).Once()
+	mockForm.On("Run").Return(nil)
+	return mockForm
 }
