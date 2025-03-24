@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
 	"strconv"
 
+	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/git"
@@ -21,17 +21,27 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete selected worktrees",
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
-		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git, transformer.NewTransformer(), filter.NewFilter(), spinner.NewRealHuhSpinner(), form.NewHuhForm(), deps.Zoxide)
+		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
+			transformer.NewTransformer(),
+			filter.NewFilter(),
+			spinner.NewRealHuhSpinner(),
+			form.NewHuhForm(),
+			deps.Zoxide)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
 		}
-		fmt.Printf("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
+		log.Info("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
 	},
 }
 
 // deleteWorktrees performs the core logic of deleting worktrees
-func deleteWorktrees(git git.Git, transformer *transformer.RealTransformer, filter filter.Filter, spinner spinner.HuhSpinner, form form.Form, zoxide zoxide.Zoxide) (int, error) {
+func deleteWorktrees(git git.Git,
+	transformer *transformer.RealTransformer,
+	filter filter.Filter,
+	spinner spinner.HuhSpinner,
+	form form.Form,
+	zoxide zoxide.Zoxide) (int, error) {
 	worktrees := getWorktrees(git, transformer)
 
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
