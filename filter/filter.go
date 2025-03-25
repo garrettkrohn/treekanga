@@ -2,6 +2,7 @@ package filter
 
 import (
 	"github.com/garrettkrohn/treekanga/worktreeObj"
+	"slices"
 )
 
 type Filter interface {
@@ -20,7 +21,7 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 	var nonMatchingWorktrees []worktreeobj.WorktreeObj
 
 	for _, worktree := range worktreeBranches {
-		if !contains(remoteBranches, worktree.BranchName) {
+		if !slices.Contains(remoteBranches, worktree.BranchName) {
 			nonMatchingWorktrees = append(nonMatchingWorktrees, worktree)
 		}
 	}
@@ -30,28 +31,15 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 
 func (f *RealFilter) BranchExistsInSlice(branches []string, newBranch string) bool {
 
-	return contains(branches, newBranch)
+	return slices.Contains(branches, newBranch)
 }
 
 func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
 	var selectedWorktreeObj []worktreeobj.WorktreeObj
 	for _, worktreeobj := range allWorktrees {
-		for _, str := range selectedBranchNames {
-			if worktreeobj.BranchName == str {
-				selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
-				break
-			}
+		if slices.Contains(selectedBranchNames, worktreeobj.BranchName) {
+			selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
 		}
 	}
 	return selectedWorktreeObj
-}
-
-// contains checks if a slice contains a specific string.
-func contains(slice []string, str string) bool {
-	for _, item := range slice {
-		if item == str {
-			return true
-		}
-	}
-	return false
 }
