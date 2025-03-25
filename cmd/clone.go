@@ -42,6 +42,7 @@ func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
 	spinner.Action(func() {
 		err := deps.Git.CloneBare(url, folderName)
 		util.CheckError(err)
+		deps.Git.ConfigureGitBare()
 	})
 	spinner.Run()
 }

@@ -27,6 +27,7 @@ type Git interface {
 	PullBranch(url string) error
 	CreateTempBranch(path string) error
 	DeleteBranch(branch string, path string) error
+	ConfigureGitBare() error
 }
 
 type RealGit struct {
@@ -176,6 +177,14 @@ func (g *RealGit) DeleteBranch(branch string, path string) error {
 	gitCmd := getBaseCommandWithOrWithoutPath(path)
 	gitCmd = append(gitCmd, "checkout", "-d", branch)
 	_, err := g.shell.Cmd("git", gitCmd...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) ConfigureGitBare() error {
+	_, err := g.shell.Cmd("git", "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
 	if err != nil {
 		return err
 	}
