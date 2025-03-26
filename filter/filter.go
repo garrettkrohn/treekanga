@@ -1,13 +1,16 @@
 package filter
 
 import (
-	"github.com/garrettkrohn/treekanga/worktreeObj"
+	"fmt"
 	"slices"
+	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 type Filter interface {
 	GetBranchNoMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
-	BranchExistsInSlice([]string, string) bool
 	GetBranchMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
 }
 
@@ -18,20 +21,19 @@ func NewFilter() *RealFilter {
 }
 
 func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranches []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+	log.Debug(remoteBranches, worktreeBranches)
 	var nonMatchingWorktrees []worktreeobj.WorktreeObj
 
 	for _, worktree := range worktreeBranches {
-		if !slices.Contains(remoteBranches, worktree.BranchName) {
+		if !slices.Contains(remoteBranches, strings.TrimSpace(worktree.BranchName)) {
+			log.Debug(fmt.Sprintf("%s not in remote branches", worktree.BranchName))
 			nonMatchingWorktrees = append(nonMatchingWorktrees, worktree)
+		} else {
+			log.Debug(fmt.Sprintf("%s exists in remote branches", worktree.BranchName))
 		}
 	}
 
 	return nonMatchingWorktrees
-}
-
-func (f *RealFilter) BranchExistsInSlice(branches []string, newBranch string) bool {
-
-	return slices.Contains(branches, newBranch)
 }
 
 func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
