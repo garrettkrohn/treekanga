@@ -90,6 +90,17 @@ func deleteWorktrees(git git.Git,
 	return len(selectedWorktreeObj), nil
 }
 
+func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
+	worktreeStrings, wError := git.GetWorktrees()
+	if wError != nil {
+		log.Fatal(wError)
+	}
+
+	worktrees := transformer.TransformWorktrees(worktreeStrings)
+
+	return worktrees
+}
+
 func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelete []string) bool {
 	for _, branch := range listOfBranchesToDelete {
 		if !slices.Contains(stringWorktrees, branch) {
