@@ -17,19 +17,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete selected worktrees",
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
+		stale, err := cmd.Flags().GetBool("stale")
+		util.CheckError(err)
+
 		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
 			transformer.NewTransformer(),
 			filter.NewFilter(),
 			spinner.NewRealHuhSpinner(),
 			form.NewHuhForm(),
 			deps.Zoxide,
-			args)
+			args,
+			stale)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -38,19 +41,26 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
-// deleteWorktrees performs the core logic of deleting worktrees
 func deleteWorktrees(git git.Git,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	spinner spinner.HuhSpinner,
 	form form.Form,
 	zoxide zoxide.Zoxide,
-	listOfBranchesToDelete []string) (int, error) {
+	listOfBranchesToDelete []string,
+	stale bool) (int, error) {
 
 	var selections []string
 	treesToDeleteAreValid := false
 
 	worktrees := getWorktrees(git, transformer)
+
+	if stale {
+		worktrees = filterLocalBranchesOnly(worktrees, transformer, filter)
+		if len(worktrees) == 0 {
+			log.Fatal("All local branches exist on remote")
+		}
+	}
 
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
@@ -99,7 +109,18 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 		}
 	})
 	spinner.Run()
+}
 
+func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
+	transformer *transformer.RealTransformer,
+	filter filter.Filter) []worktreeobj.WorktreeObj {
+
+	log.Info("filtering local branches only")
+	branches, err := deps.Git.GetRemoteBranches("")
+	util.CheckError(err)
+	cleanedBranches := transformer.RemoveOriginPrefix(branches)
+	worktrees = filter.GetBranchNoMatchList(cleanedBranches, worktrees)
+	return worktrees
 }
 
 func init() {
@@ -112,4 +133,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	deleteCmd.Flags().BoolP("stale", "s", false, "Only show worktrees where the branches don't exist on remote")
 }

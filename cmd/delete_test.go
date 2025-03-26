@@ -40,7 +40,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 	var branches []string
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches, false)
 
 	// Assert
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	branches := []string{"branch1"}
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false)
 
 	// Assert
 	assert.NoError(t, err)

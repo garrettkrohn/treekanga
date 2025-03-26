@@ -75,14 +75,14 @@ func (g *RealGit) GetRemoteBranches(path string) ([]string, error) {
 
 	//get all branches
 	branchCmd := getBaseCommandWithOrWithoutPath(path)
-	branchCmd = append(branchCmd, "branch", "-r", "--format=\"%(refname:short)\"")
+	branchCmd = append(branchCmd, "branch", "-r", "--format=%(refname:short)")
 	list, err := g.shell.ListCmd("git", branchCmd...)
 	return list, err
 }
 
 func (g *RealGit) GetLocalBranches(path string) ([]string, error) {
 	gitCmd := getBaseCommandWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "branch", "--format='%(refname:short)'")
+	gitCmd = append(gitCmd, "branch", "--format=%(refname:short)")
 	branches, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		return nil, err
