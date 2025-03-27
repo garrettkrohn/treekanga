@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
@@ -17,19 +19,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete selected worktrees",
 	Long:  `List all worktrees and selected multiple to be deleted`,
 	Run: func(cmd *cobra.Command, args []string) {
+		stale, err := cmd.Flags().GetBool("stale")
+		util.CheckError(err)
+		deleteBranches, err := cmd.Flags().GetBool("delete")
+		util.CheckError(err)
+
 		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
 			transformer.NewTransformer(),
 			filter.NewFilter(),
 			spinner.NewRealHuhSpinner(),
 			form.NewHuhForm(),
 			deps.Zoxide,
-			args)
+			args,
+			stale,
+			deleteBranches)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -38,19 +46,27 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
-// deleteWorktrees performs the core logic of deleting worktrees
 func deleteWorktrees(git git.Git,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	spinner spinner.HuhSpinner,
 	form form.Form,
 	zoxide zoxide.Zoxide,
-	listOfBranchesToDelete []string) (int, error) {
+	listOfBranchesToDelete []string,
+	stale bool,
+	deleteBranches bool) (int, error) {
 
 	var selections []string
 	treesToDeleteAreValid := false
 
 	worktrees := getWorktrees(git, transformer)
+
+	if stale {
+		worktrees = filterLocalBranchesOnly(worktrees, transformer, filter)
+		if len(worktrees) == 0 {
+			log.Fatal("All local branches exist on remote")
+		}
+	}
 
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
@@ -77,7 +93,55 @@ func deleteWorktrees(git git.Git,
 
 	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
+	if deleteBranches {
+		log.Debug("delete branches flag true")
+		deleteLocalBranches(selectedWorktreeObj)
+	}
+
 	return len(selectedWorktreeObj), nil
+}
+
+func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
+	confirm := false
+
+	confirmationMessage := "Are you sure you want to delete these branches: "
+
+	for _, worktreeObj := range selectedWorktreeObj {
+		confirmationMessage += worktreeObj.BranchName
+	}
+
+	confirmDialog := huh.NewConfirm().
+		Title(confirmationMessage).
+		Affirmative("Yes!").
+		Negative("No.").
+		Value(&confirm)
+
+	confirmDialog.Run()
+
+	if confirm {
+		for _, worktreeObj := range selectedWorktreeObj {
+			dir, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			deps.Git.DeleteBranchRef(worktreeObj.BranchName, dir)
+		}
+	} else {
+		log.Info("No local branches were deleted")
+	}
+
+}
+
+func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
+	worktreeStrings, wError := git.GetWorktrees()
+	if wError != nil {
+		log.Fatal(wError)
+	}
+
+	worktrees := transformer.TransformWorktrees(worktreeStrings)
+
+	return worktrees
 }
 
 func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelete []string) bool {
@@ -99,7 +163,18 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 		}
 	})
 	spinner.Run()
+}
 
+func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
+	transformer *transformer.RealTransformer,
+	filter filter.Filter) []worktreeobj.WorktreeObj {
+
+	log.Info("filtering local branches only")
+	branches, err := deps.Git.GetRemoteBranches("")
+	util.CheckError(err)
+	cleanedBranches := transformer.RemoveOriginPrefix(branches)
+	worktrees = filter.GetBranchNoMatchList(cleanedBranches, worktrees)
+	return worktrees
 }
 
 func init() {
@@ -112,4 +187,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	deleteCmd.Flags().BoolP("stale", "s", false, "Only show worktrees where the branches don't exist on remote")
+	deleteCmd.Flags().BoolP("delete", "d", false, "CAUTION: delete the local branch")
 }

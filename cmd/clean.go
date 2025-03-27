@@ -72,17 +72,6 @@ func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filte
 	return len(selectedWorktreeObj), nil
 }
 
-func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
-	worktreeStrings, wError := git.GetWorktrees()
-	if wError != nil {
-		log.Fatal(wError)
-	}
-
-	worktrees := transformer.TransformWorktrees(worktreeStrings)
-
-	return worktrees
-}
-
 func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []string {
 	branches, error := git.GetRemoteBranches("")
 	if error != nil {

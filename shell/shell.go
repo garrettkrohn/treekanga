@@ -51,6 +51,7 @@ func (c *RealShell) Cmd(cmd string, args ...string) (string, error) {
 }
 
 func (c *RealShell) ListCmd(cmd string, arg ...string) ([]string, error) {
+	log.Debug(cmd, "args", arg)
 	command := c.exec.Command(cmd, arg...)
 	output, err := command.Output()
 	return strings.Split(string(output), "\n"), err

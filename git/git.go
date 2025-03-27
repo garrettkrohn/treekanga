@@ -27,6 +27,8 @@ type Git interface {
 	PullBranch(url string) error
 	CreateTempBranch(path string) error
 	DeleteBranch(branch string, path string) error
+	DeleteBranchRef(branch string, path string) error
+	ConfigureGitBare() error
 }
 
 type RealGit struct {
@@ -74,14 +76,14 @@ func (g *RealGit) GetRemoteBranches(path string) ([]string, error) {
 
 	//get all branches
 	branchCmd := getBaseCommandWithOrWithoutPath(path)
-	branchCmd = append(branchCmd, "branch", "-r", "--format=\"%(refname:short)\"")
+	branchCmd = append(branchCmd, "branch", "-r", "--format=%(refname:short)")
 	list, err := g.shell.ListCmd("git", branchCmd...)
 	return list, err
 }
 
 func (g *RealGit) GetLocalBranches(path string) ([]string, error) {
 	gitCmd := getBaseCommandWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "branch", "--format='%(refname:short)'")
+	gitCmd = append(gitCmd, "branch", "--format=%(refname:short)")
 	branches, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		return nil, err
@@ -176,6 +178,23 @@ func (g *RealGit) DeleteBranch(branch string, path string) error {
 	gitCmd := getBaseCommandWithOrWithoutPath(path)
 	gitCmd = append(gitCmd, "checkout", "-d", branch)
 	_, err := g.shell.Cmd("git", gitCmd...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) DeleteBranchRef(branch string, path string) error {
+	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)
+	_, err := g.shell.Cmd("rm", gitCmd)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) ConfigureGitBare() error {
+	_, err := g.shell.Cmd("git", "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
 	if err != nil {
 		return err
 	}

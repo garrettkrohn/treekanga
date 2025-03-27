@@ -12,7 +12,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/directoryReader"
-	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 
@@ -56,7 +55,6 @@ var addCmd = &cobra.Command{
 		baseBranch, err := cmd.Flags().GetString("base")
 		util.CheckError(err)
 
-		filter := filter.NewFilter()
 		transformer := transformer.NewTransformer()
 
 		workingDir, err := os.Getwd()
@@ -97,8 +95,8 @@ var addCmd = &cobra.Command{
 		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
 		util.CheckError(err)
 
-		existsLocally := filter.BranchExistsInSlice(cleanLocalBranches, branchName)
-		existsRemotely := filter.BranchExistsInSlice(cleanRemoteBranches, branchName)
+		existsLocally := slices.Contains(cleanLocalBranches, branchName)
+		existsRemotely := slices.Contains(cleanRemoteBranches, branchName)
 
 		if existsRemotely {
 			deps.Git.FetchOrigin(branchName, path)

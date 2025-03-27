@@ -74,7 +74,6 @@ func Execute(version string) {
 	rootCmd := NewRootCmd(git, zoxide, directoryReader, sesh, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(cleanCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(cloneCmd)
 	err := rootCmd.Execute()
