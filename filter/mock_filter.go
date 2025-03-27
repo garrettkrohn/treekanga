@@ -20,53 +20,6 @@ func (_m *MockFilter) EXPECT() *MockFilter_Expecter {
 	return &MockFilter_Expecter{mock: &_m.Mock}
 }
 
-// BranchExistsInSlice provides a mock function with given fields: _a0, _a1
-func (_m *MockFilter) BranchExistsInSlice(_a0 []string, _a1 string) bool {
-	ret := _m.Called(_a0, _a1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for BranchExistsInSlice")
-	}
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func([]string, string) bool); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// MockFilter_BranchExistsInSlice_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BranchExistsInSlice'
-type MockFilter_BranchExistsInSlice_Call struct {
-	*mock.Call
-}
-
-// BranchExistsInSlice is a helper method to define mock.On call
-//   - _a0 []string
-//   - _a1 string
-func (_e *MockFilter_Expecter) BranchExistsInSlice(_a0 interface{}, _a1 interface{}) *MockFilter_BranchExistsInSlice_Call {
-	return &MockFilter_BranchExistsInSlice_Call{Call: _e.mock.On("BranchExistsInSlice", _a0, _a1)}
-}
-
-func (_c *MockFilter_BranchExistsInSlice_Call) Run(run func(_a0 []string, _a1 string)) *MockFilter_BranchExistsInSlice_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]string), args[1].(string))
-	})
-	return _c
-}
-
-func (_c *MockFilter_BranchExistsInSlice_Call) Return(_a0 bool) *MockFilter_BranchExistsInSlice_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockFilter_BranchExistsInSlice_Call) RunAndReturn(run func([]string, string) bool) *MockFilter_BranchExistsInSlice_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetBranchMatchList provides a mock function with given fields: _a0, _a1
 func (_m *MockFilter) GetBranchMatchList(_a0 []string, _a1 []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
 	ret := _m.Called(_a0, _a1)
