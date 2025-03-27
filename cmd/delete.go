@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
@@ -24,6 +26,8 @@ var deleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		stale, err := cmd.Flags().GetBool("stale")
 		util.CheckError(err)
+		deleteBranches, err := cmd.Flags().GetBool("delete")
+		util.CheckError(err)
 
 		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
 			transformer.NewTransformer(),
@@ -32,7 +36,8 @@ var deleteCmd = &cobra.Command{
 			form.NewHuhForm(),
 			deps.Zoxide,
 			args,
-			stale)
+			stale,
+			deleteBranches)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -48,7 +53,8 @@ func deleteWorktrees(git git.Git,
 	form form.Form,
 	zoxide zoxide.Zoxide,
 	listOfBranchesToDelete []string,
-	stale bool) (int, error) {
+	stale bool,
+	deleteBranches bool) (int, error) {
 
 	var selections []string
 	treesToDeleteAreValid := false
@@ -87,7 +93,44 @@ func deleteWorktrees(git git.Git,
 
 	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
+	if deleteBranches {
+		log.Debug("delete branches flag true")
+		deleteLocalBranches(selectedWorktreeObj)
+	}
+
 	return len(selectedWorktreeObj), nil
+}
+
+func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
+	confirm := false
+
+	confirmationMessage := "Are you sure you want to delete these branches: "
+
+	for _, worktreeObj := range selectedWorktreeObj {
+		confirmationMessage += worktreeObj.BranchName
+	}
+
+	confirmDialog := huh.NewConfirm().
+		Title(confirmationMessage).
+		Affirmative("Yes!").
+		Negative("No.").
+		Value(&confirm)
+
+	confirmDialog.Run()
+
+	if confirm {
+		for _, worktreeObj := range selectedWorktreeObj {
+			dir, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			deps.Git.DeleteBranchRef(worktreeObj.BranchName, dir)
+		}
+	} else {
+		log.Info("No local branches were deleted")
+	}
+
 }
 
 func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
@@ -145,4 +188,5 @@ func init() {
 	// is called directly, e.g.:
 	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	deleteCmd.Flags().BoolP("stale", "s", false, "Only show worktrees where the branches don't exist on remote")
+	deleteCmd.Flags().BoolP("delete", "d", false, "CAUTION: delete the local branch")
 }

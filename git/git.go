@@ -27,6 +27,7 @@ type Git interface {
 	PullBranch(url string) error
 	CreateTempBranch(path string) error
 	DeleteBranch(branch string, path string) error
+	DeleteBranchRef(branch string, path string) error
 	ConfigureGitBare() error
 }
 
@@ -177,6 +178,15 @@ func (g *RealGit) DeleteBranch(branch string, path string) error {
 	gitCmd := getBaseCommandWithOrWithoutPath(path)
 	gitCmd = append(gitCmd, "checkout", "-d", branch)
 	_, err := g.shell.Cmd("git", gitCmd...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *RealGit) DeleteBranchRef(branch string, path string) error {
+	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)
+	_, err := g.shell.Cmd("rm", gitCmd)
 	if err != nil {
 		return err
 	}
