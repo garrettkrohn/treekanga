@@ -128,7 +128,7 @@ var addCmd = &cobra.Command{
 			baseBranch = tempZoxideName
 		}
 
-		err = deps.Git.AddWorktree(folderName, existsLocally, branchName, baseBranch, path)
+		err = deps.Git.AddWorktree(folderName, existsLocally, existsRemotely, branchName, baseBranch, path)
 		util.CheckError(err)
 
 		if pull {
