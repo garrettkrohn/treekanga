@@ -20,7 +20,7 @@ type Git interface {
 	GetLocalBranches(string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(string, bool, string, string, string) error
+	AddWorktree(string, bool, bool, string, string, string) error
 	GetRepoName(path string) (string, error)
 	FetchOrigin(branch string, path string) error
 	CloneBare(string, string) error
@@ -107,12 +107,12 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsLocally bool,
+func (g *RealGit) AddWorktree(folderName string, existsLocally bool, existRemotely bool,
 	branchName string, baseBranch string, path string) error {
 	gitCommand := getBaseCommandWithOrWithoutPath(path)
 	gitCommand = append(gitCommand, "worktree", "add", folderName)
 
-	if existsLocally {
+	if existsLocally || existRemotely {
 		gitCommand = append(gitCommand, branchName)
 	} else {
 		gitCommand = append(gitCommand, "-b", branchName, baseBranch)

@@ -17,17 +17,17 @@ func (_m *MockGit) EXPECT() *MockGit_Expecter {
 	return &MockGit_Expecter{mock: &_m.Mock}
 }
 
-// AddWorktree provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
-func (_m *MockGit) AddWorktree(_a0 string, _a1 bool, _a2 string, _a3 string, _a4 string) error {
-	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
+// AddWorktree provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4, _a5
+func (_m *MockGit) AddWorktree(_a0 string, _a1 bool, _a2 bool, _a3 string, _a4 string, _a5 string) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3, _a4, _a5)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddWorktree")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, bool, string, string, string) error); ok {
-		r0 = rf(_a0, _a1, _a2, _a3, _a4)
+	if rf, ok := ret.Get(0).(func(string, bool, bool, string, string, string) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3, _a4, _a5)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -43,16 +43,17 @@ type MockGit_AddWorktree_Call struct {
 // AddWorktree is a helper method to define mock.On call
 //   - _a0 string
 //   - _a1 bool
-//   - _a2 string
+//   - _a2 bool
 //   - _a3 string
 //   - _a4 string
-func (_e *MockGit_Expecter) AddWorktree(_a0 interface{}, _a1 interface{}, _a2 interface{}, _a3 interface{}, _a4 interface{}) *MockGit_AddWorktree_Call {
-	return &MockGit_AddWorktree_Call{Call: _e.mock.On("AddWorktree", _a0, _a1, _a2, _a3, _a4)}
+//   - _a5 string
+func (_e *MockGit_Expecter) AddWorktree(_a0 interface{}, _a1 interface{}, _a2 interface{}, _a3 interface{}, _a4 interface{}, _a5 interface{}) *MockGit_AddWorktree_Call {
+	return &MockGit_AddWorktree_Call{Call: _e.mock.On("AddWorktree", _a0, _a1, _a2, _a3, _a4, _a5)}
 }
 
-func (_c *MockGit_AddWorktree_Call) Run(run func(_a0 string, _a1 bool, _a2 string, _a3 string, _a4 string)) *MockGit_AddWorktree_Call {
+func (_c *MockGit_AddWorktree_Call) Run(run func(_a0 string, _a1 bool, _a2 bool, _a3 string, _a4 string, _a5 string)) *MockGit_AddWorktree_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(bool), args[2].(string), args[3].(string), args[4].(string))
+		run(args[0].(string), args[1].(bool), args[2].(bool), args[3].(string), args[4].(string), args[5].(string))
 	})
 	return _c
 }
@@ -62,7 +63,7 @@ func (_c *MockGit_AddWorktree_Call) Return(_a0 error) *MockGit_AddWorktree_Call 
 	return _c
 }
 
-func (_c *MockGit_AddWorktree_Call) RunAndReturn(run func(string, bool, string, string, string) error) *MockGit_AddWorktree_Call {
+func (_c *MockGit_AddWorktree_Call) RunAndReturn(run func(string, bool, bool, string, string, string) error) *MockGit_AddWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }
