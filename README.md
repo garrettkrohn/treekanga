@@ -39,8 +39,19 @@ You can define the branch and base branch directly from the command line
 
 `treekanga add example_branch`
 
-If a base branch is not defined it will use the defaults base branch from the
-config file, if not present it will use the current branch
+logic for branche / worktrees:
+- if example_branch exists locally: create a worktree with that branch
+- if example_branch exists remotely: create a worktree with a new local version
+  of that branch
+
+`treekanga add example_branch -b base_branch`
+error will be thrown if base_branch doesn't exist locally or remotely
+- if the baseBranch exists locally: create a new example_branch off of the local
+  base_branch
+- if it exists locally and the pull flag (-p) is used: create a new 
+  example_branch off of the remote base_branch
+- if baseBranch doesn't exist locally: create new worktree with new
+example_branch off of remote base_branch
 
 `treekanga add`
 

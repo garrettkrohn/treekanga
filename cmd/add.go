@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	branchName string
-	baseBranch string
+	newBranchName string
+	baseBranch    string
 )
 
 const tempZoxideName = "temp_treekanga_worktree"
@@ -40,7 +40,7 @@ var addCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) >= 1 {
-			branchName = args[0]
+			newBranchName = args[0]
 		}
 
 		path, err := cmd.Flags().GetString("directory")
@@ -68,11 +68,11 @@ var addCmd = &cobra.Command{
 
 		parentDir := filepath.Dir(workingDir)
 
-		if branchName == "" {
+		if newBranchName == "" {
 			err := huh.NewInput().
 				Title("Input branch name").
 				Prompt("?").
-				Value(&branchName).
+				Value(&newBranchName).
 				Run()
 			util.CheckError(err)
 
@@ -86,33 +86,6 @@ var addCmd = &cobra.Command{
 				Run()
 			util.CheckError(err)
 		}
-
-		// action := func() {
-		remoteBranches, err := deps.Git.GetRemoteBranches(path)
-		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
-		util.CheckError(err)
-		localBranches, err := deps.Git.GetLocalBranches(path)
-		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
-		util.CheckError(err)
-
-		existsLocally := slices.Contains(cleanLocalBranches, branchName)
-		existsRemotely := slices.Contains(cleanRemoteBranches, branchName)
-
-		if existsRemotely {
-			deps.Git.FetchOrigin(branchName, path)
-			log.Debug("Branch exists remotely:", "branch name", branchName)
-		} else {
-			log.Debug("Branch does not exist remotely:", "branch name", branchName)
-		}
-
-		if existsLocally {
-			log.Debug("Branch exists locally:", "branch name", branchName)
-		} else {
-			log.Debug("Branch does not exist locally:", "branch name", branchName)
-		}
-
-		folderName := "../" + branchName
-
 		if baseBranch == "" {
 			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 			if baseBranch == "" {
@@ -120,33 +93,42 @@ var addCmd = &cobra.Command{
 			}
 		}
 
-		pull, err := cmd.Flags().GetBool("pull")
-		if pull {
-			log.Info("pulling base branch before creating worktree", "base branch", baseBranch)
-			deps.Git.FetchOrigin(baseBranch, path)
-			deps.Git.CreateTempBranch(path)
-			baseBranch = tempZoxideName
+		remoteBranches, err := deps.Git.GetRemoteBranches(path)
+		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
+		util.CheckError(err)
+		localBranches, err := deps.Git.GetLocalBranches(path)
+		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
+		util.CheckError(err)
+
+		newBranchExistsLocally := slices.Contains(cleanLocalBranches, newBranchName)
+		NewBranchExistsRemotely := slices.Contains(cleanRemoteBranches, newBranchName)
+		baseBranchExistsLocally := slices.Contains(cleanLocalBranches, baseBranch)
+		baseBranchExistsRemotely := slices.Contains(cleanRemoteBranches, baseBranch)
+
+		log.Debugf("newBranchExistsLocally: %v, newBranchExistsRemotely: %v, baseBranchExistsLocally: %v, baseBranchExistsRemotely: %v",
+			newBranchExistsLocally, NewBranchExistsRemotely, baseBranchExistsLocally, baseBranchExistsRemotely)
+
+		if !baseBranchExistsLocally && !baseBranchExistsRemotely {
+			log.Fatal("Base branch does not exist locally or remotely")
 		}
 
-		err = deps.Git.AddWorktree(folderName, existsLocally, existsRemotely, branchName, baseBranch, path)
+		folderName := "../" + newBranchName
+
+		pull, err := cmd.Flags().GetBool("pull")
+
+		err = deps.Git.AddWorktree(folderName, newBranchExistsLocally, NewBranchExistsRemotely,
+			newBranchName, baseBranch, path, pull, baseBranchExistsLocally, baseBranchExistsRemotely)
 		util.CheckError(err)
 
 		if pull {
 			deps.Git.DeleteBranch(tempZoxideName, path)
 		}
-		// }
 
-		// err = spinner.New().
-		// 	Title("Adding Worktree").
-		// 	Action(action).
-		// 	Run()
-		// util.CheckError(err)
-
-		log.Info(fmt.Sprintf("worktree %s created", branchName))
+		log.Info(fmt.Sprintf("worktree %s created", newBranchName))
 
 		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
 		directoryReader := deps.DirectoryReader
-		foldersToAdd := getListOfZoxideEntries(branchName, parentDir, foldersToAddFromConfig, directoryReader)
+		foldersToAdd := getListOfZoxideEntries(newBranchName, parentDir, foldersToAddFromConfig, directoryReader)
 
 		addZoxideEntries(foldersToAdd)
 

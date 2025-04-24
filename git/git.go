@@ -20,7 +20,7 @@ type Git interface {
 	GetLocalBranches(string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(string, bool, bool, string, string, string) error
+	AddWorktree(string, bool, bool, string, string, string, bool, bool, bool) error
 	GetRepoName(path string) (string, error)
 	FetchOrigin(branch string, path string) error
 	CloneBare(string, string) error
@@ -107,15 +107,25 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string, existsLocally bool, existRemotely bool,
-	branchName string, baseBranch string, path string) error {
+func (g *RealGit) AddWorktree(folderName string,
+	newBranchExistsLocally bool, newBranchExistRemotely bool,
+	branchName string, baseBranch string, path string, pull bool,
+	baseBranchExistsLocally bool, baseBrachExistsRemotely bool) error {
 	gitCommand := getBaseCommandWithOrWithoutPath(path)
 	gitCommand = append(gitCommand, "worktree", "add", folderName)
 
-	if existsLocally || existRemotely {
+	// create worktree off of local branch
+	if newBranchExistsLocally || newBranchExistRemotely {
 		gitCommand = append(gitCommand, branchName)
+	} else if baseBranchExistsLocally {
+		if pull {
+			gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch)
+		} else {
+			gitCommand = append(gitCommand, "-b", branchName, baseBranch)
+
+		}
 	} else {
-		gitCommand = append(gitCommand, "-b", branchName, baseBranch)
+		gitCommand = append(gitCommand, "-b", branchName, "origin"+baseBranch)
 	}
 
 	output, err := g.shell.Cmd("git", gitCommand...)
@@ -186,7 +196,7 @@ func (g *RealGit) DeleteBranch(branch string, path string) error {
 
 func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)
-	_, err := g.shell.Cmd("rm", gitCmd)
+	_, err := g.shell.Cmd("update-ref", "-d", gitCmd)
 	if err != nil {
 		return err
 	}
