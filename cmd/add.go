@@ -25,7 +25,28 @@ var (
 	baseBranch    string
 )
 
-const tempZoxideName = "temp_treekanga_worktree"
+type AddCmdFlags struct {
+	Directory string
+	Path      string
+	Pull      bool
+	Connect   string
+}
+
+type GitConfig struct {
+	NewBranchName string
+	BaseBrachName string
+	RepoName      string
+}
+
+type TreekangaAddConfig struct {
+	Flags      AddCmdFlags
+	Args       []string
+	GitConfig  GitConfig
+	WorkingDir string
+	ParentDir  string
+}
+
+// const tempZoxideName = "temp_treekanga_worktree"
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
@@ -39,53 +60,34 @@ var addCmd = &cobra.Command{
     defined in the config, or use the current branch.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		if len(args) >= 1 {
-			newBranchName = args[0]
-		}
+		// addCmdFlags := getAddCmdFlags(cmd)
+		c := getAddCmdConfig(cmd, args)
 
-		path, err := cmd.Flags().GetString("directory")
-		if cmd.Flags().Changed("directory") && path == "" {
-			log.Debug(fmt.Sprintf("inputted path: %s ", path))
-			_, err = os.Stat(path)
-			if err != nil {
-				log.Fatal("path does not exist")
-			}
-		}
-
-		baseBranch, err := cmd.Flags().GetString("base")
-		util.CheckError(err)
+		validateConfig(&c)
 
 		transformer := transformer.NewTransformer()
 
-		workingDir, err := os.Getwd()
-		util.CheckError(err)
-		if path != "" {
-			workingDir = path
-		}
+		// remove
+		// if newBranchName == "" {
+		// 	err := huh.NewInput().
+		// 		Title("Input branch name").
+		// 		Prompt("?").
+		// 		Value(&newBranchName).
+		// 		Run()
+		// 	util.CheckError(err)
+		// }
 
-		repoName, err := deps.Git.GetRepoName(workingDir)
-		util.CheckError(err)
+		// remove
+		// if len(args) == 0 {
+		// 	err := huh.NewInput().
+		// 		Title("Input base branch (leave blank for default)").
+		// 		Prompt("?").
+		// 		Value(&baseBranch).
+		// 		Run()
+		// 	util.CheckError(err)
+		// }
 
-		parentDir := filepath.Dir(workingDir)
-
-		if newBranchName == "" {
-			err := huh.NewInput().
-				Title("Input branch name").
-				Prompt("?").
-				Value(&newBranchName).
-				Run()
-			util.CheckError(err)
-
-		}
-
-		if len(args) == 0 {
-			err := huh.NewInput().
-				Title("Input base branch (leave blank for default)").
-				Prompt("?").
-				Value(&baseBranch).
-				Run()
-			util.CheckError(err)
-		}
+		// move to config
 		if baseBranch == "" {
 			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 			if baseBranch == "" {
@@ -93,18 +95,21 @@ var addCmd = &cobra.Command{
 			}
 		}
 
-		remoteBranches, err := deps.Git.GetRemoteBranches(path)
+		// move to git config
+		remoteBranches, err := deps.Git.GetRemoteBranches(addCmdFlags.Path)
 		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
 		util.CheckError(err)
-		localBranches, err := deps.Git.GetLocalBranches(path)
+		localBranches, err := deps.Git.GetLocalBranches(addCmdFlags.Path)
 		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
 		util.CheckError(err)
 
+		// move to git config
 		newBranchExistsLocally := slices.Contains(cleanLocalBranches, newBranchName)
 		NewBranchExistsRemotely := slices.Contains(cleanRemoteBranches, newBranchName)
 		baseBranchExistsLocally := slices.Contains(cleanLocalBranches, baseBranch)
 		baseBranchExistsRemotely := slices.Contains(cleanRemoteBranches, baseBranch)
 
+		// move to a general config log
 		log.Debugf("newBranchExistsLocally: %v, newBranchExistsRemotely: %v, baseBranchExistsLocally: %v, baseBranchExistsRemotely: %v",
 			newBranchExistsLocally, NewBranchExistsRemotely, baseBranchExistsLocally, baseBranchExistsRemotely)
 
@@ -117,12 +122,12 @@ var addCmd = &cobra.Command{
 		pull, err := cmd.Flags().GetBool("pull")
 
 		err = deps.Git.AddWorktree(folderName, newBranchExistsLocally, NewBranchExistsRemotely,
-			newBranchName, baseBranch, path, pull, baseBranchExistsLocally, baseBranchExistsRemotely)
+			newBranchName, baseBranch, addCmdFlags.Path, pull, baseBranchExistsLocally, baseBranchExistsRemotely)
 		util.CheckError(err)
 
-		if pull {
-			deps.Git.DeleteBranch(tempZoxideName, path)
-		}
+		// if pull {
+		// 	deps.Git.DeleteBranch(tempZoxideName, addCmdFlags.Path)
+		// }
 
 		log.Info(fmt.Sprintf("worktree %s created", newBranchName))
 
@@ -151,6 +156,80 @@ var addCmd = &cobra.Command{
 		}
 
 	},
+}
+
+func getAddCmdConfig(cmd *cobra.Command, args []string) TreekangaAddConfig {
+	baseConfig := getBaseConfig(cmd, args)
+	getGitConfig(&baseConfig)
+	return baseConfig
+}
+
+func getBaseConfig(cmd *cobra.Command, args []string) TreekangaAddConfig {
+	addCmdFlags := getAddCmdFlags(cmd)
+
+	workingDir, err := os.Getwd()
+	util.CheckError(err)
+
+	if addCmdFlags.Path != "" {
+		workingDir = addCmdFlags.Path
+	}
+
+	parentDir := filepath.Dir(workingDir)
+
+	return TreekangaAddConfig{
+		Flags:      addCmdFlags,
+		Args:       args,
+		WorkingDir: workingDir,
+		ParentDir:  parentDir,
+	}
+}
+
+func getGitConfig(c *TreekangaAddConfig) {
+
+	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
+	util.CheckError(err)
+	c.GitConfig.RepoName = repoName
+
+}
+
+func getAddCmdFlags(cmd *cobra.Command) AddCmdFlags {
+	directory, err := cmd.Flags().GetString("directory")
+	util.CheckError(err)
+
+	baseBranch, err := cmd.Flags().GetString("base")
+	util.CheckError(err)
+
+	connect, err := cmd.Flags().GetString("connect")
+	util.CheckError(err)
+
+	pull, err := cmd.Flags().GetBool("pull")
+	util.CheckError(err)
+
+	return AddCmdFlags{
+		Directory: directory,
+		Path:      baseBranch,
+		Connect:   connect,
+		Pull:      pull,
+	}
+}
+
+func validateConfig(c *TreekangaAddConfig) {
+	// make sure new branch name is included
+	if len(c.Args) == 1 {
+		c.GitConfig.NewBranchName = c.Args[0]
+	} else {
+		log.Fatal("please include news branch name as an argument")
+	}
+
+	// if a path is provided, be sure it exists
+	if c.Flags.Path != "" {
+		log.Debug(fmt.Sprintf("inputted path: %s ", c.Flags.Path))
+		_, err := os.Stat(c.Flags.Path)
+		if err != nil {
+			log.Fatal("path does not exist")
+		}
+	}
+
 }
 
 func getListOfZoxideEntries(branchName string, parentDir string, foldersToAddFromConfig []string, directoryReader directoryReader.DirectoryReader) []string {
