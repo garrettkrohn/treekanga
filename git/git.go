@@ -119,13 +119,13 @@ func (g *RealGit) AddWorktree(folderName string,
 		gitCommand = append(gitCommand, branchName)
 	} else if baseBranchExistsLocally {
 		if pull {
-			gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch)
+			gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch, "--no-track")
 		} else {
 			gitCommand = append(gitCommand, "-b", branchName, baseBranch)
 
 		}
 	} else {
-		gitCommand = append(gitCommand, "-b", branchName, "origin"+baseBranch)
+		gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch, "--no-track")
 	}
 
 	output, err := g.shell.Cmd("git", gitCommand...)
