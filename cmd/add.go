@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -46,67 +45,37 @@ var addCmd = &cobra.Command{
 
 		validateConfig(&c)
 
-		// remove
-		// if newBranchName == "" {
-		// 	err := huh.NewInput().
-		// 		Title("Input branch name").
-		// 		Prompt("?").
-		// 		Value(&newBranchName).
-		// 		Run()
-		// 	util.CheckError(err)
-		// }
-
-		// remove
-		// if len(args) == 0 {
-		// 	err := huh.NewInput().
-		// 		Title("Input base branch (leave blank for default)").
-		// 		Prompt("?").
-		// 		Value(&baseBranch).
-		// 		Run()
-		// 	util.CheckError(err)
-		// }
-
-		// move to a general config log
-		// log.Debugf("newBranchExistsLocally: %v, newBranchExistsRemotely: %v, baseBranchExistsLocally: %v, baseBranchExistsRemotely: %v",
-		// 	newBranchExistsLocally, NewBranchExistsRemotely, baseBranchExistsLocally, baseBranchExistsRemotely)
-
-		// pull, err := cmd.Flags().GetBool("pull")
-
 		log.Debug("Adding worktree with config:")
 		PrintConfig(c)
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
-		// if pull {
-		// 	deps.Git.DeleteBranch(tempZoxideName, addCmdFlags.Path)
-		// }
-
 		log.Info(fmt.Sprintf("worktree %s created", newBranchName))
 
-		// foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
-		// directoryReader := deps.DirectoryReader
 		foldersToAdd := getListOfZoxideEntries(&c.ZoxideConfig)
 		addZoxideEntries(foldersToAdd)
 
-		if cmd.Flags().Changed("connect") {
-			connect, err := cmd.Flags().GetString("connect")
-			log.Debug(connect)
-			util.CheckError(err)
-
-			// shortestZoxide := findShortestString(foldersToAdd)
-			shortestZoxide := slices.Min(foldersToAdd)
-			subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, connect)
-			if connect != "" && subFolderIsValid {
-				zoxidePath := shortestZoxide + "/" + connect
-				log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
-				deps.Sesh.SeshConnect(zoxidePath)
-			} else {
-				log.Info(fmt.Sprintf("Sesh connect to %s", shortestZoxide))
-				deps.Sesh.SeshConnect(shortestZoxide)
-			}
-		}
-
 	},
+}
+
+func connectSesh(c *com.AddConfig) {
+	if c.Flags.Connect == nil {
+		return
+	}
+
+	log.Debug("connecting to: %s", c.Flags.Connect)
+
+	// shortestZoxide := findShortestString(foldersToAdd)
+	shortestZoxide := slices.Min(c.ZoxideConfig.FoldersToAdd)
+	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Connect)
+	if subFolderIsValid {
+		zoxidePath := shortestZoxide + "/" + *c.Flags.Connect
+		log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
+		deps.Sesh.SeshConnect(zoxidePath)
+	} else {
+		log.Info(fmt.Sprintf("Sesh connect to %s", shortestZoxide))
+		deps.Sesh.SeshConnect(shortestZoxide)
+	}
 }
 
 func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
@@ -299,54 +268,8 @@ func addZoxideEntries(folders []string) {
 
 }
 
-func PrintConfig(config com.AddConfig) {
-	printStruct(reflect.ValueOf(config), 0)
-}
-
-func printStruct(v reflect.Value, indent int) {
-	t := v.Type()
-
-	if v.Kind() == reflect.Struct {
-		fmt.Printf("%s%s: {\n", getIndent(indent), t.Name())
-		for i := 0; i < v.NumField(); i++ {
-			field := t.Field(i)
-			value := v.Field(i)
-
-			if value.Kind() == reflect.Struct {
-				printStruct(value, indent+1)
-			} else if value.Kind() == reflect.Ptr {
-				if !value.IsNil() {
-					fmt.Printf("%s%s: %v\n", getIndent(indent+1), field.Name, value.Elem())
-				} else {
-					fmt.Printf("%s%s: nil\n", getIndent(indent+1), field.Name)
-				}
-			} else {
-				fmt.Printf("%s%s: %v\n", getIndent(indent+1), field.Name, value)
-			}
-		}
-		fmt.Printf("%s}\n", getIndent(indent))
-	} else {
-		fmt.Println("Provided value is not a struct")
-	}
-}
-
-func getIndent(indent int) string {
-	return strings.Repeat("  ", indent)
-}
-
 func init() {
 
-	// Add optional arguments
-	// func (f *FlagSet) StringVarP(p *string, name, shorthand string, value string, usage string) {
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().StringP("connect", "c", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
