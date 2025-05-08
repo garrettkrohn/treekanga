@@ -19,7 +19,7 @@ type Git interface {
 	GetLocalBranches(*string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(c *com.TreekangaAddConfig) error
+	AddWorktree(c *com.AddConfig) error
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
 	DeleteBranchRef(branch string, path string) error
@@ -78,7 +78,7 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(c *com.TreekangaAddConfig) error {
+func (g *RealGit) AddWorktree(c *com.AddConfig) error {
 	gitCommand := getBaseArguementsWithOrWithoutPath(c.Flags.Directory)
 	gitCommand = append(gitCommand, "worktree", "add", c.GitConfig.FolderPath)
 

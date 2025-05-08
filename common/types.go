@@ -2,7 +2,7 @@ package common
 
 import "github.com/garrettkrohn/treekanga/directoryReader"
 
-type TreekangaAddConfig struct {
+type AddConfig struct {
 	Flags        AddCmdFlags
 	Args         []string
 	GitConfig    GitConfig

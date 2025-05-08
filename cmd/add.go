@@ -41,7 +41,7 @@ var addCmd = &cobra.Command{
     defined in the config, or use the current branch.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		c := com.TreekangaAddConfig{}
+		c := com.AddConfig{}
 		getAddCmdConfig(cmd, args, &c)
 
 		validateConfig(&c)
@@ -109,14 +109,14 @@ var addCmd = &cobra.Command{
 	},
 }
 
-func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.TreekangaAddConfig) {
+func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	addCmdFlagsAndArgs(cmd, args, c)
 	setWorkingAndParentDir(c)
 	getGitConfig(c)
 	getZoxideConfig(c)
 }
 
-func getZoxideConfig(c *com.TreekangaAddConfig) {
+func getZoxideConfig(c *com.AddConfig) {
 	c.ZoxideConfig = com.ZoxideConfig{
 
 		NewBranchName:   c.GitConfig.NewBranchName,
@@ -127,7 +127,7 @@ func getZoxideConfig(c *com.TreekangaAddConfig) {
 
 }
 
-func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.TreekangaAddConfig) {
+func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	flags := com.AddCmdFlags{}
 	directory, err := cmd.Flags().GetString("directory")
 	if directory == "" {
@@ -167,7 +167,7 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.TreekangaAddCo
 	c.Args = args
 }
 
-func setWorkingAndParentDir(c *com.TreekangaAddConfig) {
+func setWorkingAndParentDir(c *com.AddConfig) {
 	// working dir
 	workingDir, err := os.Getwd()
 	util.CheckError(err)
@@ -183,7 +183,7 @@ func setWorkingAndParentDir(c *com.TreekangaAddConfig) {
 
 }
 
-func getGitConfig(c *com.TreekangaAddConfig) {
+func getGitConfig(c *com.AddConfig) {
 
 	if len(c.Args) == 1 {
 		c.GitConfig.NewBranchName = c.Args[0]
@@ -228,7 +228,7 @@ func getGitConfig(c *com.TreekangaAddConfig) {
 
 }
 
-func validateConfig(c *com.TreekangaAddConfig) {
+func validateConfig(c *com.AddConfig) {
 
 	// if a path is provided, be sure it exists
 	if c.Flags.Directory != nil {
@@ -299,7 +299,7 @@ func addZoxideEntries(folders []string) {
 
 }
 
-func PrintConfig(config com.TreekangaAddConfig) {
+func PrintConfig(config com.AddConfig) {
 	printStruct(reflect.ValueOf(config), 0)
 }
 
