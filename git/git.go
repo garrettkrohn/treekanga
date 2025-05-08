@@ -2,10 +2,12 @@ package git
 
 import (
 	"fmt"
-	"github.com/charmbracelet/log"
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
+	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
@@ -20,7 +22,7 @@ type Git interface {
 	GetLocalBranches(string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
-	AddWorktree(string, bool, bool, string, string, string, bool, bool, bool) error
+	AddWorktree(c *com.TreekangaAddConfig) error
 	GetRepoName(path string) (string, error)
 	FetchOrigin(branch string, path string) error
 	CloneBare(string, string) error
@@ -107,25 +109,22 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 	return out, nil
 }
 
-func (g *RealGit) AddWorktree(folderName string,
-	newBranchExistsLocally bool, newBranchExistRemotely bool,
-	branchName string, baseBranch string, path string, pull bool,
-	baseBranchExistsLocally bool, baseBrachExistsRemotely bool) error {
-	gitCommand := getBaseCommandWithOrWithoutPath(path)
-	gitCommand = append(gitCommand, "worktree", "add", folderName)
+func (g *RealGit) AddWorktree(c *com.TreekangaAddConfig) error {
+	gitCommand := getBaseCommandWithOrWithoutPath(*c.Flags.Directory)
+	gitCommand = append(gitCommand, "worktree", "add", c.GitConfig.FolderPath)
 
 	// create worktree off of local branch
-	if newBranchExistsLocally || newBranchExistRemotely {
-		gitCommand = append(gitCommand, branchName)
-	} else if baseBranchExistsLocally {
-		if pull {
-			gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch, "--no-track")
+	if c.GitConfig.NewBranchExistsLocally || c.GitConfig.NewBranchExistsRemotely {
+		gitCommand = append(gitCommand, c.GitConfig.NewBranchName)
+	} else if c.GitConfig.BaseBranchExistsLocally {
+		if c.Flags.Pull != nil {
+			gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, "origin/"+c.GitConfig.BaseBranchName, "--no-track")
 		} else {
-			gitCommand = append(gitCommand, "-b", branchName, baseBranch)
+			gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, c.GitConfig.BaseBranchName)
 
 		}
 	} else {
-		gitCommand = append(gitCommand, "-b", branchName, "origin/"+baseBranch, "--no-track")
+		gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, "origin/"+c.GitConfig.BaseBranchName, "--no-track")
 	}
 
 	output, err := g.shell.Cmd("git", gitCommand...)

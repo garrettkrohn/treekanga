@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
+	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
@@ -24,27 +24,6 @@ var (
 	newBranchName string
 	baseBranch    string
 )
-
-type AddCmdFlags struct {
-	Directory string
-	Path      string
-	Pull      bool
-	Connect   string
-}
-
-type GitConfig struct {
-	NewBranchName string
-	BaseBrachName string
-	RepoName      string
-}
-
-type TreekangaAddConfig struct {
-	Flags      AddCmdFlags
-	Args       []string
-	GitConfig  GitConfig
-	WorkingDir string
-	ParentDir  string
-}
 
 // const tempZoxideName = "temp_treekanga_worktree"
 
@@ -60,12 +39,10 @@ var addCmd = &cobra.Command{
     defined in the config, or use the current branch.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// addCmdFlags := getAddCmdFlags(cmd)
-		c := getAddCmdConfig(cmd, args)
+		c := com.TreekangaAddConfig{}
+		getAddCmdConfig(cmd, args, &c)
 
 		validateConfig(&c)
-
-		transformer := transformer.NewTransformer()
 
 		// remove
 		// if newBranchName == "" {
@@ -87,42 +64,14 @@ var addCmd = &cobra.Command{
 		// 	util.CheckError(err)
 		// }
 
-		// move to config
-		if baseBranch == "" {
-			baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
-			if baseBranch == "" {
-				log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
-			}
-		}
-
-		// move to git config
-		remoteBranches, err := deps.Git.GetRemoteBranches(addCmdFlags.Path)
-		cleanRemoteBranches := transformer.RemoveOriginPrefix(remoteBranches)
-		util.CheckError(err)
-		localBranches, err := deps.Git.GetLocalBranches(addCmdFlags.Path)
-		cleanLocalBranches := transformer.RemoveQuotes(localBranches)
-		util.CheckError(err)
-
-		// move to git config
-		newBranchExistsLocally := slices.Contains(cleanLocalBranches, newBranchName)
-		NewBranchExistsRemotely := slices.Contains(cleanRemoteBranches, newBranchName)
-		baseBranchExistsLocally := slices.Contains(cleanLocalBranches, baseBranch)
-		baseBranchExistsRemotely := slices.Contains(cleanRemoteBranches, baseBranch)
-
 		// move to a general config log
-		log.Debugf("newBranchExistsLocally: %v, newBranchExistsRemotely: %v, baseBranchExistsLocally: %v, baseBranchExistsRemotely: %v",
-			newBranchExistsLocally, NewBranchExistsRemotely, baseBranchExistsLocally, baseBranchExistsRemotely)
+		// log.Debugf("newBranchExistsLocally: %v, newBranchExistsRemotely: %v, baseBranchExistsLocally: %v, baseBranchExistsRemotely: %v",
+		// 	newBranchExistsLocally, NewBranchExistsRemotely, baseBranchExistsLocally, baseBranchExistsRemotely)
 
-		if !baseBranchExistsLocally && !baseBranchExistsRemotely {
-			log.Fatal("Base branch does not exist locally or remotely")
-		}
+		// pull, err := cmd.Flags().GetBool("pull")
 
-		folderName := "../" + newBranchName
-
-		pull, err := cmd.Flags().GetBool("pull")
-
-		err = deps.Git.AddWorktree(folderName, newBranchExistsLocally, NewBranchExistsRemotely,
-			newBranchName, baseBranch, addCmdFlags.Path, pull, baseBranchExistsLocally, baseBranchExistsRemotely)
+		log.Debug("Adding worktree with config: %+v", c)
+		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
 		// if pull {
@@ -131,10 +80,9 @@ var addCmd = &cobra.Command{
 
 		log.Info(fmt.Sprintf("worktree %s created", newBranchName))
 
-		foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
-		directoryReader := deps.DirectoryReader
-		foldersToAdd := getListOfZoxideEntries(newBranchName, parentDir, foldersToAddFromConfig, directoryReader)
-
+		// foldersToAddFromConfig := viper.GetStringSlice("repos." + repoName + ".zoxideFolders")
+		// directoryReader := deps.DirectoryReader
+		foldersToAdd := getListOfZoxideEntries(&c.ZoxideConfig)
 		addZoxideEntries(foldersToAdd)
 
 		if cmd.Flags().Changed("connect") {
@@ -144,7 +92,7 @@ var addCmd = &cobra.Command{
 
 			// shortestZoxide := findShortestString(foldersToAdd)
 			shortestZoxide := slices.Min(foldersToAdd)
-			subFolderIsValid := slices.Contains(foldersToAddFromConfig, connect)
+			subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, connect)
 			if connect != "" && subFolderIsValid {
 				zoxidePath := shortestZoxide + "/" + connect
 				log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
@@ -158,62 +106,117 @@ var addCmd = &cobra.Command{
 	},
 }
 
-func getAddCmdConfig(cmd *cobra.Command, args []string) TreekangaAddConfig {
-	baseConfig := getBaseConfig(cmd, args)
-	getGitConfig(&baseConfig)
-	return baseConfig
+func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.TreekangaAddConfig) {
+	addCmdFlagsAndArgs(cmd, args, c)
+	setWorkingAndParentDir(c)
+	getGitConfig(c)
+	getZoxideConfig(c)
 }
 
-func getBaseConfig(cmd *cobra.Command, args []string) TreekangaAddConfig {
-	addCmdFlags := getAddCmdFlags(cmd)
+func getZoxideConfig(c *com.TreekangaAddConfig) {
+	c.ZoxideConfig = com.ZoxideConfig{
 
-	workingDir, err := os.Getwd()
+		NewBranchName:   c.GitConfig.NewBranchName,
+		ParentDir:       c.ParentDir,
+		FoldersToAdd:    viper.GetStringSlice("repos." + c.GitConfig.RepoName + ".zoxideFolders"),
+		DirectoryReader: deps.DirectoryReader,
+	}
+
+}
+
+func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.TreekangaAddConfig) {
+	flags := com.AddCmdFlags{}
+	directory, err := cmd.Flags().GetString("directory")
+	if directory == "" {
+		flags.Directory = nil
+	} else {
+		flags.Directory = &directory
+	}
 	util.CheckError(err)
 
-	if addCmdFlags.Path != "" {
-		workingDir = addCmdFlags.Path
+	baseBranch, err := cmd.Flags().GetString("base")
+	if baseBranch == "" {
+		flags.BaseBranch = nil
+	} else {
+		flags.BaseBranch = &baseBranch
 	}
+	util.CheckError(err)
 
-	parentDir := filepath.Dir(workingDir)
-
-	return TreekangaAddConfig{
-		Flags:      addCmdFlags,
-		Args:       args,
-		WorkingDir: workingDir,
-		ParentDir:  parentDir,
+	// Refactor connect
+	connect, err := cmd.Flags().GetString("connect")
+	if connect == "" {
+		flags.Connect = nil
+	} else {
+		flags.Connect = &connect
 	}
+	util.CheckError(err)
+
+	// Refactor pull
+	pull, err := cmd.Flags().GetBool("pull")
+	if err != nil {
+		flags.Pull = nil
+	} else {
+		flags.Pull = &pull
+	}
+	util.CheckError(err)
+
+	c.Flags = flags
+	c.Args = args
 }
 
-func getGitConfig(c *TreekangaAddConfig) {
+func setWorkingAndParentDir(c *com.TreekangaAddConfig) {
+	// working dir
+	workingDir, err := os.Getwd()
+	util.CheckError(err)
+	if c.Flags.Directory != nil {
+		workingDir = *c.Flags.Directory
+	}
+
+	//parent dir
+	parentDir := filepath.Dir(workingDir)
+
+	c.WorkingDir = workingDir
+	c.ParentDir = parentDir
+
+}
+
+func getGitConfig(c *com.TreekangaAddConfig) {
 
 	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
 	util.CheckError(err)
 	c.GitConfig.RepoName = repoName
 
-}
-
-func getAddCmdFlags(cmd *cobra.Command) AddCmdFlags {
-	directory, err := cmd.Flags().GetString("directory")
-	util.CheckError(err)
-
-	baseBranch, err := cmd.Flags().GetString("base")
-	util.CheckError(err)
-
-	connect, err := cmd.Flags().GetString("connect")
-	util.CheckError(err)
-
-	pull, err := cmd.Flags().GetBool("pull")
-	util.CheckError(err)
-
-	return AddCmdFlags{
-		Directory: directory,
-		Path:      baseBranch,
-		Connect:   connect,
-		Pull:      pull,
+	if c.Flags.BaseBranch != nil {
+		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+		if baseBranch == "" {
+			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
+		}
 	}
+	c.GitConfig.BaseBranchName = baseBranch
+
+	t := transformer.NewTransformer()
+
+	// move to git config
+	remoteBranches, err := deps.Git.GetRemoteBranches(c.GitConfig.BaseBranchName)
+	util.CheckError(err)
+	cleanRemoteBranches := t.RemoveOriginPrefix(remoteBranches)
+	// c.GitConfig.RemoteBranches = cleanRemoteBranches
+
+	localBranches, err := deps.Git.GetLocalBranches(c.GitConfig.BaseBranchName)
+	util.CheckError(err)
+	cleanLocalBranches := t.RemoveQuotes(localBranches)
+	// c.GitConfig.LocalBranches = cleanLocalBranches
+
+	c.GitConfig.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GitConfig.NewBranchName)
+	c.GitConfig.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GitConfig.NewBranchName)
+	c.GitConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GitConfig.BaseBranchName)
+	c.GitConfig.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GitConfig.BaseBranchName)
+
+	c.GitConfig.FolderPath = "../" + c.GitConfig.NewBranchName
+
 }
 
-func validateConfig(c *TreekangaAddConfig) {
+func validateConfig(c *com.TreekangaAddConfig) {
 	// make sure new branch name is included
 	if len(c.Args) == 1 {
 		c.GitConfig.NewBranchName = c.Args[0]
@@ -222,23 +225,28 @@ func validateConfig(c *TreekangaAddConfig) {
 	}
 
 	// if a path is provided, be sure it exists
-	if c.Flags.Path != "" {
-		log.Debug(fmt.Sprintf("inputted path: %s ", c.Flags.Path))
-		_, err := os.Stat(c.Flags.Path)
+	if c.Flags.Directory != nil {
+		log.Debug(fmt.Sprintf("inputted path: %s ", c.Flags.Directory))
+		_, err := os.Stat(*c.Flags.Directory)
 		if err != nil {
 			log.Fatal("path does not exist")
 		}
 	}
 
+	//baseBranch must exist
+	if !c.GitConfig.BaseBranchExistsLocally && !c.GitConfig.BaseBranchExistsRemotely {
+		log.Fatal("Base branch does not exist locally or remotely")
+	}
+
 }
 
-func getListOfZoxideEntries(branchName string, parentDir string, foldersToAddFromConfig []string, directoryReader directoryReader.DirectoryReader) []string {
-	baseName := parentDir + "/" + branchName
+func getListOfZoxideEntries(c *com.ZoxideConfig) []string {
+	baseName := c.ParentDir + "/" + c.NewBranchName
 
 	var foldersToAdd []string
 	foldersToAdd = append(foldersToAdd, baseName)
 
-	foldersToAdd = addConfigFolders(foldersToAdd, foldersToAddFromConfig, baseName, directoryReader)
+	foldersToAdd = addConfigFolders(foldersToAdd, c.FoldersToAdd, baseName, c.DirectoryReader)
 
 	return foldersToAdd
 }
