@@ -15,22 +15,15 @@ const tempZoxideName = "temp_treekanga_worktree"
 
 // TODO: make a a function to add the directory
 type Git interface {
-	ShowTopLevel(name string) (bool, string, error)
-	GitCommonDir(name string) (bool, string, error)
-	Clone(name string) (string, error)
-	GetRemoteBranches(string) ([]string, error)
-	GetLocalBranches(string) ([]string, error)
+	GetRemoteBranches(*string) ([]string, error)
+	GetLocalBranches(*string) ([]string, error)
 	GetWorktrees() ([]string, error)
 	RemoveWorktree(string) (string, error)
 	AddWorktree(c *com.TreekangaAddConfig) error
 	GetRepoName(path string) (string, error)
-	FetchOrigin(branch string, path string) error
 	CloneBare(string, string) error
-	PullBranch(url string) error
-	CreateTempBranch(path string) error
-	DeleteBranch(branch string, path string) error
 	DeleteBranchRef(branch string, path string) error
-	ConfigureGitBare() error
+	ConfigureGitBare(path string) error
 }
 
 type RealGit struct {
@@ -41,51 +34,27 @@ func NewGit(shell shell.Shell) Git {
 	return &RealGit{shell}
 }
 
-func (g *RealGit) ShowTopLevel(path string) (bool, string, error) {
-	out, err := g.shell.Cmd("git", "-C", path, "rev-parse", "--show-toplevel")
-	if err != nil {
-		return false, "", err
-	}
-	return true, out, nil
-}
-
-func (g *RealGit) GitCommonDir(path string) (bool, string, error) {
-	out, err := g.shell.Cmd("git", "-C", path, "rev-parse", "--git-common-dir")
-	if err != nil {
-		return false, "", err
-	}
-	return true, out, nil
-}
-
-func (g *RealGit) Clone(name string) (string, error) {
-	out, err := g.shell.Cmd("git", "clone", name)
-	if err != nil {
-		return "", err
-	}
-	return out, nil
-}
-
-func (g *RealGit) GetRemoteBranches(path string) ([]string, error) {
+func (g *RealGit) GetRemoteBranches(path *string) ([]string, error) {
 	// prune
-	fetchCmd := getBaseCommandWithOrWithoutPath(path)
+	fetchCmd := getBaseArguementsWithOrWithoutPath(path)
 	fetchCmd = append(fetchCmd, "fetch", "--prune")
 	g.shell.Cmd("git", fetchCmd...)
 
 	// fetch
-	fetchCmd2 := getBaseCommandWithOrWithoutPath(path)
+	fetchCmd2 := getBaseArguementsWithOrWithoutPath(path)
 	fetchCmd2 = append(fetchCmd2, "fetch", "origin")
 	g.shell.Cmd("git", fetchCmd2...)
 
 	//get all branches
-	branchCmd := getBaseCommandWithOrWithoutPath(path)
+	branchCmd := getBaseArguementsWithOrWithoutPath(path)
 	branchCmd = append(branchCmd, "branch", "-r", "--format=%(refname:short)")
 	list, err := g.shell.ListCmd("git", branchCmd...)
 	return list, err
 }
 
-func (g *RealGit) GetLocalBranches(path string) ([]string, error) {
-	gitCmd := getBaseCommandWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "branch", "--format=%(refname:short)")
+func (g *RealGit) GetLocalBranches(path *string) ([]string, error) {
+	gitCmd := getBaseArguementsWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "branch", "--format='%(refname:short)'")
 	branches, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		return nil, err
@@ -110,7 +79,7 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 }
 
 func (g *RealGit) AddWorktree(c *com.TreekangaAddConfig) error {
-	gitCommand := getBaseCommandWithOrWithoutPath(*c.Flags.Directory)
+	gitCommand := getBaseArguementsWithOrWithoutPath(c.Flags.Directory)
 	gitCommand = append(gitCommand, "worktree", "add", c.GitConfig.FolderPath)
 
 	// create worktree off of local branch
@@ -146,16 +115,6 @@ func (g *RealGit) GetRepoName(path string) (string, error) {
 	return repoName, nil
 }
 
-func (g *RealGit) FetchOrigin(branch string, path string) error {
-	gitCmd := getBaseCommandWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "fetch", "origin", branch)
-	_, err := g.shell.Cmd("git", gitCmd...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (g *RealGit) CloneBare(url string, folderName string) error {
 	_, err := g.shell.Cmd("git", "clone", "--bare", url, folderName)
 	if err != nil {
@@ -164,28 +123,9 @@ func (g *RealGit) CloneBare(url string, folderName string) error {
 	return nil
 }
 
-func (g *RealGit) PullBranch(url string) error {
-	//TODO: need to make this configurable to be run from a worktree
-	_, err := g.shell.Cmd("git", "-c", "/Users/gkrohn/code/platform_work/development", "pull", url)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (g *RealGit) CreateTempBranch(path string) error {
-	gitCmd := getBaseCommandWithOrWithoutPath(path)
+	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
 	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
-	_, err := g.shell.Cmd("git", gitCmd...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (g *RealGit) DeleteBranch(branch string, path string) error {
-	gitCmd := getBaseCommandWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "checkout", "-d", branch)
 	_, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
 		return err
@@ -202,19 +142,21 @@ func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	return nil
 }
 
-func (g *RealGit) ConfigureGitBare() error {
-	_, err := g.shell.Cmd("git", "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
+func (g *RealGit) ConfigureGitBare(path string) error {
+	//This is really ugly, but necessary to set up the bare repo correctly.  The issue was trying
+	//to get the shell to keep the "" around the +refs...
+	_, err := g.shell.Cmd("sh", "-c", fmt.Sprintf(`git -C %s config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"`, path))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func getBaseCommandWithOrWithoutPath(path string) []string {
+func getBaseArguementsWithOrWithoutPath(path *string) []string {
 	gitCommand := make([]string, 0)
 
-	if path != "" {
-		gitCommand = append(gitCommand, "-C", path)
+	if path != nil {
+		gitCommand = append(gitCommand, "-C", *path)
 	}
 
 	return gitCommand

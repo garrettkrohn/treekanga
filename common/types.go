@@ -22,8 +22,8 @@ type GitConfig struct {
 	NewBranchName            string
 	BaseBranchName           string
 	RepoName                 string
-	RemoteBranches           []string
-	LocalBranches            []string
+	NumOfRemoteBranches      int
+	NumOfLocalBranches       int
 	NewBranchExistsLocally   bool
 	NewBranchExistsRemotely  bool
 	BaseBranchExistsLocally  bool

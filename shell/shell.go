@@ -2,10 +2,11 @@ package shell
 
 import (
 	"bytes"
-	"github.com/charmbracelet/log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/garrettkrohn/treekanga/execwrap"
 )

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -15,9 +16,10 @@ import (
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 
+	"slices"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"slices"
 )
 
 var (
@@ -70,7 +72,8 @@ var addCmd = &cobra.Command{
 
 		// pull, err := cmd.Flags().GetBool("pull")
 
-		log.Debug("Adding worktree with config: %+v", c)
+		log.Debug("Adding worktree with config:")
+		PrintConfig(c)
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
@@ -182,30 +185,39 @@ func setWorkingAndParentDir(c *com.TreekangaAddConfig) {
 
 func getGitConfig(c *com.TreekangaAddConfig) {
 
+	if len(c.Args) == 1 {
+		c.GitConfig.NewBranchName = c.Args[0]
+	} else {
+		log.Fatal("please include news branch name as an argument")
+	}
+
 	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
 	util.CheckError(err)
 	c.GitConfig.RepoName = repoName
 
 	if c.Flags.BaseBranch != nil {
+		c.GitConfig.BaseBranchName = *c.Flags.BaseBranch
+	} else {
 		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
+		c.GitConfig.BaseBranchName = baseBranch
 	}
-	c.GitConfig.BaseBranchName = baseBranch
 
 	t := transformer.NewTransformer()
 
-	// move to git config
-	remoteBranches, err := deps.Git.GetRemoteBranches(c.GitConfig.BaseBranchName)
+	remoteBranches, err := deps.Git.GetRemoteBranches(c.Flags.Directory)
 	util.CheckError(err)
 	cleanRemoteBranches := t.RemoveOriginPrefix(remoteBranches)
-	// c.GitConfig.RemoteBranches = cleanRemoteBranches
+	log.Debug(cleanRemoteBranches)
+	c.GitConfig.NumOfRemoteBranches = len(cleanRemoteBranches)
 
-	localBranches, err := deps.Git.GetLocalBranches(c.GitConfig.BaseBranchName)
+	localBranches, err := deps.Git.GetLocalBranches(c.Flags.Directory)
 	util.CheckError(err)
 	cleanLocalBranches := t.RemoveQuotes(localBranches)
-	// c.GitConfig.LocalBranches = cleanLocalBranches
+	log.Debug(cleanLocalBranches)
+	c.GitConfig.NumOfLocalBranches = len(cleanLocalBranches)
 
 	c.GitConfig.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GitConfig.NewBranchName)
 	c.GitConfig.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GitConfig.NewBranchName)
@@ -217,12 +229,6 @@ func getGitConfig(c *com.TreekangaAddConfig) {
 }
 
 func validateConfig(c *com.TreekangaAddConfig) {
-	// make sure new branch name is included
-	if len(c.Args) == 1 {
-		c.GitConfig.NewBranchName = c.Args[0]
-	} else {
-		log.Fatal("please include news branch name as an argument")
-	}
 
 	// if a path is provided, be sure it exists
 	if c.Flags.Directory != nil {
@@ -291,6 +297,41 @@ func addZoxideEntries(folders []string) {
 		util.CheckError(err)
 	}
 
+}
+
+func PrintConfig(config com.TreekangaAddConfig) {
+	printStruct(reflect.ValueOf(config), 0)
+}
+
+func printStruct(v reflect.Value, indent int) {
+	t := v.Type()
+
+	if v.Kind() == reflect.Struct {
+		fmt.Printf("%s%s: {\n", getIndent(indent), t.Name())
+		for i := 0; i < v.NumField(); i++ {
+			field := t.Field(i)
+			value := v.Field(i)
+
+			if value.Kind() == reflect.Struct {
+				printStruct(value, indent+1)
+			} else if value.Kind() == reflect.Ptr {
+				if !value.IsNil() {
+					fmt.Printf("%s%s: %v\n", getIndent(indent+1), field.Name, value.Elem())
+				} else {
+					fmt.Printf("%s%s: nil\n", getIndent(indent+1), field.Name)
+				}
+			} else {
+				fmt.Printf("%s%s: %v\n", getIndent(indent+1), field.Name, value)
+			}
+		}
+		fmt.Printf("%s}\n", getIndent(indent))
+	} else {
+		fmt.Println("Provided value is not a struct")
+	}
+}
+
+func getIndent(indent int) string {
+	return strings.Repeat("  ", indent)
 }
 
 func init() {
