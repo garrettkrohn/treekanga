@@ -73,7 +73,7 @@ func cleanWorktrees(git git.Git, transformer *transformer.RealTransformer, filte
 }
 
 func getRemoteBranches(git git.Git, transformer *transformer.RealTransformer) []string {
-	branches, error := git.GetRemoteBranches("")
+	branches, error := git.GetRemoteBranches(nil)
 	if error != nil {
 		log.Fatal(error)
 	}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/garrettkrohn/treekanga/git"
@@ -42,7 +43,13 @@ func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
 	spinner.Action(func() {
 		err := deps.Git.CloneBare(url, folderName)
 		util.CheckError(err)
-		deps.Git.ConfigureGitBare()
+
+		workingDir, err := os.Getwd()
+		util.CheckError(err)
+
+		barePath := workingDir + "/" + folderName
+
+		deps.Git.ConfigureGitBare(barePath)
 	})
 	spinner.Run()
 }

@@ -170,7 +170,7 @@ func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
 	filter filter.Filter) []worktreeobj.WorktreeObj {
 
 	log.Info("filtering local branches only")
-	branches, err := deps.Git.GetRemoteBranches("")
+	branches, err := deps.Git.GetRemoteBranches(nil)
 	util.CheckError(err)
 	cleanedBranches := transformer.RemoveOriginPrefix(branches)
 	worktrees = filter.GetBranchNoMatchList(cleanedBranches, worktrees)
