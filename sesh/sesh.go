@@ -12,6 +12,7 @@ import (
 
 type Sesh interface {
 	SeshConnect(c *com.AddConfig)
+	GetZoxidePath(c *com.AddConfig) string
 }
 
 type RealSesh struct {
@@ -22,22 +23,21 @@ func NewSesh(shell shell.Shell) Sesh {
 	return &RealSesh{shell}
 }
 
-func (r *RealSesh) SeshConnect(c *com.AddConfig) {
-
-	log.Debug("connecting to: %s", c.Flags.Connect)
-
+func (r *RealSesh) GetZoxidePath(c *com.AddConfig) string {
 	shortestZoxide := slices.Min(c.ZoxideConfig.FoldersToAdd)
 	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Connect)
 	if subFolderIsValid {
-		zoxidePath := shortestZoxide + "/" + *c.Flags.Connect
+		zoxidePath := c.ParentDir + "/" + c.ZoxideConfig.NewBranchName + "/" + *c.Flags.Connect
 		log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
-		_, err := r.shell.Cmd("sesh", "connect", zoxidePath)
-		utility.CheckError(err)
-		// deps.Sesh.SeshConnect(zoxidePath)
+		return zoxidePath
 	} else {
 		log.Info(fmt.Sprintf("Sesh connect to %s", shortestZoxide))
-		_, err := r.shell.Cmd("sesh", "connect", shortestZoxide)
-		utility.CheckError(err)
-		// deps.Sesh.SeshConnect(shortestZoxide)
+		return c.ParentDir + "/" + c.ZoxideConfig.NewBranchName
 	}
+}
+
+func (r *RealSesh) SeshConnect(c *com.AddConfig) {
+	zoxidePath := r.GetZoxidePath(c)
+	_, err := r.shell.Cmd("sesh", "connect", zoxidePath)
+	utility.CheckError(err)
 }
