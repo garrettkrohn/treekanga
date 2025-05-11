@@ -5,11 +5,14 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	com "github.com/garrettkrohn/treekanga/common"
 )
 
 func PrintConfig(config com.AddConfig) {
-	printStruct(reflect.ValueOf(config), 0)
+	if log.GetLevel() == log.DebugLevel {
+		printStruct(reflect.ValueOf(config), 0)
+	}
 }
 
 func printStruct(v reflect.Value, indent int) {
