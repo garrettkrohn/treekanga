@@ -1,4 +1,4 @@
-package sesh
+package connector
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ func TestSeshConnectNoMatch(t *testing.T) {
 	//Arrange
 	ms := shell.NewMockShell(t)
 	c := getTestAddConfig()
-	s := NewSesh(ms)
+	s := NewConnector(ms)
 
 	connect := "x"
 	c.Flags.Connect = &connect
@@ -29,7 +29,7 @@ func TestSeshConnectMatch(t *testing.T) {
 	//Arrange
 	ms := shell.NewMockShell(t)
 	c := getTestAddConfig()
-	s := NewSesh(ms)
+	s := NewConnector(ms)
 
 	connect := "cmd"
 	c.Flags.Connect = &connect

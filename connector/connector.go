@@ -1,4 +1,4 @@
-package sesh
+package connector
 
 import (
 	"fmt"
@@ -10,20 +10,22 @@ import (
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
-type Sesh interface {
+type Connector interface {
 	SeshConnect(c *com.AddConfig)
+	VsCodeConnect(c *com.AddConfig)
+	CursorConnect(c *com.AddConfig)
 	GetZoxidePath(c *com.AddConfig) string
 }
 
-type RealSesh struct {
+type RealConnector struct {
 	shell shell.Shell
 }
 
-func NewSesh(shell shell.Shell) Sesh {
-	return &RealSesh{shell}
+func NewConnector(shell shell.Shell) Connector {
+	return &RealConnector{shell}
 }
 
-func (r *RealSesh) GetZoxidePath(c *com.AddConfig) string {
+func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
 	shortestZoxide := slices.Min(c.ZoxideConfig.FoldersToAdd)
 	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Connect)
 	if subFolderIsValid {
@@ -36,8 +38,24 @@ func (r *RealSesh) GetZoxidePath(c *com.AddConfig) string {
 	}
 }
 
-func (r *RealSesh) SeshConnect(c *com.AddConfig) {
+func (r *RealConnector) SeshConnect(c *com.AddConfig) {
 	zoxidePath := r.GetZoxidePath(c)
 	_, err := r.shell.Cmd("sesh", "connect", zoxidePath)
 	utility.CheckError(err)
+}
+
+func (r *RealConnector) VsCodeConnect(c *com.AddConfig) {
+	addPath := getCodeAndCursorPath(c)
+	_, err := r.shell.Cmd("code", addPath)
+	utility.CheckError(err)
+}
+
+func (r *RealConnector) CursorConnect(c *com.AddConfig) {
+	addPath := getCodeAndCursorPath(c)
+	_, err := r.shell.Cmd("cursor", addPath)
+	utility.CheckError(err)
+}
+
+func getCodeAndCursorPath(c *com.AddConfig) string {
+	return c.ZoxideConfig.ParentDir + "/" + c.ZoxideConfig.NewBranchName
 }

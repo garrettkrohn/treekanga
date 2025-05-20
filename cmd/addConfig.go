@@ -52,11 +52,11 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	util.CheckError(err)
 
 	// Refactor connect
-	connect, err := cmd.Flags().GetString("connect")
-	if connect == "" {
+	sesh, err := cmd.Flags().GetString("sesh")
+	if sesh == "" {
 		flags.Connect = nil
 	} else {
-		flags.Connect = &connect
+		flags.Connect = &sesh
 	}
 	util.CheckError(err)
 
@@ -66,6 +66,22 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 		flags.Pull = nil
 	} else {
 		flags.Pull = &pull
+	}
+	util.CheckError(err)
+
+	cursor, err := cmd.Flags().GetBool("cursor")
+	if err != nil {
+		flags.Cursor = nil
+	} else {
+		flags.Cursor = &cursor
+	}
+	util.CheckError(err)
+
+	vscode, err := cmd.Flags().GetBool("vscode")
+	if err != nil {
+		flags.VsCode = nil
+	} else {
+		flags.VsCode = &vscode
 	}
 	util.CheckError(err)
 
@@ -94,7 +110,7 @@ func getGitConfig(c *com.AddConfig) {
 	if len(c.Args) == 1 {
 		c.GitConfig.NewBranchName = c.Args[0]
 	} else {
-		log.Fatal("please include news branch name as an argument")
+		log.Fatal("please include new branch name as an argument")
 	}
 
 	repoName, err := deps.Git.GetRepoName(c.WorkingDir)

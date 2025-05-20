@@ -16,6 +16,8 @@ type AddCmdFlags struct {
 	BaseBranch *string
 	Pull       *bool
 	Connect    *string
+	Cursor     *bool
+	VsCode     *bool
 }
 
 type GitConfig struct {
