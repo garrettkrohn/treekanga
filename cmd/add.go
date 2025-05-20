@@ -47,7 +47,18 @@ var addCmd = &cobra.Command{
 		deps.Zoxide.AddZoxideEntries(&c.ZoxideConfig)
 
 		if c.Flags.Connect != nil {
-			deps.Sesh.SeshConnect(&c)
+			deps.Connector.SeshConnect(&c)
+			return
+		}
+
+		if c.Flags.Cursor != nil {
+			deps.Connector.CursorConnect(&c)
+			return
+		}
+
+		if c.Flags.VsCode != nil {
+			deps.Connector.VsCodeConnect(&c)
+			return
 		}
 	},
 }
@@ -55,7 +66,9 @@ var addCmd = &cobra.Command{
 func init() {
 
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
-	addCmd.Flags().StringP("connect", "c", "", "Automatically connect to a sesh upon creation")
+	addCmd.Flags().BoolP("cursor", "c", false, "Open up new worktree in cursor")
+	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
+	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
 }

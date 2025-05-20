@@ -3,11 +3,11 @@ package cmd
 import (
 	"os"
 
+	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
-	"github.com/garrettkrohn/treekanga/sesh"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
@@ -17,7 +17,7 @@ type Dependencies struct {
 	Git             git.Git
 	Zoxide          zoxide.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
-	Sesh            sesh.Sesh
+	Connector       connector.Connector
 }
 
 var (
@@ -28,7 +28,7 @@ var (
 func NewRootCmd(git git.Git,
 	zoxide zoxide.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
-	sesh sesh.Sesh,
+	sesh connector.Connector,
 	version string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "treekanga",
@@ -40,7 +40,7 @@ func NewRootCmd(git git.Git,
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
-				Sesh:            sesh,
+				Connector:       sesh,
 			}
 			// Set the ENV environment variable based on the log level flag
 			// if logLevel != "" {
@@ -68,10 +68,10 @@ func Execute(version string) {
 	shell := shell.NewShell(execWrap)
 	git := git.NewGit(shell)
 	zoxide := zoxide.NewZoxide(shell)
-	sesh := sesh.NewSesh(shell)
+	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader, sesh, version)
+	rootCmd := NewRootCmd(git, zoxide, directoryReader, connector, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)
