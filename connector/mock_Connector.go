@@ -20,6 +20,39 @@ func (_m *MockConnector) EXPECT() *MockConnector_Expecter {
 	return &MockConnector_Expecter{mock: &_m.Mock}
 }
 
+// CursorConnect provides a mock function with given fields: c
+func (_m *MockConnector) CursorConnect(c *common.AddConfig) {
+	_m.Called(c)
+}
+
+// MockConnector_CursorConnect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CursorConnect'
+type MockConnector_CursorConnect_Call struct {
+	*mock.Call
+}
+
+// CursorConnect is a helper method to define mock.On call
+//   - c *common.AddConfig
+func (_e *MockConnector_Expecter) CursorConnect(c interface{}) *MockConnector_CursorConnect_Call {
+	return &MockConnector_CursorConnect_Call{Call: _e.mock.On("CursorConnect", c)}
+}
+
+func (_c *MockConnector_CursorConnect_Call) Run(run func(c *common.AddConfig)) *MockConnector_CursorConnect_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*common.AddConfig))
+	})
+	return _c
+}
+
+func (_c *MockConnector_CursorConnect_Call) Return() *MockConnector_CursorConnect_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockConnector_CursorConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_CursorConnect_Call {
+	_c.Run(run)
+	return _c
+}
+
 // GetZoxidePath provides a mock function with given fields: c
 func (_m *MockConnector) GetZoxidePath(c *common.AddConfig) string {
 	ret := _m.Called(c)
@@ -95,6 +128,39 @@ func (_c *MockConnector_SeshConnect_Call) Return() *MockConnector_SeshConnect_Ca
 }
 
 func (_c *MockConnector_SeshConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_SeshConnect_Call {
+	_c.Run(run)
+	return _c
+}
+
+// VsCodeConnect provides a mock function with given fields: c
+func (_m *MockConnector) VsCodeConnect(c *common.AddConfig) {
+	_m.Called(c)
+}
+
+// MockConnector_VsCodeConnect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VsCodeConnect'
+type MockConnector_VsCodeConnect_Call struct {
+	*mock.Call
+}
+
+// VsCodeConnect is a helper method to define mock.On call
+//   - c *common.AddConfig
+func (_e *MockConnector_Expecter) VsCodeConnect(c interface{}) *MockConnector_VsCodeConnect_Call {
+	return &MockConnector_VsCodeConnect_Call{Call: _e.mock.On("VsCodeConnect", c)}
+}
+
+func (_c *MockConnector_VsCodeConnect_Call) Run(run func(c *common.AddConfig)) *MockConnector_VsCodeConnect_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*common.AddConfig))
+	})
+	return _c
+}
+
+func (_c *MockConnector_VsCodeConnect_Call) Return() *MockConnector_VsCodeConnect_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockConnector_VsCodeConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_VsCodeConnect_Call {
 	_c.Run(run)
 	return _c
 }
