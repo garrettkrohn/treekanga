@@ -51,16 +51,14 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	}
 	util.CheckError(err)
 
-	// Refactor connect
 	sesh, err := cmd.Flags().GetString("sesh")
 	if sesh == "" {
-		flags.Connect = nil
+		flags.Sesh = nil
 	} else {
-		flags.Connect = &sesh
+		flags.Sesh = &sesh
 	}
 	util.CheckError(err)
 
-	// Refactor pull
 	pull, err := cmd.Flags().GetBool("pull")
 	if err != nil {
 		flags.Pull = nil

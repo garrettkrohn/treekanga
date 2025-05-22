@@ -15,7 +15,7 @@ type AddCmdFlags struct {
 	Directory  *string
 	BaseBranch *string
 	Pull       *bool
-	Connect    *string
+	Sesh       *string
 	Cursor     *bool
 	VsCode     *bool
 }

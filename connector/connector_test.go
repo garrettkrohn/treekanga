@@ -15,7 +15,7 @@ func TestSeshConnectNoMatch(t *testing.T) {
 	s := NewConnector(ms)
 
 	connect := "x"
-	c.Flags.Connect = &connect
+	c.Flags.Sesh = &connect
 
 	//Act
 	res := s.GetZoxidePath(&c)
@@ -32,7 +32,7 @@ func TestSeshConnectMatch(t *testing.T) {
 	s := NewConnector(ms)
 
 	connect := "cmd"
-	c.Flags.Connect = &connect
+	c.Flags.Sesh = &connect
 
 	//Act
 	res := s.GetZoxidePath(&c)
@@ -48,7 +48,7 @@ func getTestAddConfig() com.AddConfig {
 			Directory:  nil,
 			BaseBranch: nil,
 			Pull:       nil,
-			Connect:    nil,
+			Sesh:       nil,
 		},
 		Args:       []string{"test"},
 		GitConfig:  com.GitConfig{},
