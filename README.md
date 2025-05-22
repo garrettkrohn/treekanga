@@ -1,27 +1,46 @@
-This is a cli application to manage git worktrees
+# Treekanga
 
-# How to Install
+Treekanga is a powerful CLI tool for managing Git worktrees with ease. It simplifies the creation, management, and cleanup of worktrees, enhancing your Git workflow.
 
-`brew install garrettkrohn/treekanga/treekanga`
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/garrettkrohn/treekanga)
+![License](https://img.shields.io/github/license/garrettkrohn/treekanga)
+
+## Features
+
+- Create new worktrees with smart branch handling
+- List all worktrees in a repository
+- Clean up stale worktrees
+- Delete worktrees with an interactive selector
+- Clone repositories as bare worktrees
+- Zoxide integration for quick navigation
+- Simple YAML configuration
+
+## Installation
+
+### Homebrew (macOS and Linux)
+
+```bash
+brew install garrettkrohn/treekanga/treekanga
+```
 
 ## Configuration
 
-Create a yml file in this location:
-`.config/treekanga/treekanga.yml`
+Create a YAML configuration file at `~/.config/treekanga/treekanga.yml`:
 
 ```yaml
-# example Configuration
+# Example Configuration
 repos:
-  # This is the name of the repository
+  # Repository name
   exampleRepository:
-    # This is the default branch that will be used in the add command if a baseBranch is not defined
+    # Default branch used when no base branch is specified
     defaultBranch: development
-    # This is a list of folders that will be added to zoxide
+    # Folders to register with zoxide for quick navigation
     zoxideFolders:
       - frontEnd
-      - frontEnd/* # this will add all folders immediately within frontEnd
+      - frontEnd/* # adds all folders immediately within frontEnd
       - backEnd
       - backEnd/application/src/main/resources/db/migration
+  
   treekanga:
     defaultBranch: main
     zoxideFolders:
@@ -29,56 +48,68 @@ repos:
       - git
 ```
 
-## Commands
+## Usage
 
-### Add
+### Add a Worktree
 
-`treekanga add example_branch -b example_base_branch`
+Create a new worktree with a branch:
 
-You can define the branch and base branch directly from the command line
+```bash
+# Specify branch and base branch
+treekanga add example_branch -b example_base_branch
 
-`treekanga add example_branch`
+# Use default base branch from config
+treekanga add example_branch
+```
 
-logic for branche / worktrees:
-- if example_branch exists locally: create a worktree with that branch
-- if example_branch exists remotely: create a worktree with a new local version
-  of that branch
+Branch handling logic:
+- If `example_branch` exists locally: Create a worktree with that branch
+- If `example_branch` exists remotely: Create a worktree with a new local version of that branch
+- With base branch specified:
+  - If base branch exists locally: Create a new branch off the local base branch
+  - If using the pull flag (`-p`): Create a new branch off the remote base branch
+  - If base branch doesn't exist locally: Create new worktree with new branch off remote base branch
 
-`treekanga add example_branch -b base_branch`
-error will be thrown if base_branch doesn't exist locally or remotely
-- if the baseBranch exists locally: create a new example_branch off of the local
-  base_branch
-- if it exists locally and the pull flag (-p) is used: create a new 
-  example_branch off of the remote base_branch
-- if baseBranch doesn't exist locally: create new worktree with new
-example_branch off of remote base_branch
+### List Worktrees
 
-`treekanga add`
+Display all worktrees in the current repository:
 
-You can also input via prompts
+```bash
+treekanga list
+```
 
-### List
+### Clean Worktrees
 
-`treekanga list`
+Remove worktrees that no longer have a corresponding remote branch:
 
-List of all worktrees of repository
+```bash
+treekanga clean
+```
 
-### Clean
+### Delete Worktrees
 
-`treekanga clean`
+Interactive deletion of worktrees:
 
-This will check what worktrees do not have a remote branch, ex. local
-branches that have been merged and remote branch deleted
+```bash
+treekanga delete
+```
 
-### Delete
+### Clone a Repository
 
-`treekanga delete`
+Clone a repository as a bare worktree:
 
-This will bring up all worktrees and allow you to select worktree(s)
-to delete
+```bash
+treekanga clone https://www.github.com/example/example
+```
 
-### Clone
+## Logging
 
-`treekanga clone https://www.github.com/example/example`
+Control log verbosity:
 
-This will create a bare worktree for the given url
+```bash
+treekanga --log debug [command]
+```
+
+## Author
+
+Garrett Krohn
