@@ -27,9 +27,9 @@ func NewConnector(shell shell.Shell) Connector {
 
 func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
 	shortestZoxide := slices.Min(c.ZoxideConfig.FoldersToAdd)
-	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Connect)
+	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Sesh)
 	if subFolderIsValid {
-		zoxidePath := c.ParentDir + "/" + c.ZoxideConfig.NewBranchName + "/" + *c.Flags.Connect
+		zoxidePath := c.ParentDir + "/" + c.ZoxideConfig.NewBranchName + "/" + *c.Flags.Sesh
 		log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
 		return zoxidePath
 	} else {

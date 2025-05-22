@@ -46,19 +46,25 @@ var addCmd = &cobra.Command{
 
 		deps.Zoxide.AddZoxideEntries(&c.ZoxideConfig)
 
-		if c.Flags.Connect != nil {
+		if c.Flags.Sesh != nil {
 			deps.Connector.SeshConnect(&c)
 			return
 		}
 
 		if c.Flags.Cursor != nil {
-			deps.Connector.CursorConnect(&c)
-			return
+			connect := *c.Flags.Cursor
+			if connect {
+				deps.Connector.CursorConnect(&c)
+				return
+			}
 		}
 
 		if c.Flags.VsCode != nil {
-			deps.Connector.VsCodeConnect(&c)
-			return
+			connect := *c.Flags.VsCode
+			if connect {
+				deps.Connector.VsCodeConnect(&c)
+				return
+			}
 		}
 	},
 }
