@@ -48,14 +48,12 @@ var addCmd = &cobra.Command{
 
 		if c.Flags.Sesh != nil {
 			deps.Connector.SeshConnect(&c)
-			return
 		}
 
 		if c.Flags.Cursor != nil {
 			connect := *c.Flags.Cursor
 			if connect {
 				deps.Connector.CursorConnect(&c)
-				return
 			}
 		}
 
@@ -63,7 +61,6 @@ var addCmd = &cobra.Command{
 			connect := *c.Flags.VsCode
 			if connect {
 				deps.Connector.VsCodeConnect(&c)
-				return
 			}
 		}
 	},
