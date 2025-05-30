@@ -12,7 +12,7 @@ import (
 type Zoxide interface {
 	AddPath(path string) error
 	RemovePath(path string) error
-	AddZoxideEntries(c *common.ZoxideConfig)
+	AddZoxideEntries(c *common.AddConfig)
 }
 
 type RealZoxide struct {
@@ -33,13 +33,13 @@ func (r *RealZoxide) RemovePath(path string) error {
 	return err
 }
 
-func (r *RealZoxide) AddZoxideEntries(c *common.ZoxideConfig) {
-	baseName := c.ParentDir + "/" + c.NewBranchName
+func (r *RealZoxide) AddZoxideEntries(c *common.AddConfig) {
+	baseName := c.GetZoxideBasePath()
 
 	var foldersToAdd []string
 	foldersToAdd = append(foldersToAdd, baseName)
 
-	foldersToAdd = addConfigFolders(foldersToAdd, c.FoldersToAdd, baseName, c.DirectoryReader)
+	foldersToAdd = addConfigFolders(foldersToAdd, c.ZoxideFolders, baseName, c.DirectoryReader)
 
 	for _, folder := range foldersToAdd {
 		err := r.AddPath(folder)

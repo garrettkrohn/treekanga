@@ -80,20 +80,20 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 
 func (g *RealGit) AddWorktree(c *com.AddConfig) error {
 	gitCommand := getBaseArguementsWithOrWithoutPath(c.Flags.Directory)
-	gitCommand = append(gitCommand, "worktree", "add", c.GitConfig.FolderPath)
+	gitCommand = append(gitCommand, "worktree", "add", c.GetWorktreePath())
 
 	// create worktree off of local branch
-	if c.GitConfig.NewBranchExistsLocally || c.GitConfig.NewBranchExistsRemotely {
-		gitCommand = append(gitCommand, c.GitConfig.NewBranchName)
-	} else if c.GitConfig.BaseBranchExistsLocally {
-		if c.Flags.Pull != nil {
-			gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, "origin/"+c.GitConfig.BaseBranchName, "--no-track")
+	if c.GitInfo.NewBranchExistsLocally || c.GitInfo.NewBranchExistsRemotely {
+		gitCommand = append(gitCommand, c.GetNewBranchName())
+	} else if c.GitInfo.BaseBranchExistsLocally {
+		if c.ShouldPull() {
+			gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), "origin/"+c.GetBaseBranchName(), "--no-track")
 		} else {
-			gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, c.GitConfig.BaseBranchName)
+			gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), c.GetBaseBranchName())
 
 		}
 	} else {
-		gitCommand = append(gitCommand, "-b", c.GitConfig.NewBranchName, "origin/"+c.GitConfig.BaseBranchName, "--no-track")
+		gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), "origin/"+c.GetBaseBranchName(), "--no-track")
 	}
 
 	output, err := g.shell.Cmd("git", gitCommand...)

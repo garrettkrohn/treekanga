@@ -26,15 +26,20 @@ func NewConnector(shell shell.Shell) Connector {
 }
 
 func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
-	shortestZoxide := slices.Min(c.ZoxideConfig.FoldersToAdd)
-	subFolderIsValid := slices.Contains(c.ZoxideConfig.FoldersToAdd, *c.Flags.Sesh)
-	if subFolderIsValid {
-		zoxidePath := c.ParentDir + "/" + c.ZoxideConfig.NewBranchName + "/" + *c.Flags.Sesh
+	if len(c.ZoxideFolders) == 0 {
+		return c.GetZoxideBasePath()
+	}
+	
+	seshTarget := c.GetSeshTarget()
+	
+	if seshTarget != "" && slices.Contains(c.ZoxideFolders, seshTarget) {
+		zoxidePath := c.GetZoxidePath(seshTarget)
 		log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
 		return zoxidePath
 	} else {
-		log.Info(fmt.Sprintf("Sesh connect to %s", shortestZoxide))
-		return c.ParentDir + "/" + c.ZoxideConfig.NewBranchName
+		basePath := c.GetZoxideBasePath()
+		log.Info(fmt.Sprintf("Sesh connect to %s", basePath))
+		return basePath
 	}
 }
 
@@ -45,17 +50,13 @@ func (r *RealConnector) SeshConnect(c *com.AddConfig) {
 }
 
 func (r *RealConnector) VsCodeConnect(c *com.AddConfig) {
-	addPath := getCodeAndCursorPath(c)
+	addPath := c.GetWorktreePath()
 	_, err := r.shell.Cmd("code", addPath)
 	utility.CheckError(err)
 }
 
 func (r *RealConnector) CursorConnect(c *com.AddConfig) {
-	addPath := getCodeAndCursorPath(c)
+	addPath := c.GetWorktreePath()
 	_, err := r.shell.Cmd("cursor", addPath)
 	utility.CheckError(err)
-}
-
-func getCodeAndCursorPath(c *com.AddConfig) string {
-	return c.ZoxideConfig.ParentDir + "/" + c.ZoxideConfig.NewBranchName
 }

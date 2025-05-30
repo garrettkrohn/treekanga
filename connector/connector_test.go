@@ -50,18 +50,15 @@ func getTestAddConfig() com.AddConfig {
 			Pull:       nil,
 			Sesh:       nil,
 		},
-		Args:       []string{"test"},
-		GitConfig:  com.GitConfig{},
-		WorkingDir: "/Users/gkrohn/code/treekanga_work/treekanga_bare",
-		ParentDir:  "/Users/gkrohn/code/treekanga_work",
-		ZoxideConfig: com.ZoxideConfig{
-			NewBranchName: "test",
-			ParentDir:     "/Users/gkrohn/code/treekanga_work",
-			FoldersToAdd: []string{
-				"cmd",
-				"git",
-			},
-			DirectoryReader: nil, // Replace with actual implementation if needed
+		Args:         []string{"test"},
+		GitInfo:      com.GitInfo{NewBranchName: "test"},
+		WorkingDir:   "/Users/gkrohn/code/treekanga_work/treekanga_bare",
+		ParentDir:    "/Users/gkrohn/code/treekanga_work",
+		WorktreeTargetDir: "/Users/gkrohn/code/treekanga_work/test",
+		ZoxideFolders: []string{
+			"cmd",
+			"git",
 		},
+		DirectoryReader: nil, // Replace with actual implementation if needed
 	}
 }

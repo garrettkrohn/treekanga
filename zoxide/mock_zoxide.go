@@ -67,7 +67,7 @@ func (_c *MockZoxide_AddPath_Call) RunAndReturn(run func(string) error) *MockZox
 }
 
 // AddZoxideEntries provides a mock function with given fields: c
-func (_m *MockZoxide) AddZoxideEntries(c *common.ZoxideConfig) {
+func (_m *MockZoxide) AddZoxideEntries(c *common.AddConfig) {
 	_m.Called(c)
 }
 
@@ -77,14 +77,14 @@ type MockZoxide_AddZoxideEntries_Call struct {
 }
 
 // AddZoxideEntries is a helper method to define mock.On call
-//   - c *common.ZoxideConfig
+//   - c *common.AddConfig
 func (_e *MockZoxide_Expecter) AddZoxideEntries(c interface{}) *MockZoxide_AddZoxideEntries_Call {
 	return &MockZoxide_AddZoxideEntries_Call{Call: _e.mock.On("AddZoxideEntries", c)}
 }
 
-func (_c *MockZoxide_AddZoxideEntries_Call) Run(run func(c *common.ZoxideConfig)) *MockZoxide_AddZoxideEntries_Call {
+func (_c *MockZoxide_AddZoxideEntries_Call) Run(run func(c *common.AddConfig)) *MockZoxide_AddZoxideEntries_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*common.ZoxideConfig))
+		run(args[0].(*common.AddConfig))
 	})
 	return _c
 }
@@ -94,7 +94,7 @@ func (_c *MockZoxide_AddZoxideEntries_Call) Return() *MockZoxide_AddZoxideEntrie
 	return _c
 }
 
-func (_c *MockZoxide_AddZoxideEntries_Call) RunAndReturn(run func(*common.ZoxideConfig)) *MockZoxide_AddZoxideEntries_Call {
+func (_c *MockZoxide_AddZoxideEntries_Call) RunAndReturn(run func(*common.AddConfig)) *MockZoxide_AddZoxideEntries_Call {
 	_c.Run(run)
 	return _c
 }

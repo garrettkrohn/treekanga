@@ -1,14 +1,77 @@
 package common
 
-import "github.com/garrettkrohn/treekanga/directoryReader"
+import (
+	"path/filepath"
+	"github.com/garrettkrohn/treekanga/directoryReader"
+)
 
 type AddConfig struct {
-	Flags        AddCmdFlags
-	Args         []string
-	GitConfig    GitConfig
-	WorkingDir   string
-	ParentDir    string
-	ZoxideConfig ZoxideConfig
+	// Input from user
+	Args  []string
+	Flags AddCmdFlags
+
+	// Resolved paths and directories
+	WorkingDir        string
+	ParentDir         string
+	WorktreeTargetDir string
+
+	// Git repository information
+	GitInfo GitInfo
+
+	// External tool configurations
+	ZoxideFolders   []string
+	DirectoryReader directoryReader.DirectoryReader
+}
+
+// Helper methods for the AddConfig struct
+func (c *AddConfig) GetNewBranchName() string {
+	return c.GitInfo.NewBranchName
+}
+
+func (c *AddConfig) GetBaseBranchName() string {
+	return c.GitInfo.BaseBranchName
+}
+
+func (c *AddConfig) GetRepoName() string {
+	return c.GitInfo.RepoName
+}
+
+func (c *AddConfig) GetWorktreePath() string {
+	return c.WorktreeTargetDir
+}
+
+func (c *AddConfig) GetZoxideBasePath() string {
+	return c.WorktreeTargetDir
+}
+
+func (c *AddConfig) GetZoxidePath(subFolder string) string {
+	if subFolder != "" {
+		return filepath.Join(c.WorktreeTargetDir, subFolder)
+	}
+	return c.WorktreeTargetDir
+}
+
+func (c *AddConfig) ShouldPull() bool {
+	return c.Flags.Pull != nil && *c.Flags.Pull
+}
+
+func (c *AddConfig) ShouldOpenCursor() bool {
+	return c.Flags.Cursor != nil && *c.Flags.Cursor
+}
+
+func (c *AddConfig) ShouldOpenVSCode() bool {
+	return c.Flags.VsCode != nil && *c.Flags.VsCode
+}
+
+func (c *AddConfig) GetSeshTarget() string {
+	if c.Flags.Sesh != nil {
+		return *c.Flags.Sesh
+	}
+	return ""
+}
+
+func (c *AddConfig) HasSeshTarget() bool {
+	return c.Flags.Sesh != nil && *c.Flags.Sesh != ""
 }
 
 type AddCmdFlags struct {
@@ -20,19 +83,18 @@ type AddCmdFlags struct {
 	VsCode     *bool
 }
 
-type GitConfig struct {
+type GitInfo struct {
 	NewBranchName            string
 	BaseBranchName           string
 	RepoName                 string
-	NumOfRemoteBranches      int
-	NumOfLocalBranches       int
 	NewBranchExistsLocally   bool
 	NewBranchExistsRemotely  bool
 	BaseBranchExistsLocally  bool
 	BaseBranchExistsRemotely bool
-	FolderPath               string
 }
 
+// Legacy type alias for backward compatibility during transition
+type GitConfig = GitInfo
 type ZoxideConfig struct {
 	NewBranchName   string
 	ParentDir       string
