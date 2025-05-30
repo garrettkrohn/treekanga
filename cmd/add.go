@@ -42,26 +42,20 @@ var addCmd = &cobra.Command{
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
-		log.Info(fmt.Sprintf("worktree %s created", newBranchName))
+		log.Info(fmt.Sprintf("worktree %s created", c.GetNewBranchName()))
 
-		deps.Zoxide.AddZoxideEntries(&c.ZoxideConfig)
+		deps.Zoxide.AddZoxideEntries(&c)
 
-		if c.Flags.Sesh != nil {
+		if c.HasSeshTarget() {
 			deps.Connector.SeshConnect(&c)
 		}
 
-		if c.Flags.Cursor != nil {
-			connect := *c.Flags.Cursor
-			if connect {
-				deps.Connector.CursorConnect(&c)
-			}
+		if c.ShouldOpenCursor() {
+			deps.Connector.CursorConnect(&c)
 		}
 
-		if c.Flags.VsCode != nil {
-			connect := *c.Flags.VsCode
-			if connect {
-				deps.Connector.VsCodeConnect(&c)
-			}
+		if c.ShouldOpenVSCode() {
+			deps.Connector.VsCodeConnect(&c)
 		}
 	},
 }

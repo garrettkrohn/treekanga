@@ -23,14 +23,8 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 }
 
 func getZoxideConfig(c *com.AddConfig) {
-	c.ZoxideConfig = com.ZoxideConfig{
-
-		NewBranchName:   c.GitConfig.NewBranchName,
-		ParentDir:       c.ParentDir,
-		FoldersToAdd:    viper.GetStringSlice("repos." + c.GitConfig.RepoName + ".zoxideFolders"),
-		DirectoryReader: deps.DirectoryReader,
-	}
-
+	c.ZoxideFolders = viper.GetStringSlice("repos." + c.GetRepoName() + ".zoxideFolders")
+	c.DirectoryReader = deps.DirectoryReader
 }
 
 func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
@@ -106,23 +100,23 @@ func setWorkingAndParentDir(c *com.AddConfig) {
 func getGitConfig(c *com.AddConfig) {
 
 	if len(c.Args) == 1 {
-		c.GitConfig.NewBranchName = c.Args[0]
+		c.GitInfo.NewBranchName = c.Args[0]
 	} else {
 		log.Fatal("please include new branch name as an argument")
 	}
 
 	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
 	util.CheckError(err)
-	c.GitConfig.RepoName = repoName
+	c.GitInfo.RepoName = repoName
 
 	if c.Flags.BaseBranch != nil {
-		c.GitConfig.BaseBranchName = *c.Flags.BaseBranch
+		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
 	} else {
 		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
-		c.GitConfig.BaseBranchName = baseBranch
+		c.GitInfo.BaseBranchName = baseBranch
 	}
 
 	t := transformer.NewTransformer()
@@ -131,21 +125,36 @@ func getGitConfig(c *com.AddConfig) {
 	util.CheckError(err)
 	cleanRemoteBranches := t.RemoveOriginPrefix(remoteBranches)
 	log.Debug(cleanRemoteBranches)
-	c.GitConfig.NumOfRemoteBranches = len(cleanRemoteBranches)
 
 	localBranches, err := deps.Git.GetLocalBranches(c.Flags.Directory)
 	util.CheckError(err)
 	cleanLocalBranches := t.RemoveQuotes(localBranches)
 	log.Debug(cleanLocalBranches)
-	c.GitConfig.NumOfLocalBranches = len(cleanLocalBranches)
 
-	c.GitConfig.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GitConfig.NewBranchName)
-	c.GitConfig.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GitConfig.NewBranchName)
-	c.GitConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GitConfig.BaseBranchName)
-	c.GitConfig.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GitConfig.BaseBranchName)
+	c.GitInfo.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetNewBranchName())
+	c.GitInfo.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetNewBranchName())
+	c.GitInfo.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetBaseBranchName())
+	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
-	c.GitConfig.FolderPath = "../" + c.GitConfig.NewBranchName
+	configWorktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
 
+	if configWorktreeTargetDir != "" {
+		homePath, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Printf("Error getting home directory: %v\n", err)
+			return
+		}
+		c.WorktreeTargetDir = buildConfigWorktreeDir(homePath, configWorktreeTargetDir, c.GetNewBranchName())
+	} else {
+		c.WorktreeTargetDir = "../" + c.GetNewBranchName()
+	}
+}
+
+func buildConfigWorktreeDir(homePath string, configWorktreeTargetDir string, branchName string) string {
+	if configWorktreeTargetDir == "" {
+		return filepath.Join(homePath, branchName)
+	}
+	return filepath.Join(homePath, configWorktreeTargetDir, branchName)
 }
 
 func validateConfig(c *com.AddConfig) {
@@ -160,7 +169,7 @@ func validateConfig(c *com.AddConfig) {
 	}
 
 	//baseBranch must exist
-	if !c.GitConfig.BaseBranchExistsLocally && !c.GitConfig.BaseBranchExistsRemotely {
+	if !c.GitInfo.BaseBranchExistsLocally && !c.GitInfo.BaseBranchExistsRemotely {
 		log.Fatal("Base branch does not exist locally or remotely")
 	}
 
