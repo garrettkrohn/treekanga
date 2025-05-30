@@ -34,6 +34,8 @@ repos:
   exampleRepository:
     # Default branch used when no base branch is specified
     defaultBranch: development
+    #where should treekanga put the worktrees, assumes starting in the $HOME directory
+    worktreeTargetDir: /code 
     # Folders to register with zoxide for quick navigation
     zoxideFolders:
       - frontEnd
