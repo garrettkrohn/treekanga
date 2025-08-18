@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/garrettkrohn/treekanga/transformer"
+	util "github.com/garrettkrohn/treekanga/utility"
 )
 
 type Worktree struct {
@@ -28,7 +29,10 @@ var listCmd = &cobra.Command{
     This is useful for getting an overview of all active worktrees
     before performing operations like deletion or cleanup.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		worktrees, err := listWorktrees()
+		verbose, err := cmd.Flags().GetBool("verbose")
+		util.CheckError(err)
+
+		worktrees, err := buildWorktreeStrings(verbose)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -38,7 +42,7 @@ var listCmd = &cobra.Command{
 	},
 }
 
-func listWorktrees() ([]string, error) {
+func buildWorktreeStrings(verbose bool) ([]string, error) {
 	rawWorktrees, err := deps.Git.GetWorktrees()
 	if err != nil {
 		return nil, err
@@ -49,11 +53,18 @@ func listWorktrees() ([]string, error) {
 
 	var worktreeBranches []string
 	for _, worktree := range worktreeObjects {
-		worktreeBranches = append(worktreeBranches, worktree.BranchName)
+		var branchDisplay string
+		if verbose {
+			branchDisplay = fmt.Sprintf("worktree: %s, branch: %s, fullPath: %s, commitHash: %s", worktree.Folder, worktree.BranchName, worktree.FullPath, worktree.CommitHash)
+		} else {
+			branchDisplay = worktree.BranchName
+		}
+		worktreeBranches = append(worktreeBranches, branchDisplay)
 	}
 
 	return worktreeBranches, nil
 }
 
 func init() {
+	listCmd.Flags().BoolP("verbose", "v", false, "Verbose display of worktrees")
 }

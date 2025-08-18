@@ -19,7 +19,7 @@ func TestListCmd(t *testing.T) {
 	deps.Git = mockGit
 
 	// Execute the function
-	worktrees, err := listWorktrees()
+	worktrees, err := buildWorktreeStrings()
 	assert.NoError(t, err)
 
 	// Verify the output
