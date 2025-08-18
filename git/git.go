@@ -79,32 +79,45 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 }
 
 func (g *RealGit) AddWorktree(c *com.AddConfig) error {
+	// Build base command
 	gitCommand := getBaseArguementsWithOrWithoutPath(c.Flags.Directory)
-	// Use the WorktreeTargetDir directly as it already contains the full path
-	worktreePath := c.GetWorktreePath()
-	gitCommand = append(gitCommand, "worktree", "add", worktreePath)
+	gitCommand = append(gitCommand, "worktree", "add", c.GetWorktreePath())
 
-	// create worktree off of local branch
-	if c.GitInfo.NewBranchExistsLocally || c.GitInfo.NewBranchExistsRemotely {
-		gitCommand = append(gitCommand, c.GetNewBranchName())
-	} else if c.GitInfo.BaseBranchExistsLocally {
-		if c.ShouldPull() {
-			gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), "origin/"+c.GetBaseBranchName(), "--no-track")
-		} else {
-			gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), c.GetBaseBranchName())
+	// Add branch-specific arguments
+	branchArgs := g.determineBranchArguments(c)
+	gitCommand = append(gitCommand, branchArgs...)
 
-		}
-	} else {
-		gitCommand = append(gitCommand, "-b", c.GetNewBranchName(), "origin/"+c.GetBaseBranchName(), "--no-track")
-	}
+	// Log the full command for debugging
+	fullCommand := strings.Join(append([]string{"git"}, gitCommand...), " ")
+	log.Debug("Executing git worktree command", "command", fullCommand)
 
 	output, err := g.shell.Cmd("git", gitCommand...)
-
 	if err != nil {
-		return fmt.Errorf("failed to add worktree: %v, %s", err, output)
+		return fmt.Errorf("failed to add worktree: %v\nCommand: %s\nOutput: %s", err, fullCommand, output)
 	}
 
 	return nil
+}
+
+func (g *RealGit) determineBranchArguments(c *com.AddConfig) []string {
+	// Case 1: Branch already exists (locally or remotely) - just checkout
+	if c.GitInfo.NewBranchExistsLocally || c.GitInfo.NewBranchExistsRemotely {
+		return []string{c.GetNewBranchName()}
+	}
+
+	// Case 2: Base branch exists locally
+	if c.GitInfo.BaseBranchExistsLocally {
+		if c.ShouldPull() {
+			// Create new branch from remote version of base branch
+			return []string{"-b", c.GetNewBranchName(), "origin/" + c.GetBaseBranchName(), "--no-track"}
+		} else {
+			// Create new branch from local version of base branch
+			return []string{"-b", c.GetNewBranchName(), c.GetBaseBranchName()}
+		}
+	}
+
+	// Case 3: Base branch only exists remotely
+	return []string{"-b", c.GetNewBranchName(), "origin/" + c.GetBaseBranchName(), "--no-track"}
 }
 
 // Note: path is figured out in add.go
