@@ -80,7 +80,9 @@ func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
 
 func (g *RealGit) AddWorktree(c *com.AddConfig) error {
 	gitCommand := getBaseArguementsWithOrWithoutPath(c.Flags.Directory)
-	gitCommand = append(gitCommand, "worktree", "add", c.GetWorktreePath())
+	// Construct the full worktree path by joining the target directory with branch name
+	worktreePath := filepath.Join(c.GetWorktreePath(), c.GetNewBranchName())
+	gitCommand = append(gitCommand, "worktree", "add", worktreePath)
 
 	// create worktree off of local branch
 	if c.GitInfo.NewBranchExistsLocally || c.GitInfo.NewBranchExistsRemotely {
