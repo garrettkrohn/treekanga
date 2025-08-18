@@ -1,8 +1,9 @@
 package transformer
 
 import (
-	"github.com/garrettkrohn/treekanga/worktreeObj"
 	"strings"
+
+	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 type transformer interface {
