@@ -179,5 +179,10 @@ func validateConfig(c *com.AddConfig) {
 func getPostScript(c *com.AddConfig) {
 	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
 	util.CheckError(err)
-	c.PostScript = viper.GetString("repos." + repoName + "postScript")
+	postScript := viper.GetString("repos." + repoName + ".postScript")
+	if postScript == "" {
+		log.Debug("no post script found")
+		return
+	}
+	c.PostScript = postScript
 }

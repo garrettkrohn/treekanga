@@ -60,8 +60,8 @@ var addCmd = &cobra.Command{
 
 		if c.HasPostScript() {
 			script := c.GetPostScript()
-			deps.Shell.Cmd(script)
-			log.Info(fmt.Sprintf("post script run with the following command: ", script))
+			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
+			log.Info(fmt.Sprintf("post script run with the following command: %s", script))
 		}
 	},
 }
