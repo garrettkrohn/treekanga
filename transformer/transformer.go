@@ -61,7 +61,7 @@ func (r *RealTransformer) RemoveOriginPrefix(branchStrings []string) []string {
 func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []worktreeobj.WorktreeObj) []string {
 	var stringWorktrees []string
 	for _, worktreeObj := range worktreeObjs {
-		stringWorktrees = append(stringWorktrees, worktreeObj.BranchName)
+		stringWorktrees = append(stringWorktrees, worktreeObj.Folder)
 	}
 	return stringWorktrees
 }

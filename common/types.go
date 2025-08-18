@@ -11,9 +11,10 @@ type AddConfig struct {
 	Flags AddCmdFlags
 
 	// Resolved paths and directories
-	WorkingDir        string
-	ParentDir         string
-	WorktreeTargetDir string
+	WorkingDir            string
+	ParentDir             string
+	WorktreeTargetDir     string
+	SpecifiedWorktreeName string
 
 	// Git repository information
 	GitInfo GitInfo
@@ -89,12 +90,13 @@ func (c *AddConfig) GetPostScript() string {
 }
 
 type AddCmdFlags struct {
-	Directory  *string
-	BaseBranch *string
-	Pull       *bool
-	Sesh       *string
-	Cursor     *bool
-	VsCode     *bool
+	Directory             *string
+	BaseBranch            *string
+	Pull                  *bool
+	Sesh                  *string
+	Cursor                *bool
+	VsCode                *bool
+	SpecifiedWorktreeName *string
 }
 
 type GitInfo struct {
