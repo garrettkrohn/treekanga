@@ -17,8 +17,6 @@ var (
 	baseBranch string
 )
 
-// const tempZoxideName = "temp_treekanga_worktree"
-
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
