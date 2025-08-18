@@ -59,10 +59,10 @@ homebrew_casks:
       email: bot@goreleaser.com
     dependencies:
       - formula: tmux
-      - formula: zoxide
     hooks:
       post:
         install: |
           if OS.mac?
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/treekanga"]
           end
+
