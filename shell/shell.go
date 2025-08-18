@@ -15,7 +15,6 @@ type Shell interface {
 	Cmd(cmd string, arg ...string) (string, error)
 	ListCmd(cmd string, arg ...string) ([]string, error)
 	CmdWithDir(dir string, cmd string, args ...string) (string, error)
-	// SetWorkingDir(workingDir string) error
 }
 
 type RealShell struct {

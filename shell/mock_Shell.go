@@ -88,6 +88,78 @@ func (_c *MockShell_Cmd_Call) RunAndReturn(run func(string, ...string) (string, 
 	return _c
 }
 
+// CmdWithDir provides a mock function with given fields: dir, cmd, args
+func (_m *MockShell) CmdWithDir(dir string, cmd string, args ...string) (string, error) {
+	_va := make([]interface{}, len(args))
+	for _i := range args {
+		_va[_i] = args[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, dir, cmd)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CmdWithDir")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, string, ...string) (string, error)); ok {
+		return rf(dir, cmd, args...)
+	}
+	if rf, ok := ret.Get(0).(func(string, string, ...string) string); ok {
+		r0 = rf(dir, cmd, args...)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string, string, ...string) error); ok {
+		r1 = rf(dir, cmd, args...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockShell_CmdWithDir_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CmdWithDir'
+type MockShell_CmdWithDir_Call struct {
+	*mock.Call
+}
+
+// CmdWithDir is a helper method to define mock.On call
+//   - dir string
+//   - cmd string
+//   - args ...string
+func (_e *MockShell_Expecter) CmdWithDir(dir interface{}, cmd interface{}, args ...interface{}) *MockShell_CmdWithDir_Call {
+	return &MockShell_CmdWithDir_Call{Call: _e.mock.On("CmdWithDir",
+		append([]interface{}{dir, cmd}, args...)...)}
+}
+
+func (_c *MockShell_CmdWithDir_Call) Run(run func(dir string, cmd string, args ...string)) *MockShell_CmdWithDir_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]string, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(string)
+			}
+		}
+		run(args[0].(string), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockShell_CmdWithDir_Call) Return(_a0 string, _a1 error) *MockShell_CmdWithDir_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockShell_CmdWithDir_Call) RunAndReturn(run func(string, string, ...string) (string, error)) *MockShell_CmdWithDir_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListCmd provides a mock function with given fields: cmd, arg
 func (_m *MockShell) ListCmd(cmd string, arg ...string) ([]string, error) {
 	_va := make([]interface{}, len(arg))
