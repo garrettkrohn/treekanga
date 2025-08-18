@@ -20,6 +20,7 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	setWorkingAndParentDir(c)
 	getGitConfig(c)
 	getZoxideConfig(c)
+	getPostScript(c)
 }
 
 func getZoxideConfig(c *com.AddConfig) {
@@ -173,4 +174,10 @@ func validateConfig(c *com.AddConfig) {
 		log.Fatal("Base branch does not exist locally or remotely")
 	}
 
+}
+
+func getPostScript(c *com.AddConfig) {
+	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
+	util.CheckError(err)
+	c.PostScript = viper.GetString("repos." + repoName + "postScript")
 }

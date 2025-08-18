@@ -57,6 +57,12 @@ var addCmd = &cobra.Command{
 		if c.ShouldOpenVSCode() {
 			deps.Connector.VsCodeConnect(&c)
 		}
+
+		if c.HasPostScript() {
+			script := c.GetPostScript()
+			deps.Shell.Cmd(script)
+			log.Info(fmt.Sprintf("post script run with the following command: ", script))
+		}
 	},
 }
 

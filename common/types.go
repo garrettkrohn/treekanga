@@ -1,8 +1,8 @@
 package common
 
 import (
-	"path/filepath"
 	"github.com/garrettkrohn/treekanga/directoryReader"
+	"path/filepath"
 )
 
 type AddConfig struct {
@@ -21,6 +21,9 @@ type AddConfig struct {
 	// External tool configurations
 	ZoxideFolders   []string
 	DirectoryReader directoryReader.DirectoryReader
+
+	// Custom scripts
+	PostScript string
 }
 
 // Helper methods for the AddConfig struct
@@ -72,6 +75,17 @@ func (c *AddConfig) GetSeshTarget() string {
 
 func (c *AddConfig) HasSeshTarget() bool {
 	return c.Flags.Sesh != nil && *c.Flags.Sesh != ""
+}
+
+func (c *AddConfig) HasPostScript() bool {
+	if c.PostScript != "" {
+		return true
+	}
+	return false
+}
+
+func (c *AddConfig) GetPostScript() string {
+	return c.PostScript
 }
 
 type AddCmdFlags struct {
