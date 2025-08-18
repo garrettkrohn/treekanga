@@ -145,25 +145,37 @@ func getGitConfig(c *com.AddConfig) {
 	c.GitInfo.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetBaseBranchName())
 	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
-	var newWorktreeName string
-	if c.Flags.SpecifiedWorktreeName != nil {
-		newWorktreeName = *c.Flags.SpecifiedWorktreeName
-	} else {
-		newWorktreeName = c.GetNewBranchName()
-	}
+	c.WorktreeTargetDir = resolveWorktreeTargetDir(repoName, c)
+}
 
+// resolveWorktreeTargetDir determines the target directory for the new worktree
+// based on configuration and user preferences
+func resolveWorktreeTargetDir(repoName string, c *com.AddConfig) string {
+	// Determine the worktree name - either user specified or branch name
+	worktreeName := getWorktreeName(c)
+
+	// Check if there's a configured worktree target directory
 	configWorktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
 
 	if configWorktreeTargetDir != "" {
+		// Use configured directory under home path
 		homePath, err := os.UserHomeDir()
 		if err != nil {
-			fmt.Printf("Error getting home directory: %v\n", err)
-			return
+			log.Fatal("Error getting home directory: ", err)
 		}
-		c.WorktreeTargetDir = buildConfigWorktreeDir(homePath, configWorktreeTargetDir, newWorktreeName)
+		return buildConfigWorktreeDir(homePath, configWorktreeTargetDir, worktreeName)
 	} else {
-		c.WorktreeTargetDir = "../" + newWorktreeName
+		// Default to relative path from parent directory
+		return "../" + worktreeName
 	}
+}
+
+// getWorktreeName returns the name to use for the worktree directory
+func getWorktreeName(c *com.AddConfig) string {
+	if c.Flags.SpecifiedWorktreeName != nil && *c.Flags.SpecifiedWorktreeName != "" {
+		return *c.Flags.SpecifiedWorktreeName
+	}
+	return c.GetNewBranchName()
 }
 
 func buildConfigWorktreeDir(homePath string, configWorktreeTargetDir string, branchName string) string {
