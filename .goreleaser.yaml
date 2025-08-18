@@ -45,13 +45,11 @@ changelog:
       - "^docs:"
       - "^test:"
 
-brews:
+homebrew_casks:
   - name: treekanga
     homepage: "https://github.com/garrettkrohn/treekanga"
     description: "Git Worktree Manager"
     license: "MIT"
-    url_template: "https://github.com/garrettkrohn/treekanga/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
     repository:
       owner: garrettkrohn
       name: homebrew-treekanga
@@ -60,9 +58,5 @@ brews:
       name: goreleaser-bot
       email: bot@goreleaser.com
     dependencies:
-      - tmux
-      - zoxide
-    install: |
-      define_method :install do
-        bin.install "treekanga"
-      end
+      - formula: tmux
+      - formula: zoxide
