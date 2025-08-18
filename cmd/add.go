@@ -78,4 +78,5 @@ func init() {
 	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
+	addCmd.Flags().StringP("name", "n", "", "Specify a worktree name")
 }

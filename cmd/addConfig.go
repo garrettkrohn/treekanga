@@ -78,6 +78,14 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	}
 	util.CheckError(err)
 
+	specifiedWorktreeName, err := cmd.Flags().GetString("name")
+	if err != nil {
+		flags.SpecifiedWorktreeName = nil
+	} else {
+		flags.SpecifiedWorktreeName = &specifiedWorktreeName
+	}
+	util.CheckError(err)
+
 	c.Flags = flags
 	c.Args = args
 }
@@ -137,6 +145,13 @@ func getGitConfig(c *com.AddConfig) {
 	c.GitInfo.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetBaseBranchName())
 	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
+	var newWorktreeName string
+	if c.Flags.SpecifiedWorktreeName != nil {
+		newWorktreeName = *c.Flags.SpecifiedWorktreeName
+	} else {
+		newWorktreeName = c.GetNewBranchName()
+	}
+
 	configWorktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
 
 	if configWorktreeTargetDir != "" {
@@ -145,9 +160,9 @@ func getGitConfig(c *com.AddConfig) {
 			fmt.Printf("Error getting home directory: %v\n", err)
 			return
 		}
-		c.WorktreeTargetDir = buildConfigWorktreeDir(homePath, configWorktreeTargetDir, c.GetNewBranchName())
+		c.WorktreeTargetDir = buildConfigWorktreeDir(homePath, configWorktreeTargetDir, newWorktreeName)
 	} else {
-		c.WorktreeTargetDir = "../" + c.GetNewBranchName()
+		c.WorktreeTargetDir = "../" + newWorktreeName
 	}
 }
 
