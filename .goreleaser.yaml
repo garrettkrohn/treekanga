@@ -62,3 +62,7 @@ brews:
     dependencies:
       - tmux
       - zoxide
+    install: |
+      define_method :install do
+        bin.install "treekanga"
+      end
