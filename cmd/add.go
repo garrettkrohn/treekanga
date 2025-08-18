@@ -14,22 +14,26 @@ import (
 )
 
 var (
-	newBranchName string
-	baseBranch    string
+	baseBranch string
 )
-
-// const tempZoxideName = "temp_treekanga_worktree"
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add a git worktree",
-	Long: `You may use this command with zero arguments, and you
-    will be prompeted to input the branch name and base branch.
+	Long: `Create a new worktree with the specified branch name.
 
-    Alternatively, you may the branch name as an argument, 
-    treekanga will create this branch off of the defaultBranch 
-    defined in the config, or use the current branch.`,
+    The branch name is required as an argument. Treekanga will create 
+    this branch off of the defaultBranch defined in the config, or 
+    you can specify a base branch with the -b flag.
+
+    Available flags:
+    -b, --base: Specify the base branch for the new worktree
+    -p, --pull: Pull the base branch before creating new branch
+    -c, --cursor: Open the new worktree in Cursor
+    -v, --vscode: Open the new worktree in VS Code
+    -s, --sesh: Connect to a sesh session after creation
+    -d, --directory: Specify the directory to the bare repo`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		c := com.AddConfig{}
@@ -56,6 +60,12 @@ var addCmd = &cobra.Command{
 
 		if c.ShouldOpenVSCode() {
 			deps.Connector.VsCodeConnect(&c)
+		}
+
+		if c.HasPostScript() {
+			script := c.GetPostScript()
+			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
+			log.Info(fmt.Sprintf("post script run with the following command: %s", script))
 		}
 	},
 }

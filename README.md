@@ -9,8 +9,7 @@ Treekanga is a powerful CLI tool for managing Git worktrees with ease. It simpli
 
 - Create new worktrees with smart branch handling
 - List all worktrees in a repository
-- Clean up stale worktrees
-- Delete worktrees with an interactive selector
+- Delete worktrees with stale branch filtering and interactive selector
 - Clone repositories as bare worktrees
 - Zoxide integration for quick navigation
 - Simple YAML configuration
@@ -42,6 +41,7 @@ repos:
       - frontEnd/* # adds all folders immediately within frontEnd
       - backEnd
       - backEnd/application/src/main/resources/db/migration
+    postScript: ~/dotfiles/scripts/test_script.sh
   
   treekanga:
     defaultBranch: main
@@ -62,6 +62,21 @@ treekanga add example_branch -b example_base_branch
 
 # Use default base branch from config
 treekanga add example_branch
+
+# Pull the base branch before creating new branch
+treekanga add example_branch -p
+
+# Open in Cursor after creation
+treekanga add example_branch -c
+
+# Open in VS Code after creation
+treekanga add example_branch -v
+
+# Connect to a sesh session after creation
+treekanga add example_branch -s session_name
+
+# Specify custom directory for bare repo
+treekanga add example_branch -d /path/to/bare/repo
 ```
 
 Branch handling logic:
@@ -80,20 +95,19 @@ Display all worktrees in the current repository:
 treekanga list
 ```
 
-### Clean Worktrees
-
-Remove worktrees that no longer have a corresponding remote branch:
-
-```bash
-treekanga clean
-```
-
 ### Delete Worktrees
 
 Interactive deletion of worktrees:
 
 ```bash
+# Delete any worktrees interactively
 treekanga delete
+
+# Only show worktrees where branches don't exist on remote (stale worktrees)
+treekanga delete --stale
+
+# Also delete the local branches (use with caution)
+treekanga delete --delete
 ```
 
 ### Clone a Repository

@@ -18,6 +18,7 @@ type Dependencies struct {
 	Zoxide          zoxide.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
+	Shell           shell.Shell
 }
 
 var (
@@ -29,6 +30,7 @@ func NewRootCmd(git git.Git,
 	zoxide zoxide.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
+	shell shell.Shell,
 	version string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "treekanga",
@@ -41,14 +43,9 @@ func NewRootCmd(git git.Git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
+				Shell:           shell,
 			}
-			// Set the ENV environment variable based on the log level flag
-			// if logLevel != "" {
-			// 	os.Setenv("ENV", logLevel)
-			// }
 
-			// slog logger
-			// logger.LoggerInit(logLevel)
 			logger.LoggerInit(logLevel)
 
 		},
@@ -71,7 +68,7 @@ func Execute(version string) {
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader, connector, version)
+	rootCmd := NewRootCmd(git, zoxide, directoryReader, connector, shell, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)
@@ -83,13 +80,5 @@ func Execute(version string) {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.treekanga.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Reserved for future flag and configuration settings
 }

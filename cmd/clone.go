@@ -18,8 +18,18 @@ var (
 
 var cloneCmd = &cobra.Command{
 	Use:   "clone",
-	Short: "clone a bare repo",
-	Long:  `clone a bare repo with treekanga clone https://github.com/test/test`,
+	Short: "Clone a repository as a bare repo",
+	Long: `Clone a repository as a bare repository for worktree management.
+
+    Bare repositories are ideal for worktree workflows as they don't have 
+    a working directory, allowing you to create multiple worktrees from 
+    the same repository.
+    
+    Usage:
+      treekanga clone <repository_url> [folder_name]
+    
+    If no folder name is provided, it will use the repository name 
+    with "_bare" suffix.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		CloneBareRepo(deps.Git, spinner.NewRealHuhSpinner(), args)
 	},
@@ -64,14 +74,5 @@ func getProjectName(url string) string {
 }
 
 func init() {
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// No additional flags needed for clone command
 }

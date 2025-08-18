@@ -1,10 +1,9 @@
 package filter
 
 import (
-	// "fmt"
 	"testing"
 
-	"github.com/garrettkrohn/treekanga/worktreeObj"
+	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/stretchr/testify/assert"
 )
 
