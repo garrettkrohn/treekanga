@@ -63,5 +63,5 @@ jobs:
     steps:
       - name: Install with brew
         run: |
-          brew install garrettkrohn/treekanga/treekanga
+          brew install --cask garrettkrohn/treekanga/treekanga
       # TODO: assert the latest version was installed
