@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/garrettkrohn/treekanga/directoryReader"
 	"path/filepath"
+
+	"github.com/garrettkrohn/treekanga/directoryReader"
 )
 
 type AddConfig struct {
@@ -11,10 +12,9 @@ type AddConfig struct {
 	Flags AddCmdFlags
 
 	// Resolved paths and directories
-	WorkingDir            string
-	ParentDir             string
-	WorktreeTargetDir     string
-	SpecifiedWorktreeName string
+	WorkingDir        string
+	ParentDir         string
+	WorktreeTargetDir string
 
 	// Git repository information
 	GitInfo GitInfo
