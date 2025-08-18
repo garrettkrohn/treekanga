@@ -8,7 +8,7 @@ import (
 )
 
 func TestFilterWorktreesAndBranches(t *testing.T) {
-	remoteBranches := []string{"branch1", "branch2", "branch4"}
+	remoteBranches := []string{"repo1", "repo2", "repo4"}
 	worktreeObjs := []worktreeobj.WorktreeObj{
 		{
 			FullPath:   "/path/to/repo1",

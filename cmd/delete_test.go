@@ -15,8 +15,8 @@ import (
 )
 
 func TestDeleteWorktreesWithoutArgs(t *testing.T) {
-	// Arrange
 
+	// Arrange
 	mockGit := getMockGit(t)
 
 	transformer := transformer.NewTransformer()
@@ -78,7 +78,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	mockZoxide := zoxide.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
-	branches := []string{"branch1"}
+	branches := []string{"development"}
 
 	// Act
 	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false, false)

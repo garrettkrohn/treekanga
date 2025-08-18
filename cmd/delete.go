@@ -59,7 +59,7 @@ func deleteWorktrees(git git.Git,
 	form form.Form,
 	zoxide zoxide.Zoxide,
 	listOfBranchesToDelete []string,
-	stale bool,
+	applyStaleFilter bool,
 	deleteBranches bool) (int, error) {
 
 	var selections []string
@@ -67,15 +67,17 @@ func deleteWorktrees(git git.Git,
 
 	worktrees := getWorktrees(git, transformer)
 
-	if stale {
+	if applyStaleFilter {
 		worktrees = filterLocalBranchesOnly(worktrees, transformer, filter)
 		if len(worktrees) == 0 {
 			log.Fatal("All local branches exist on remote")
 		}
 	}
 
+	// get names to display
 	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
 
+	// branches can be provided via args or the form
 	if len(listOfBranchesToDelete) > 0 {
 		log.Debug(fmt.Sprintf("branch(es) submitted as argument(s): %s ", listOfBranchesToDelete))
 		treesToDeleteAreValid = validateAllBranchesToDelete(stringWorktrees, listOfBranchesToDelete)
@@ -87,6 +89,7 @@ func deleteWorktrees(git git.Git,
 		}
 	}
 
+	// need to make this cleaner
 	if !treesToDeleteAreValid {
 		log.Debug("activating selection form")
 		form.SetSelections(&selections)
@@ -95,10 +98,13 @@ func deleteWorktrees(git git.Git,
 		util.CheckError(err)
 	}
 
+	// transform selection back into worktreeObj
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
+	// remove worktrees
 	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
 
+	// delete branches
 	if deleteBranches {
 		log.Debug("delete branches flag true")
 		deleteLocalBranches(selectedWorktreeObj)
