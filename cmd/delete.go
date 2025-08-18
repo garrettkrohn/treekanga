@@ -22,7 +22,13 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete selected worktrees",
-	Long:  `List all worktrees and selected multiple to be deleted`,
+	Long: `Interactive deletion of worktrees with optional filtering.
+
+    Lists all worktrees and allows you to select multiple to be deleted.
+    
+    Available flags:
+    -s, --stale: Only show worktrees where branches don't exist on remote
+    -d, --delete: CAUTION - Also delete the local branches`,
 	Run: func(cmd *cobra.Command, args []string) {
 		stale, err := cmd.Flags().GetBool("stale")
 		util.CheckError(err)

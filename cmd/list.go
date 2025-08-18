@@ -21,8 +21,12 @@ type Worktree struct {
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List worktrees",
-	Long:  `List worktrees`,
+	Short: "List all worktrees",
+	Long: `Display all worktrees in the current repository.
+
+    Shows the branch name for each worktree in the repository.
+    This is useful for getting an overview of all active worktrees
+    before performing operations like deletion or cleanup.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		worktrees, err := listWorktrees()
 		if err != nil {

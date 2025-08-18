@@ -18,8 +18,18 @@ var (
 
 var cloneCmd = &cobra.Command{
 	Use:   "clone",
-	Short: "clone a bare repo",
-	Long:  `clone a bare repo with treekanga clone https://github.com/test/test`,
+	Short: "Clone a repository as a bare repo",
+	Long: `Clone a repository as a bare repository for worktree management.
+
+    Bare repositories are ideal for worktree workflows as they don't have 
+    a working directory, allowing you to create multiple worktrees from 
+    the same repository.
+    
+    Usage:
+      treekanga clone <repository_url> [folder_name]
+    
+    If no folder name is provided, it will use the repository name 
+    with "_bare" suffix.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		CloneBareRepo(deps.Git, spinner.NewRealHuhSpinner(), args)
 	},
