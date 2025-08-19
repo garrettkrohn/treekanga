@@ -59,6 +59,7 @@ homebrew_casks:
       email: bot@goreleaser.com
     dependencies:
       - formula: tmux
+      - formula: zoxide
     hooks:
       post:
         install: |
