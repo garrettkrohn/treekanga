@@ -49,9 +49,11 @@ changelog:
 
 brews:
   - name: treekanga
-    description: "Git Worktree Manager"
     homepage: "https://github.com/garrettkrohn/treekanga"
+    description: "Git Worktree Manager"
     license: "MIT"
+    url_template: "https://github.com/garrettkrohn/treekanga/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
     repository:
       owner: garrettkrohn
       name: homebrew-treekanga
