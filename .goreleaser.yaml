@@ -66,4 +66,3 @@ homebrew_casks:
         name: zoxide
     postinstall: |
       system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/treekanga"] if OS.mac?
-
