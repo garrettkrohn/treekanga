@@ -47,7 +47,7 @@ changelog:
       - "^docs:"
       - "^test:"
 
-homebrew_casks:
+brews:
   - name: treekanga
     description: "Git Worktree Manager"
     homepage: "https://github.com/garrettkrohn/treekanga"
@@ -60,9 +60,5 @@ homebrew_casks:
       name: goreleaser-bot
       email: bot@goreleaser.com
     dependencies:
-      - type: formula
-        name: tmux
-      - type: formula  
-        name: zoxide
-    postinstall: |
-      system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/treekanga"] if OS.mac?
+      - tmux
+      - zoxide
