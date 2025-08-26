@@ -86,6 +86,14 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	}
 	util.CheckError(err)
 
+	executeScript, err := cmd.Flags().GetBool("script")
+	if err != nil {
+		flags.ExecuteScript = nil
+	} else {
+		flags.ExecuteScript = &executeScript
+	}
+	util.CheckError(err)
+
 	c.Flags = flags
 	c.Args = args
 }
@@ -208,7 +216,7 @@ func getPostScript(c *com.AddConfig) {
 	util.CheckError(err)
 	postScript := viper.GetString("repos." + repoName + ".postScript")
 	if postScript == "" {
-		log.Debug("no post script found")
+		log.Debug("no post script found in config file")
 		return
 	}
 	c.PostScript = postScript
