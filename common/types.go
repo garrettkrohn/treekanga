@@ -24,7 +24,8 @@ type AddConfig struct {
 	DirectoryReader directoryReader.DirectoryReader
 
 	// Custom scripts
-	PostScript string
+	PostScript        string
+	AutoRunPostScript *bool
 }
 
 // Helper methods for the AddConfig struct
@@ -97,6 +98,7 @@ type AddCmdFlags struct {
 	Cursor                *bool
 	VsCode                *bool
 	SpecifiedWorktreeName *string
+	ExecuteScript         *bool
 }
 
 type GitInfo struct {

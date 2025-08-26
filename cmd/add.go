@@ -62,7 +62,8 @@ var addCmd = &cobra.Command{
 			deps.Connector.VsCodeConnect(&c)
 		}
 
-		if c.HasPostScript() {
+		if c.HasPostScript() &&
+			(*c.Flags.ExecuteScript || *c.AutoRunPostScript) {
 			script := c.GetPostScript()
 			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
 			log.Info(fmt.Sprintf("post script run with the following command: %s", script))
@@ -75,6 +76,7 @@ func init() {
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().BoolP("cursor", "c", false, "Open up new worktree in cursor")
 	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
+	addCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
 	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
