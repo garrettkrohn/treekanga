@@ -24,7 +24,7 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 }
 
 func getZoxideConfig(c *com.AddConfig) {
-	c.ZoxideFolders = viper.GetStringSlice("repos." + c.GetRepoName() + ".zoxideFolders")
+	c.ZoxideFolders = viper.GetStringSlice(deps.ResolvedRepo + ".zoxideFolders")
 	c.DirectoryReader = deps.DirectoryReader
 }
 
@@ -122,14 +122,12 @@ func getGitConfig(c *com.AddConfig) {
 		log.Fatal("please include new branch name as an argument")
 	}
 
-	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
-	util.CheckError(err)
-	c.GitInfo.RepoName = repoName
+	c.GitInfo.RepoName = deps.ResolvedRepo
 
 	if c.Flags.BaseBranch != nil {
 		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
 	} else {
-		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+		baseBranch = viper.GetString(deps.ResolvedRepo + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
@@ -153,7 +151,7 @@ func getGitConfig(c *com.AddConfig) {
 	c.GitInfo.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetBaseBranchName())
 	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
-	c.WorktreeTargetDir = resolveWorktreeTargetDir(repoName, c)
+	c.WorktreeTargetDir = resolveWorktreeTargetDir(deps.ResolvedRepo, c)
 }
 
 // resolveWorktreeTargetDir determines the target directory for the new worktree
@@ -163,7 +161,7 @@ func resolveWorktreeTargetDir(repoName string, c *com.AddConfig) string {
 	worktreeName := getWorktreeName(c)
 
 	// Check if there's a configured worktree target directory
-	configWorktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
+	configWorktreeTargetDir := viper.GetString(repoName + ".worktreeTargetDir")
 
 	if configWorktreeTargetDir != "" {
 		// Use configured directory under home path
@@ -212,16 +210,14 @@ func validateConfig(c *com.AddConfig) {
 }
 
 func getPostScript(c *com.AddConfig) {
-	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
-	util.CheckError(err)
-	postScript := viper.GetString("repos." + repoName + ".postScript")
+	postScript := viper.GetString(deps.ResolvedRepo + ".postScript")
 	if postScript == "" {
 		log.Debug("no post script found in config file")
 		return
 	}
 	c.PostScript = postScript
 
-	autoRunPostScript := viper.GetBool("repos." + repoName + ".autoRunPostScript")
+	autoRunPostScript := viper.GetBool(deps.ResolvedRepo + ".autoRunPostScript")
 	c.AutoRunPostScript = &autoRunPostScript
 
 }
