@@ -220,4 +220,8 @@ func getPostScript(c *com.AddConfig) {
 		return
 	}
 	c.PostScript = postScript
+
+	autoRunPostScript := viper.GetBool("repos." + repoName + ".autoRunPostScript")
+	c.AutoRunPostScript = &autoRunPostScript
+
 }

@@ -42,6 +42,7 @@ repos:
       - backEnd
       - backEnd/application/src/main/resources/db/migration
     postScript: ~/dotfiles/scripts/test_script.sh
+    autoRunPostScript: false
   
   treekanga:
     defaultBranch: main
