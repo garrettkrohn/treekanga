@@ -138,6 +138,7 @@ func (g *RealGit) CloneBare(url string, folderName string) error {
 	return nil
 }
 
+// NOTE: I this can be removed
 func (g *RealGit) CreateTempBranch(path string) error {
 	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
 	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
