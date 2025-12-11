@@ -15,9 +15,50 @@ import (
 	util "github.com/garrettkrohn/treekanga/utility"
 )
 
+// resolveRepoName implements the fallback logic for determining the repo name
+// 1. First tries to use the current directory name
+// 2. If that doesn't exist in config, falls back to git.GetRepoName()
+func resolveRepoName() string {
+	// Get current working directory
+	workingDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error getting working directory: ", err)
+	}
+	log.Debug("workingDir", workingDir)
+
+	// Get directory name
+	directoryName := filepath.Base(filepath.Dir(workingDir))
+	log.Debug("directoryName", directoryName)
+
+	// Check if directory name exists in viper config
+	if viper.IsSet("repos." + directoryName) {
+		log.Debug("Repo directory name found: ", "directory name", directoryName)
+		return "repos." + directoryName
+	}
+
+	// Fallback to git.GetRepoName()
+	repoName, err := deps.Git.GetRepoName(workingDir)
+	if err != nil {
+		log.Fatal("Error resolving repo name: ", err)
+	}
+
+	// Check if git repo name exists in viper config
+	if viper.IsSet("repos." + repoName) {
+		log.Debug("Repo git directory name found: ", directoryName)
+		return "repos." + repoName
+	}
+
+	log.Fatal("No directory name, or git directory name found in the config")
+	return ""
+}
+
 func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	addCmdFlagsAndArgs(cmd, args, c)
 	setWorkingAndParentDir(c)
+
+	// Resolve repo name only when needed (for add command)
+	deps.ResolvedRepo = resolveRepoName()
+
 	getGitConfig(c)
 	getZoxideConfig(c)
 	getPostScript(c)
