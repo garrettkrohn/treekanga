@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 
-	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
@@ -13,7 +11,6 @@ import (
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type Dependencies struct {
@@ -30,43 +27,6 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-// resolveRepoName implements the fallback logic for determining the repo name
-// 1. First tries to use the current directory name
-// 2. If that doesn't exist in config, falls back to git.GetRepoName()
-func resolveRepoName(git git.Git) string {
-	// Get current working directory
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Error getting working directory: ", err)
-	}
-	log.Debug("workingDir", workingDir)
-
-	// Get directory name
-	directoryName := filepath.Base(filepath.Dir(workingDir))
-	log.Debug("directoryName", directoryName)
-
-	// Check if directory name exists in viper config
-	if viper.IsSet("repos." + directoryName) {
-		log.Debug("Repo directory name found: ", "directory name", directoryName)
-		return "repos." + directoryName
-	}
-
-	// Fallback to git.GetRepoName()
-	repoName, err := git.GetRepoName(workingDir)
-	if err != nil {
-		log.Fatal("Error resolving repo name: ", err)
-	}
-
-	// Check if git repo name exists in viper config
-	if viper.IsSet("repos." + repoName) {
-		log.Debug("Repo git directory name found: ", directoryName)
-		return "repos." + repoName
-	}
-
-	log.Fatal("No directory name, or git directory name found in the config")
-	return ""
-}
-
 func NewRootCmd(git git.Git,
 	zoxide zoxide.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
@@ -81,16 +41,16 @@ func NewRootCmd(git git.Git,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			logger.LoggerInit(logLevel)
 
-			resolvedRepo := resolveRepoName(git)
-
 			deps = Dependencies{
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
-				ResolvedRepo:    resolvedRepo,
+				ResolvedRepo:    "",
 			}
+
+			deps.ResolvedRepo = resolveRepoName()
 
 		},
 	}
