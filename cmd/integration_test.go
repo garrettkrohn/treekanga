@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	com "github.com/garrettkrohn/treekanga/common"
@@ -86,11 +87,20 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	require.NoError(t, err, "Should be able to get remote branches")
 	require.Greater(t, len(remoteBranches), 0, "Should have at least one remote branch")
 
-	// Use the first remote branch as the base (typically origin/master or origin/main)
-	baseBranch := remoteBranches[0]
-	if len(baseBranch) > 7 && baseBranch[:7] == "origin/" {
-		baseBranch = baseBranch[7:] // Remove "origin/" prefix
+	// Log all remote branches for debugging
+	t.Logf("All remote branches: %v", remoteBranches)
+
+	// Find a valid remote branch (must contain "origin/" prefix and have a branch name after it)
+	var baseBranch string
+	for _, branch := range remoteBranches {
+		// Skip entries that are just "origin" or don't have the expected format
+		if strings.HasPrefix(branch, "origin/") && len(branch) > 7 {
+			// This is a valid remote branch like "origin/master" or "origin/main"
+			baseBranch = branch[7:] // Remove "origin/" prefix
+			break
+		}
 	}
+	require.NotEmpty(t, baseBranch, "Should find at least one valid remote branch (origin/...)")
 	t.Logf("Using base branch: %s", baseBranch)
 
 	// Create a worktree using the add functionality

@@ -204,6 +204,15 @@ func (g *RealGit) ConfigureGitBare(path string) error {
 	if err != nil {
 		return err
 	}
+	
+	// After configuring the fetch refspec, we need to fetch to populate remote-tracking branches
+	// In a bare clone, branches are initially in refs/heads/, but we want them in refs/remotes/origin/
+	_, err = g.shell.Cmd("git", "-C", path, "fetch", "origin")
+	if err != nil {
+		log.Debug("Warning: fetch after bare config failed", "error", err)
+		// Don't return error as the repo might still be usable
+	}
+	
 	return nil
 }
 
