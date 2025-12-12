@@ -38,6 +38,9 @@ repos:
     defaultBranch: development
     #where should treekanga put the worktrees, assumes starting in the $HOME directory
     worktreeTargetDir: /code 
+    # Display mode for the list command: "branch" (default) or "directory"/"folder"
+    # "branch" shows branch names, "directory" shows directory names
+    listDisplayMode: branch
     # Folders to register with zoxide for quick navigation
     zoxideFolders:
       - frontEnd
@@ -50,6 +53,7 @@ repos:
   treekanga:
     bareRepoName: treekanga_bare
     defaultBranch: main
+    listDisplayMode: directory
     zoxideFolders:
       - cmd
       - git
@@ -97,8 +101,26 @@ Branch handling logic:
 Display all worktrees in the current repository:
 
 ```bash
+# List worktrees (display format based on config)
 treekanga list
+
+# Verbose output showing all details
+treekanga list -v
 ```
+
+By default, the list command displays branch names. You can configure it to display directory names instead using the `listDisplayMode` configuration option:
+
+- `branch` (default): Display branch names
+- `directory` or `folder`: Display directory names
+
+Example configuration:
+```yaml
+repos:
+  myrepo:
+    listDisplayMode: directory
+```
+
+The verbose flag (`-v`) will always show all details including both branch names and directory names, regardless of the configured display mode.
 
 ### Delete Worktrees
 
