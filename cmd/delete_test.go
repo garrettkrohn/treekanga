@@ -109,13 +109,7 @@ func getMockGit(t *testing.T) *git.MockGit {
 
 func getMockSpinner(t *testing.T) *spinner.MockHuhSpinner {
 	mockSpinner := spinner.NewMockHuhSpinner(t)
-	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
-	mockSpinner.On("Action", mock.Anything).Run(func(args mock.Arguments) {
-		// Call the action function
-		args.Get(0).(func())()
-	}).Return(mockSpinner)
-	mockSpinner.On("Run").Run(func(args mock.Arguments) {
-	}).Return(nil).Once()
+	// Spinner is no longer used in removeWorktrees, so no expectations are set
 	return mockSpinner
 }
 

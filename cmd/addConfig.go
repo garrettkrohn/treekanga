@@ -371,7 +371,7 @@ func validateConfig(c *com.AddConfig) {
 
 	// if a path is provided, be sure it exists
 	if c.Flags.Directory != nil {
-		log.Debug(fmt.Sprintf("inputted path: %s ", *c.Flags.Directory))
+		log.Debug("inputted path", "path", *c.Flags.Directory)
 		_, err := os.Stat(*c.Flags.Directory)
 		if err != nil {
 			log.Fatal("path does not exist")

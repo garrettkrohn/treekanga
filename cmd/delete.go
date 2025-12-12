@@ -78,7 +78,7 @@ func deleteWorktrees(git git.Git,
 
 	// branches can be provided via args or the form
 	if len(listOfBranchesToDelete) > 0 {
-		log.Debug(fmt.Sprintf("branch(es) submitted as argument(s): %s ", listOfBranchesToDelete))
+		log.Debug("branch(es) submitted as argument(s)", "branches", listOfBranchesToDelete)
 		treesToDeleteAreValid = validateAllBranchesToDelete(stringWorktrees, listOfBranchesToDelete)
 		if !treesToDeleteAreValid {
 			log.Error("At least one of the branches provided were not valid, please select a branch")

@@ -4,8 +4,6 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/log"
 	com "github.com/garrettkrohn/treekanga/common"
 	util "github.com/garrettkrohn/treekanga/utility"
@@ -46,7 +44,7 @@ var addCmd = &cobra.Command{
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
-		log.Info(fmt.Sprintf("worktree %s created", c.GetNewBranchName()))
+		log.Info("worktree created", "branch", c.GetNewBranchName())
 
 		deps.Zoxide.AddZoxideEntries(&c)
 
@@ -65,7 +63,7 @@ var addCmd = &cobra.Command{
 		if c.HasPostScript() && *c.Flags.ExecuteScript {
 			script := c.GetPostScript()
 			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
-			log.Info(fmt.Sprintf("post script run with the following command: %s", script))
+			log.Info("post script run", "command", script)
 		}
 	},
 }
