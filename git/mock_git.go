@@ -378,9 +378,9 @@ func (_c *MockGit_GetRepoName_Call) RunAndReturn(run func(string) (string, error
 	return _c
 }
 
-// GetWorktrees provides a mock function with no fields
-func (_m *MockGit) GetWorktrees() ([]string, error) {
-	ret := _m.Called()
+// GetWorktrees provides a mock function with given fields: path
+func (_m *MockGit) GetWorktrees(path *string) ([]string, error) {
+	ret := _m.Called(path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetWorktrees")
@@ -388,19 +388,19 @@ func (_m *MockGit) GetWorktrees() ([]string, error) {
 
 	var r0 []string
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]string, error)); ok {
-		return rf()
+	if rf, ok := ret.Get(0).(func(*string) ([]string, error)); ok {
+		return rf(path)
 	}
-	if rf, ok := ret.Get(0).(func() []string); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(*string) []string); ok {
+		r0 = rf(path)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(*string) error); ok {
+		r1 = rf(path)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -414,13 +414,14 @@ type MockGit_GetWorktrees_Call struct {
 }
 
 // GetWorktrees is a helper method to define mock.On call
-func (_e *MockGit_Expecter) GetWorktrees() *MockGit_GetWorktrees_Call {
-	return &MockGit_GetWorktrees_Call{Call: _e.mock.On("GetWorktrees")}
+//   - path *string
+func (_e *MockGit_Expecter) GetWorktrees(path interface{}) *MockGit_GetWorktrees_Call {
+	return &MockGit_GetWorktrees_Call{Call: _e.mock.On("GetWorktrees", path)}
 }
 
-func (_c *MockGit_GetWorktrees_Call) Run(run func()) *MockGit_GetWorktrees_Call {
+func (_c *MockGit_GetWorktrees_Call) Run(run func(path *string)) *MockGit_GetWorktrees_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		run(args[0].(*string))
 	})
 	return _c
 }
@@ -430,14 +431,14 @@ func (_c *MockGit_GetWorktrees_Call) Return(_a0 []string, _a1 error) *MockGit_Ge
 	return _c
 }
 
-func (_c *MockGit_GetWorktrees_Call) RunAndReturn(run func() ([]string, error)) *MockGit_GetWorktrees_Call {
+func (_c *MockGit_GetWorktrees_Call) RunAndReturn(run func(*string) ([]string, error)) *MockGit_GetWorktrees_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// RemoveWorktree provides a mock function with given fields: _a0
-func (_m *MockGit) RemoveWorktree(_a0 string) (string, error) {
-	ret := _m.Called(_a0)
+// RemoveWorktree provides a mock function with given fields: worktreeName, path
+func (_m *MockGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
+	ret := _m.Called(worktreeName, path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RemoveWorktree")
@@ -445,17 +446,17 @@ func (_m *MockGit) RemoveWorktree(_a0 string) (string, error) {
 
 	var r0 string
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return rf(_a0)
+	if rf, ok := ret.Get(0).(func(string, *string) (string, error)); ok {
+		return rf(worktreeName, path)
 	}
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(string, *string) string); ok {
+		r0 = rf(worktreeName, path)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(_a0)
+	if rf, ok := ret.Get(1).(func(string, *string) error); ok {
+		r1 = rf(worktreeName, path)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -469,14 +470,15 @@ type MockGit_RemoveWorktree_Call struct {
 }
 
 // RemoveWorktree is a helper method to define mock.On call
-//   - _a0 string
-func (_e *MockGit_Expecter) RemoveWorktree(_a0 interface{}) *MockGit_RemoveWorktree_Call {
-	return &MockGit_RemoveWorktree_Call{Call: _e.mock.On("RemoveWorktree", _a0)}
+//   - worktreeName string
+//   - path *string
+func (_e *MockGit_Expecter) RemoveWorktree(worktreeName interface{}, path interface{}) *MockGit_RemoveWorktree_Call {
+	return &MockGit_RemoveWorktree_Call{Call: _e.mock.On("RemoveWorktree", worktreeName, path)}
 }
 
-func (_c *MockGit_RemoveWorktree_Call) Run(run func(_a0 string)) *MockGit_RemoveWorktree_Call {
+func (_c *MockGit_RemoveWorktree_Call) Run(run func(worktreeName string, path *string)) *MockGit_RemoveWorktree_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
+		run(args[0].(string), args[1].(*string))
 	})
 	return _c
 }
@@ -486,7 +488,7 @@ func (_c *MockGit_RemoveWorktree_Call) Return(_a0 string, _a1 error) *MockGit_Re
 	return _c
 }
 
-func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string) (string, error)) *MockGit_RemoveWorktree_Call {
+func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string) (string, error)) *MockGit_RemoveWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }

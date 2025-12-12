@@ -20,6 +20,7 @@ type Dependencies struct {
 	Connector       connector.Connector
 	Shell           shell.Shell
 	ResolvedRepo    string
+	BareRepoPath    string
 }
 
 var (
@@ -48,9 +49,12 @@ func NewRootCmd(git git.Git,
 				Connector:       sesh,
 				Shell:           shell,
 				ResolvedRepo:    "",
+				BareRepoPath:    "",
 			}
 
-			deps.ResolvedRepo = resolveRepoName()
+			repoName, bareRepoPath := resolveRepoNameAndPath()
+			deps.ResolvedRepo = repoName
+			deps.BareRepoPath = bareRepoPath
 
 		},
 	}

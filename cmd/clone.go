@@ -51,7 +51,7 @@ func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
 
 	spinner.Title("Cloning bare repo")
 	spinner.Action(func() {
-		err := deps.Git.CloneBare(url, folderName)
+		err := git.CloneBare(url, folderName)
 		util.CheckError(err)
 
 		workingDir, err := os.Getwd()
@@ -59,7 +59,7 @@ func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
 
 		barePath := workingDir + "/" + folderName
 
-		deps.Git.ConfigureGitBare(barePath)
+		git.ConfigureGitBare(barePath)
 	})
 	spinner.Run()
 }

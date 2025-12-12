@@ -7,6 +7,6 @@ import (
 // CheckError logs the error and terminates the program if the error is not nil.
 func CheckError(err error) {
 	if err != nil {
-		log.Fatal("Error: %v", err)
+		log.Fatal("Error", "error", err)
 	}
 }

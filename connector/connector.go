@@ -1,7 +1,6 @@
 package connector
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/charmbracelet/log"
@@ -34,11 +33,11 @@ func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
 	
 	if seshTarget != "" && slices.Contains(c.ZoxideFolders, seshTarget) {
 		zoxidePath := c.GetZoxidePath(seshTarget)
-		log.Info(fmt.Sprintf("Sesh connect to %s", zoxidePath))
+		log.Info("Sesh connect", "path", zoxidePath)
 		return zoxidePath
 	} else {
 		basePath := c.GetZoxideBasePath()
-		log.Info(fmt.Sprintf("Sesh connect to %s", basePath))
+		log.Info("Sesh connect", "path", basePath)
 		return basePath
 	}
 }

@@ -99,23 +99,17 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 func getMockGit(t *testing.T) *git.MockGit {
 	mockGit := git.NewMockGit(t)
-	mockGit.On("GetWorktrees").Return([]string{
+	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	mockGit.On("RemoveWorktree", mock.Anything).Return("", nil)
+	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything).Return("", nil)
 	return mockGit
 }
 
 func getMockSpinner(t *testing.T) *spinner.MockHuhSpinner {
 	mockSpinner := spinner.NewMockHuhSpinner(t)
-	mockSpinner.On("Title", mock.Anything).Return(mockSpinner)
-	mockSpinner.On("Action", mock.Anything).Run(func(args mock.Arguments) {
-		// Call the action function
-		args.Get(0).(func())()
-	}).Return(mockSpinner)
-	mockSpinner.On("Run").Run(func(args mock.Arguments) {
-	}).Return(nil).Once()
+	// Spinner is no longer used in removeWorktrees, so no expectations are set
 	return mockSpinner
 }
 
