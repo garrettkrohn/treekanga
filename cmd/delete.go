@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strconv"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
@@ -48,7 +47,7 @@ var deleteCmd = &cobra.Command{
 			cmd.PrintErrln("Error:", err)
 			return
 		}
-		log.Info("worktrees removed: %s", strconv.Itoa(numOfWorktreesRemoved))
+		log.Info("worktrees removed", "count", numOfWorktreesRemoved)
 	},
 }
 
@@ -180,22 +179,23 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 }
 
 func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
-	spinner.Title("Deleting Worktrees")
-	spinner.Action(func() {
-		// Use the resolved bare repo path if available
-		var path *string
-		if deps.BareRepoPath != "" {
-			path = &deps.BareRepoPath
-			log.Debug("Using bare repo path for removing worktrees", "path", deps.BareRepoPath)
-		}
+	log.Debug("removeWorktrees called", "count", len(worktrees))
 
-		for _, worktreeObj := range worktrees {
-			_, err := git.RemoveWorktree(worktreeObj.Folder, path)
-			_ = zoxide.RemovePath(worktreeObj.FullPath)
-			util.CheckError(err)
-		}
-	})
-	spinner.Run()
+	// Use the resolved bare repo path if available
+	var path *string
+	if deps.BareRepoPath != "" {
+		path = &deps.BareRepoPath
+		log.Debug("Using bare repo path for removing worktrees", "path", deps.BareRepoPath)
+	}
+
+	for _, worktreeObj := range worktrees {
+		log.Debug("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
+		output, err := git.RemoveWorktree(worktreeObj.FullPath, path)
+		log.Debug("RemoveWorktree returned", "output", output, "error", err)
+		_ = zoxide.RemovePath(worktreeObj.FullPath)
+		util.CheckError(err)
+		log.Debug("Worktree removed successfully")
+	}
 }
 
 func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,

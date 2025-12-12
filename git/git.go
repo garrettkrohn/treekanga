@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -73,13 +74,47 @@ func (g *RealGit) GetWorktrees(path *string) ([]string, error) {
 }
 
 func (g *RealGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
+	// When using a bare repo, convert absolute worktree path to relative path
+	worktreePath := worktreeName
+	if path != nil && filepath.IsAbs(worktreeName) {
+		// Fix the .git file if it points to the wrong location (from old bare repo)
+		err := g.fixWorktreeGitFile(worktreeName, *path)
+		if err != nil {
+			log.Debug("Could not fix .git file", "error", err)
+		}
+		
+		relPath, err := filepath.Rel(*path, worktreeName)
+		if err == nil {
+			worktreePath = relPath
+			log.Debug("Using relative path for worktree removal", "absolute", worktreeName, "relative", relPath)
+		}
+	}
+	
 	gitCmd := getBaseArguementsWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "worktree", "remove", worktreeName, "--force")
+	gitCmd = append(gitCmd, "worktree", "remove", worktreePath, "--force")
+	log.Debug("git args", "args", gitCmd)
 	out, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to remove worktree %s: %w", worktreeName, err)
 	}
 	return out, nil
+}
+
+// fixWorktreeGitFile fixes the .git file in a worktree to point to the correct bare repo location
+func (g *RealGit) fixWorktreeGitFile(worktreePath string, bareRepoPath string) error {
+	gitFilePath := filepath.Join(worktreePath, ".git")
+	worktreeName := filepath.Base(worktreePath)
+	expectedGitDir := filepath.Join(bareRepoPath, "worktrees", worktreeName)
+	
+	// Write the corrected .git file using Go's file I/O
+	content := fmt.Sprintf("gitdir: %s\n", expectedGitDir)
+	err := os.WriteFile(gitFilePath, []byte(content), 0644)
+	if err != nil {
+		log.Debug("Failed to fix .git file", "error", err, "path", gitFilePath)
+		return err
+	}
+	log.Debug("Fixed .git file", "path", gitFilePath, "points to", expectedGitDir)
+	return nil
 }
 
 func (g *RealGit) AddWorktree(c *com.AddConfig) error {
