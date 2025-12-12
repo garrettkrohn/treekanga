@@ -17,8 +17,8 @@ const tempZoxideName = "temp_treekanga_worktree"
 type Git interface {
 	GetRemoteBranches(*string) ([]string, error)
 	GetLocalBranches(*string) ([]string, error)
-	GetWorktrees() ([]string, error)
-	RemoveWorktree(string) (string, error)
+	GetWorktrees(path *string) ([]string, error)
+	RemoveWorktree(worktreeName string, path *string) (string, error)
 	AddWorktree(c *com.AddConfig) error
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
@@ -62,16 +62,20 @@ func (g *RealGit) GetLocalBranches(path *string) ([]string, error) {
 	return branches, nil
 }
 
-func (g *RealGit) GetWorktrees() ([]string, error) {
-	out, err := g.shell.ListCmd("git", "worktree", "list")
+func (g *RealGit) GetWorktrees(path *string) ([]string, error) {
+	gitCmd := getBaseArguementsWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "worktree", "list")
+	out, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return out, nil
 }
 
-func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
-	out, err := g.shell.Cmd("git", "worktree", "remove", worktreeName, "--force")
+func (g *RealGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
+	gitCmd := getBaseArguementsWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "worktree", "remove", worktreeName, "--force")
+	out, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -31,6 +31,9 @@ Create a YAML configuration file at `~/.config/treekanga/treekanga.yml`:
 repos:
   # Repository name
   exampleRepository:
+    # Optional: Name of the bare repository directory (e.g., .bare, _bare, -bare)
+    # If not specified, defaults to the repository name itself
+    bareRepoName: .bare
     # Default branch used when no base branch is specified
     defaultBranch: development
     #where should treekanga put the worktrees, assumes starting in the $HOME directory
@@ -45,6 +48,7 @@ repos:
     autoRunPostScript: false
   
   treekanga:
+    bareRepoName: treekanga_bare
     defaultBranch: main
     zoxideFolders:
       - cmd

@@ -132,11 +132,17 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
 
 	if confirm {
 		for _, worktreeObj := range selectedWorktreeObj {
-			dir, err := os.Getwd()
-			if err != nil {
-				fmt.Println("Error:", err)
-				return
+			// Use the bare repo path if available, otherwise fall back to current directory
+			dir := deps.BareRepoPath
+			if dir == "" {
+				var err error
+				dir, err = os.Getwd()
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
 			}
+			log.Debug("Deleting branch ref", "branch", worktreeObj.BranchName, "path", dir)
 			deps.Git.DeleteBranchRef(worktreeObj.BranchName, dir)
 		}
 	} else {
@@ -146,7 +152,15 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
 }
 
 func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []worktreeobj.WorktreeObj {
-	worktreeStrings, wError := git.GetWorktrees()
+	var worktreeStrings []string
+	var wError error
+
+	if deps.BareRepoPath != "" {
+		worktreeStrings, wError = git.GetWorktrees(&deps.BareRepoPath)
+	} else {
+		worktreeStrings, wError = git.GetWorktrees(nil)
+	}
+
 	if wError != nil {
 		log.Fatal(wError)
 	}
@@ -168,8 +182,15 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
 	spinner.Title("Deleting Worktrees")
 	spinner.Action(func() {
+		// Use the resolved bare repo path if available
+		var path *string
+		if deps.BareRepoPath != "" {
+			path = &deps.BareRepoPath
+			log.Debug("Using bare repo path for removing worktrees", "path", deps.BareRepoPath)
+		}
+
 		for _, worktreeObj := range worktrees {
-			_, err := git.RemoveWorktree(worktreeObj.Folder)
+			_, err := git.RemoveWorktree(worktreeObj.Folder, path)
 			_ = zoxide.RemovePath(worktreeObj.FullPath)
 			util.CheckError(err)
 		}
@@ -182,7 +203,15 @@ func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
 	filter filter.Filter) []worktreeobj.WorktreeObj {
 
 	log.Info("filtering local branches only")
-	branches, err := deps.Git.GetRemoteBranches(nil)
+
+	// Use the resolved bare repo path if available
+	var path *string
+	if deps.BareRepoPath != "" {
+		path = &deps.BareRepoPath
+		log.Debug("Using bare repo path for remote branches", "path", deps.BareRepoPath)
+	}
+
+	branches, err := deps.Git.GetRemoteBranches(path)
 	util.CheckError(err)
 	cleanedBranches := transformer.RemoveOriginPrefix(branches)
 	worktrees = filter.GetBranchNoMatchList(cleanedBranches, worktrees)

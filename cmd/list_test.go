@@ -5,12 +5,13 @@ import (
 
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestListCmd(t *testing.T) {
 	// Mock the GetWorktrees method
 	mockGit := git.NewMockGit(t)
-	mockGit.On("GetWorktrees").Return([]string{
+	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)

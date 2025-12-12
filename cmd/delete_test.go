@@ -99,11 +99,11 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 func getMockGit(t *testing.T) *git.MockGit {
 	mockGit := git.NewMockGit(t)
-	mockGit.On("GetWorktrees").Return([]string{
+	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	mockGit.On("RemoveWorktree", mock.Anything).Return("", nil)
+	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything).Return("", nil)
 	return mockGit
 }
 

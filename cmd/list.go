@@ -43,7 +43,17 @@ var listCmd = &cobra.Command{
 }
 
 func buildWorktreeStrings(verbose bool) ([]string, error) {
-	rawWorktrees, err := deps.Git.GetWorktrees()
+	var rawWorktrees []string
+	var err error
+
+	if deps.BareRepoPath != "" {
+		log.Debug("Using bare repo path for worktree list", "path", deps.BareRepoPath)
+		rawWorktrees, err = deps.Git.GetWorktrees(&deps.BareRepoPath)
+	} else {
+		log.Debug("No bare repo path set, using current directory")
+		rawWorktrees, err = deps.Git.GetWorktrees(nil)
+	}
+
 	if err != nil {
 		return nil, err
 	}
