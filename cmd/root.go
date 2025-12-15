@@ -19,6 +19,8 @@ type Dependencies struct {
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
+	ResolvedRepo    string
+	BareRepoPath    string
 }
 
 var (
@@ -38,15 +40,21 @@ func NewRootCmd(git git.Git,
 		Long:    `CLI application to manage git worktree`,
 		Version: version,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			logger.LoggerInit(logLevel)
+
 			deps = Dependencies{
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
+				ResolvedRepo:    "",
+				BareRepoPath:    "",
 			}
 
-			logger.LoggerInit(logLevel)
+			repoName, bareRepoPath := resolveRepoNameAndPath()
+			deps.ResolvedRepo = repoName
+			deps.BareRepoPath = bareRepoPath
 
 		},
 	}

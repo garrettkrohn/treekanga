@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -17,8 +18,8 @@ const tempZoxideName = "temp_treekanga_worktree"
 type Git interface {
 	GetRemoteBranches(*string) ([]string, error)
 	GetLocalBranches(*string) ([]string, error)
-	GetWorktrees() ([]string, error)
-	RemoveWorktree(string) (string, error)
+	GetWorktrees(path *string) ([]string, error)
+	RemoveWorktree(worktreeName string, path *string) (string, error)
 	AddWorktree(c *com.AddConfig) error
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
@@ -62,20 +63,58 @@ func (g *RealGit) GetLocalBranches(path *string) ([]string, error) {
 	return branches, nil
 }
 
-func (g *RealGit) GetWorktrees() ([]string, error) {
-	out, err := g.shell.ListCmd("git", "worktree", "list")
+func (g *RealGit) GetWorktrees(path *string) ([]string, error) {
+	gitCmd := getBaseArguementsWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "worktree", "list")
+	out, err := g.shell.ListCmd("git", gitCmd...)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return out, nil
 }
 
-func (g *RealGit) RemoveWorktree(worktreeName string) (string, error) {
-	out, err := g.shell.Cmd("git", "worktree", "remove", worktreeName, "--force")
+func (g *RealGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
+	// When using a bare repo, convert absolute worktree path to relative path
+	worktreePath := worktreeName
+	if path != nil && filepath.IsAbs(worktreeName) {
+		// Fix the .git file if it points to the wrong location (from old bare repo)
+		err := g.fixWorktreeGitFile(worktreeName, *path)
+		if err != nil {
+			log.Debug("Could not fix .git file", "error", err)
+		}
+		
+		relPath, err := filepath.Rel(*path, worktreeName)
+		if err == nil {
+			worktreePath = relPath
+			log.Debug("Using relative path for worktree removal", "absolute", worktreeName, "relative", relPath)
+		}
+	}
+	
+	gitCmd := getBaseArguementsWithOrWithoutPath(path)
+	gitCmd = append(gitCmd, "worktree", "remove", worktreePath, "--force")
+	log.Debug("git args", "args", gitCmd)
+	out, err := g.shell.Cmd("git", gitCmd...)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to remove worktree %s: %w", worktreeName, err)
 	}
 	return out, nil
+}
+
+// fixWorktreeGitFile fixes the .git file in a worktree to point to the correct bare repo location
+func (g *RealGit) fixWorktreeGitFile(worktreePath string, bareRepoPath string) error {
+	gitFilePath := filepath.Join(worktreePath, ".git")
+	worktreeName := filepath.Base(worktreePath)
+	expectedGitDir := filepath.Join(bareRepoPath, "worktrees", worktreeName)
+	
+	// Write the corrected .git file using Go's file I/O
+	content := fmt.Sprintf("gitdir: %s\n", expectedGitDir)
+	err := os.WriteFile(gitFilePath, []byte(content), 0644)
+	if err != nil {
+		log.Debug("Failed to fix .git file", "error", err, "path", gitFilePath)
+		return err
+	}
+	log.Debug("Fixed .git file", "path", gitFilePath, "points to", expectedGitDir)
+	return nil
 }
 
 func (g *RealGit) AddWorktree(c *com.AddConfig) error {
@@ -138,6 +177,7 @@ func (g *RealGit) CloneBare(url string, folderName string) error {
 	return nil
 }
 
+// NOTE: I this can be removed
 func (g *RealGit) CreateTempBranch(path string) error {
 	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
 	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
@@ -164,6 +204,15 @@ func (g *RealGit) ConfigureGitBare(path string) error {
 	if err != nil {
 		return err
 	}
+	
+	// After configuring the fetch refspec, we need to fetch to populate remote-tracking branches
+	// In a bare clone, branches are initially in refs/heads/, but we want them in refs/remotes/origin/
+	_, err = g.shell.Cmd("git", "-C", path, "fetch", "origin")
+	if err != nil {
+		log.Debug("Warning: fetch after bare config failed", "error", err)
+		// Don't return error as the repo might still be usable
+	}
+	
 	return nil
 }
 

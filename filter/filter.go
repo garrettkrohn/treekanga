@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -26,15 +25,15 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 
 	for _, worktree := range worktreeBranches {
 		trimmedBranchName := strings.TrimSpace(worktree.Folder)
-		log.Debug(fmt.Sprintf("Checking worktree branch: '%s'", trimmedBranchName))
+		log.Debug("Checking worktree branch", "branch", trimmedBranchName)
 
 		if slices.Contains(remoteBranches, trimmedBranchName) {
-			log.Debug(fmt.Sprintf("'%s' exists in remote branches", trimmedBranchName))
+			log.Debug("branch exists in remote branches", "branch", trimmedBranchName)
 		} else {
 			for _, remoteBranch := range remoteBranches {
-				log.Debug(fmt.Sprintf("Comparing '%s' with remote branch '%s'", trimmedBranchName, remoteBranch))
+				log.Debug("Comparing with remote branch", "local", trimmedBranchName, "remote", remoteBranch)
 			}
-			log.Debug(fmt.Sprintf("'%s' not in remote branches: %s", trimmedBranchName, remoteBranches))
+			log.Debug("branch not in remote branches", "branch", trimmedBranchName, "remoteBranches", remoteBranches)
 			nonMatchingWorktrees = append(nonMatchingWorktrees, worktree)
 		}
 	}

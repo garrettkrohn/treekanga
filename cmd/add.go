@@ -4,8 +4,6 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/log"
 	com "github.com/garrettkrohn/treekanga/common"
 	util "github.com/garrettkrohn/treekanga/utility"
@@ -46,7 +44,7 @@ var addCmd = &cobra.Command{
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
-		log.Info(fmt.Sprintf("worktree %s created", c.GetNewBranchName()))
+		log.Info("worktree created", "branch", c.GetNewBranchName())
 
 		deps.Zoxide.AddZoxideEntries(&c)
 
@@ -62,10 +60,10 @@ var addCmd = &cobra.Command{
 			deps.Connector.VsCodeConnect(&c)
 		}
 
-		if c.HasPostScript() {
+		if c.HasPostScript() && *c.Flags.ExecuteScript {
 			script := c.GetPostScript()
 			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
-			log.Info(fmt.Sprintf("post script run with the following command: %s", script))
+			log.Info("post script run", "command", script)
 		}
 	},
 }
@@ -75,6 +73,7 @@ func init() {
 	addCmd.Flags().BoolP("pull", "p", false, "Pull the base branch before creating new branch")
 	addCmd.Flags().BoolP("cursor", "c", false, "Open up new worktree in cursor")
 	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
+	addCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
 	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")

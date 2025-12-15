@@ -15,16 +15,241 @@ import (
 	util "github.com/garrettkrohn/treekanga/utility"
 )
 
+// resolveRepoNameAndPath implements the fallback logic for determining the repo name and bare repo path
+// 1. First tries to use the current directory name
+// 2. Checks sibling directories for matching bareRepoName configs
+// 3. Checks if parent directory matches any repo's bareRepoName config
+// 4. If that doesn't exist in config, falls back to git.GetRepoName()
+// Returns: (repoName, bareRepoPath)
+func resolveRepoNameAndPath() (string, string) {
+	log.Debug("=== Starting bare repo resolution ===")
+
+	// Get current working directory
+	workingDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error getting working directory: ", err)
+	}
+	log.Debug("Current working directory", "path", workingDir)
+
+	// Get directory name (parent directory of current working directory)
+	parentDir := filepath.Dir(workingDir)
+	directoryName := filepath.Base(parentDir)
+	currentDirName := filepath.Base(workingDir)
+	log.Debug("Directory info", "current", currentDirName, "parent", directoryName, "parentPath", parentDir)
+
+	// Check if directory name exists in viper config
+	log.Debug("Step 1: Checking if parent directory name exists in config", "checking", "repos."+directoryName)
+	if viper.IsSet("repos." + directoryName) {
+		log.Debug("✓ Repo directory name found in config", "directory name", directoryName)
+		// Parent directory is likely the bare repo
+		return "repos." + directoryName, parentDir
+	}
+	log.Debug("✗ Parent directory name not found in config")
+
+	// Check sibling directories to find a matching bareRepoName
+	// This handles cases where we're in a worktree and the bare repo is a sibling
+	log.Debug("Step 2: Checking sibling directories for matching bareRepoName", "parentDir", parentDir)
+	repoKey, bareRepoPath := findRepoByBareRepoInSiblings(parentDir)
+	if repoKey != "" {
+		log.Debug("✓ Repo found by checking sibling directories", "repo", repoKey, "bareRepoPath", bareRepoPath)
+		return repoKey, bareRepoPath
+	}
+	log.Debug("✗ No matching bareRepoName found in siblings")
+
+	// Check if the parent directory matches any repo's bareRepoName config
+	log.Debug("Step 3: Checking if parent directory matches any bareRepoName config", "directoryName", directoryName)
+	repoKey = findRepoByBareRepoName(directoryName, parentDir)
+	if repoKey != "" {
+		log.Debug("✓ Repo found by bareRepoName match", "repo", repoKey, "bareRepoName", directoryName)
+		// Parent directory is the bare repo
+		return repoKey, parentDir
+	}
+	log.Debug("✗ Parent directory doesn't match any bareRepoName")
+
+	// Check if we're in a nested structure (e.g., project/.bare/worktree)
+	// Try going up one more level
+	grandparentPath := filepath.Dir(parentDir)
+	grandparentDir := filepath.Base(grandparentPath)
+	log.Debug("Step 4: Checking grandparent directory", "grandparent", grandparentDir, "checking", "repos."+grandparentDir)
+	if viper.IsSet("repos." + grandparentDir) {
+		log.Debug("✓ Repo found by grandparent directory", "directory name", grandparentDir)
+		return "repos." + grandparentDir, grandparentPath
+	}
+	log.Debug("✗ Grandparent directory not found in config")
+
+	// Fallback to git.GetRepoName()
+	log.Debug("Step 5: Falling back to git.GetRepoName()")
+	repoName, err := deps.Git.GetRepoName(workingDir)
+	if err != nil {
+		log.Error("Error resolving repo name via git", "error", err)
+		log.Fatal("Error resolving repo name: ", err)
+	}
+	log.Debug("Git repo name resolved", "repoName", repoName)
+
+	// Check if git repo name exists in viper config
+	log.Debug("Step 6: Checking if git repo name exists in config", "checking", "repos."+repoName)
+	if viper.IsSet("repos." + repoName) {
+		log.Debug("✓ Repo git directory name found in config", "repoName", repoName)
+		// Try to find the actual bare repo path
+		bareRepoPath = determineBareRepoPath(repoName, workingDir)
+		return "repos." + repoName, bareRepoPath
+	}
+	log.Debug("✗ Git repo name not found in config")
+
+	log.Error("Failed to resolve repo name through all methods")
+	log.Fatal("No directory name, or git directory name found in the config")
+	return "", ""
+}
+
+// determineBareRepoPath tries to determine the path to the bare repository
+// when we've resolved the repo name but don't have a specific path
+func determineBareRepoPath(repoName string, workingDir string) string {
+	log.Debug("  → Attempting to determine bare repo path", "repoName", repoName, "workingDir", workingDir)
+
+	// Check if there's a configured bareRepoName
+	configuredBareRepoName := viper.GetString(repoName + ".bareRepoName")
+	if configuredBareRepoName != "" {
+		log.Debug("  → Found configured bareRepoName", "bareRepoName", configuredBareRepoName)
+		// Look for this directory as a sibling
+		parentDir := filepath.Dir(workingDir)
+		bareRepoPath := filepath.Join(parentDir, configuredBareRepoName)
+		if _, err := os.Stat(bareRepoPath); err == nil {
+			log.Debug("  → ✓ Found bare repo at expected location", "path", bareRepoPath)
+			return bareRepoPath
+		}
+	}
+
+	// Default to working directory (might be the bare repo itself)
+	log.Debug("  → Defaulting to working directory", "path", workingDir)
+	return workingDir
+}
+
+// findRepoByBareRepoName searches all repo configs to find one with a matching bareRepoName
+func findRepoByBareRepoName(bareRepoName string, parentDir ...string) string {
+	log.Debug("  → Searching for bareRepoName in configs", "looking for", bareRepoName)
+	repos := viper.GetStringMap("repos")
+	log.Debug("  → Found repos in config", "count", len(repos), "repos", repos)
+
+	// Collect all matching repos
+	var matches []string
+	for repoName := range repos {
+		configuredBareRepoName := viper.GetString(fmt.Sprintf("repos.%s.bareRepoName", repoName))
+		log.Debug("  → Checking repo", "repo", repoName, "configuredBareRepoName", configuredBareRepoName, "looking for", bareRepoName)
+
+		if configuredBareRepoName != "" && configuredBareRepoName == bareRepoName {
+			log.Debug("  → ✓ Match found!", "repo", repoName, "bareRepoName", configuredBareRepoName)
+			matches = append(matches, repoName)
+		}
+	}
+
+	// If no matches, return empty
+	if len(matches) == 0 {
+		log.Debug("  → ✗ No matching bareRepoName found in any repo config")
+		return ""
+	}
+
+	// If only one match, return it
+	if len(matches) == 1 {
+		return "repos." + matches[0]
+	}
+
+	// Multiple matches found - try to disambiguate using worktreetargetdir and parentDir
+	log.Debug("  → Multiple matches found, disambiguating", "matches", matches, "count", len(matches))
+	
+	if len(parentDir) > 0 {
+		currentParent := parentDir[0]
+		log.Debug("  → Using parent directory for disambiguation", "parentDir", currentParent)
+		
+		// Check each match for worktreetargetdir
+		for _, repoName := range matches {
+			worktreeTargetDir := viper.GetString(fmt.Sprintf("repos.%s.worktreeTargetDir", repoName))
+			log.Debug("  → Checking worktreetargetdir", "repo", repoName, "worktreeTargetDir", worktreeTargetDir)
+			
+			if worktreeTargetDir != "" {
+				// Expand the worktreeTargetDir if it starts with ~
+				if len(worktreeTargetDir) > 0 && worktreeTargetDir[0] == '~' {
+					homeDir, err := os.UserHomeDir()
+					if err == nil {
+						worktreeTargetDir = filepath.Join(homeDir, worktreeTargetDir[1:])
+					}
+				}
+				
+				// Check if the parentDir matches or contains the base of worktreeTargetDir
+				worktreeBase := filepath.Base(worktreeTargetDir)
+				parentBase := filepath.Base(currentParent)
+				log.Debug("  → Comparing paths", "parentBase", parentBase, "worktreeBase", worktreeBase)
+				
+				if parentBase == worktreeBase || currentParent == worktreeTargetDir {
+					log.Debug("  → ✓ Disambiguated by worktreetargetdir match!", "repo", repoName)
+					return "repos." + repoName
+				}
+			}
+		}
+	}
+
+	// If we still can't disambiguate, return the first match but warn
+	log.Warn("  → ⚠ Multiple repos with same bareRepoName, using first match", "bareRepoName", bareRepoName, "matches", matches, "selected", matches[0])
+	return "repos." + matches[0]
+}
+
+// findRepoByBareRepoInSiblings checks sibling directories to see if any match a configured bareRepoName
+// This is useful when we're in a worktree and need to find the bare repo which is a sibling directory
+// Returns: (repoKey, bareRepoPath)
+func findRepoByBareRepoInSiblings(parentDir string) (string, string) {
+	log.Debug("  → Checking sibling directories in parent", "parentDir", parentDir)
+
+	// Read the parent directory to get all siblings
+	entries, err := os.ReadDir(parentDir)
+	if err != nil {
+		log.Debug("  → ✗ Could not read parent directory", "error", err)
+		return "", ""
+	}
+
+	log.Debug("  → Found entries in parent directory", "count", len(entries))
+
+	// Check each sibling directory to see if it matches a configured bareRepoName
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirName := entry.Name()
+			log.Debug("  → Checking sibling directory", "name", dirName)
+			repoKey := findRepoByBareRepoName(dirName, parentDir)
+			if repoKey != "" {
+				bareRepoPath := filepath.Join(parentDir, dirName)
+				log.Debug("  → ✓ Found bare repo in sibling directory!", "directory", dirName, "repo", repoKey, "path", bareRepoPath)
+				return repoKey, bareRepoPath
+			}
+		} else {
+			log.Debug("  → Skipping non-directory entry", "name", entry.Name())
+		}
+	}
+
+	log.Debug("  → ✗ No matching bare repo found in sibling directories")
+	return "", ""
+}
+
 func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	addCmdFlagsAndArgs(cmd, args, c)
+
+	// Resolve repo name and bare repo path early
+	repoName, bareRepoPath := resolveRepoNameAndPath()
+	deps.ResolvedRepo = repoName
+	deps.BareRepoPath = bareRepoPath
+
+	// If user didn't provide -d flag, use the resolved bare repo path for git operations
+	if c.Flags.Directory == nil && bareRepoPath != "" {
+		log.Debug("Using resolved bare repo path for git operations", "path", bareRepoPath)
+		c.Flags.Directory = &bareRepoPath
+	}
+
 	setWorkingAndParentDir(c)
+
 	getGitConfig(c)
 	getZoxideConfig(c)
 	getPostScript(c)
 }
 
 func getZoxideConfig(c *com.AddConfig) {
-	c.ZoxideFolders = viper.GetStringSlice("repos." + c.GetRepoName() + ".zoxideFolders")
+	c.ZoxideFolders = viper.GetStringSlice(deps.ResolvedRepo + ".zoxideFolders")
 	c.DirectoryReader = deps.DirectoryReader
 }
 
@@ -86,6 +311,14 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	}
 	util.CheckError(err)
 
+	executeScript, err := cmd.Flags().GetBool("script")
+	if err != nil {
+		flags.ExecuteScript = nil
+	} else {
+		flags.ExecuteScript = &executeScript
+	}
+	util.CheckError(err)
+
 	c.Flags = flags
 	c.Args = args
 }
@@ -114,14 +347,14 @@ func getGitConfig(c *com.AddConfig) {
 		log.Fatal("please include new branch name as an argument")
 	}
 
-	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
-	util.CheckError(err)
+	repoName := deps.ResolvedRepo
+
 	c.GitInfo.RepoName = repoName
 
 	if c.Flags.BaseBranch != nil {
 		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
 	} else {
-		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
+		baseBranch = viper.GetString(deps.ResolvedRepo + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
@@ -159,7 +392,7 @@ func resolveWorktreeTargetDir(repoName string, c *com.AddConfig) string {
 	worktreeName := getWorktreeName(c)
 
 	// Check if there's a configured worktree target directory
-	configWorktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
+	configWorktreeTargetDir := viper.GetString(repoName + ".worktreeTargetDir")
 
 	if configWorktreeTargetDir != "" {
 		// Use configured directory under home path
@@ -193,7 +426,7 @@ func validateConfig(c *com.AddConfig) {
 
 	// if a path is provided, be sure it exists
 	if c.Flags.Directory != nil {
-		log.Debug(fmt.Sprintf("inputted path: %s ", *c.Flags.Directory))
+		log.Debug("inputted path", "path", *c.Flags.Directory)
 		_, err := os.Stat(*c.Flags.Directory)
 		if err != nil {
 			log.Fatal("path does not exist")
@@ -208,12 +441,14 @@ func validateConfig(c *com.AddConfig) {
 }
 
 func getPostScript(c *com.AddConfig) {
-	repoName, err := deps.Git.GetRepoName(c.WorkingDir)
-	util.CheckError(err)
-	postScript := viper.GetString("repos." + repoName + ".postScript")
+	postScript := viper.GetString(deps.ResolvedRepo + ".postScript")
 	if postScript == "" {
-		log.Debug("no post script found")
+		log.Debug("no post script found in config file")
 		return
 	}
 	c.PostScript = postScript
+
+	autoRunPostScript := viper.GetBool(deps.ResolvedRepo + ".autoRunPostScript")
+	c.AutoRunPostScript = &autoRunPostScript
+
 }
