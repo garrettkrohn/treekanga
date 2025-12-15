@@ -54,6 +54,10 @@ func NewRootCmd(git git.Git,
 				BareRepoPath:    "",
 			}
 
+			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
+				return
+			}
+
 			repoName, bareRepoPath := resolveRepoNameAndPath()
 			deps.ResolvedRepo = repoName
 			deps.BareRepoPath = bareRepoPath
