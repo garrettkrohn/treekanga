@@ -146,6 +146,10 @@ func getGitConfig(c *com.AddConfig) {
 	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
 	c.WorktreeTargetDir = resolveWorktreeTargetDir(repoName, c)
+	autoPull := viper.GetBool("repos."+repoName+".autoPull") == true
+	if autoPull == true {
+		c.AutoPull = true
+	}
 }
 
 // resolveWorktreeTargetDir determines the target directory for the new worktree

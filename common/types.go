@@ -15,6 +15,7 @@ type AddConfig struct {
 	WorkingDir        string
 	ParentDir         string
 	WorktreeTargetDir string
+	AutoPull          bool
 
 	// Git repository information
 	GitInfo GitInfo
