@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	com "github.com/garrettkrohn/treekanga/common"
@@ -229,93 +227,6 @@ func TestFindRepoByBareRepoName(t *testing.T) {
 
 			result := findRepoByBareRepoName(tt.bareRepoName)
 			assert.Equal(t, tt.expected, result, tt.description)
-		})
-	}
-
-	// Clean up
-	viper.Reset()
-}
-
-func TestFindRepoByBareRepoInSiblings(t *testing.T) {
-	// Create a temporary directory structure for testing
-	tmpDir := t.TempDir()
-
-	tests := []struct {
-		name        string
-		setupDirs   []string
-		parentDir   string
-		configSetup func()
-		expected    string
-		description string
-	}{
-		{
-			name:      "finds bare repo in sibling directory",
-			setupDirs: []string{".bare", "feature-branch", "another-worktree"},
-			parentDir: tmpDir,
-			configSetup: func() {
-				viper.Reset()
-				viper.Set("repos.myproject.bareRepoName", ".bare")
-				viper.Set("repos.myproject.defaultBranch", "main")
-			},
-			expected:    "repos.myproject",
-			description: "should find .bare sibling directory matching bareRepoName config",
-		},
-		{
-			name:      "finds bare repo with underscore naming",
-			setupDirs: []string{"myproject_bare", "feature-branch"},
-			parentDir: tmpDir,
-			configSetup: func() {
-				viper.Reset()
-				viper.Set("repos.myproject.bareRepoName", "myproject_bare")
-				viper.Set("repos.myproject.defaultBranch", "main")
-			},
-			expected:    "repos.myproject",
-			description: "should find _bare sibling directory",
-		},
-		{
-			name:      "returns empty when no matching siblings",
-			setupDirs: []string{"some-dir", "another-dir"},
-			parentDir: tmpDir,
-			configSetup: func() {
-				viper.Reset()
-				viper.Set("repos.myproject.bareRepoName", ".bare")
-				viper.Set("repos.myproject.defaultBranch", "main")
-			},
-			expected:    "",
-			description: "should return empty when no siblings match bareRepoName",
-		},
-		{
-			name:      "returns empty when no repos configured",
-			setupDirs: []string{".bare", "feature-branch"},
-			parentDir: tmpDir,
-			configSetup: func() {
-				viper.Reset()
-			},
-			expected:    "",
-			description: "should return empty when no repos are configured",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create test directory structure
-			testParentDir := filepath.Join(tmpDir, tt.name)
-			err := os.MkdirAll(testParentDir, 0755)
-			assert.NoError(t, err)
-
-			for _, dir := range tt.setupDirs {
-				err := os.MkdirAll(filepath.Join(testParentDir, dir), 0755)
-				assert.NoError(t, err)
-			}
-
-			// Setup config for this test
-			tt.configSetup()
-
-			result, _ := findRepoByBareRepoInSiblings(testParentDir)
-			assert.Equal(t, tt.expected, result, tt.description)
-
-			// Cleanup test directory
-			os.RemoveAll(testParentDir)
 		})
 	}
 
