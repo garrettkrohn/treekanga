@@ -58,7 +58,7 @@ func resolveRepoNameAndPath() (string, string) {
 
 	// Check if the parent directory matches any repo's bareRepoName config
 	log.Debug("Step 3: Checking if parent directory matches any bareRepoName config", "directoryName", directoryName)
-	repoKey = findRepoByBareRepoName(directoryName)
+	repoKey = findRepoByBareRepoName(directoryName, parentDir)
 	if repoKey != "" {
 		log.Debug("✓ Repo found by bareRepoName match", "repo", repoKey, "bareRepoName", directoryName)
 		// Parent directory is the bare repo
@@ -125,22 +125,71 @@ func determineBareRepoPath(repoName string, workingDir string) string {
 }
 
 // findRepoByBareRepoName searches all repo configs to find one with a matching bareRepoName
-func findRepoByBareRepoName(bareRepoName string) string {
+func findRepoByBareRepoName(bareRepoName string, parentDir ...string) string {
 	log.Debug("  → Searching for bareRepoName in configs", "looking for", bareRepoName)
 	repos := viper.GetStringMap("repos")
 	log.Debug("  → Found repos in config", "count", len(repos), "repos", repos)
 
+	// Collect all matching repos
+	var matches []string
 	for repoName := range repos {
 		configuredBareRepoName := viper.GetString(fmt.Sprintf("repos.%s.bareRepoName", repoName))
 		log.Debug("  → Checking repo", "repo", repoName, "configuredBareRepoName", configuredBareRepoName, "looking for", bareRepoName)
 
 		if configuredBareRepoName != "" && configuredBareRepoName == bareRepoName {
 			log.Debug("  → ✓ Match found!", "repo", repoName, "bareRepoName", configuredBareRepoName)
-			return "repos." + repoName
+			matches = append(matches, repoName)
 		}
 	}
-	log.Debug("  → ✗ No matching bareRepoName found in any repo config")
-	return ""
+
+	// If no matches, return empty
+	if len(matches) == 0 {
+		log.Debug("  → ✗ No matching bareRepoName found in any repo config")
+		return ""
+	}
+
+	// If only one match, return it
+	if len(matches) == 1 {
+		return "repos." + matches[0]
+	}
+
+	// Multiple matches found - try to disambiguate using worktreetargetdir and parentDir
+	log.Debug("  → Multiple matches found, disambiguating", "matches", matches, "count", len(matches))
+	
+	if len(parentDir) > 0 {
+		currentParent := parentDir[0]
+		log.Debug("  → Using parent directory for disambiguation", "parentDir", currentParent)
+		
+		// Check each match for worktreetargetdir
+		for _, repoName := range matches {
+			worktreeTargetDir := viper.GetString(fmt.Sprintf("repos.%s.worktreeTargetDir", repoName))
+			log.Debug("  → Checking worktreetargetdir", "repo", repoName, "worktreeTargetDir", worktreeTargetDir)
+			
+			if worktreeTargetDir != "" {
+				// Expand the worktreeTargetDir if it starts with ~
+				if len(worktreeTargetDir) > 0 && worktreeTargetDir[0] == '~' {
+					homeDir, err := os.UserHomeDir()
+					if err == nil {
+						worktreeTargetDir = filepath.Join(homeDir, worktreeTargetDir[1:])
+					}
+				}
+				
+				// Check if the parentDir matches or contains the base of worktreeTargetDir
+				worktreeBase := filepath.Base(worktreeTargetDir)
+				parentBase := filepath.Base(currentParent)
+				log.Debug("  → Comparing paths", "parentBase", parentBase, "worktreeBase", worktreeBase)
+				
+				if parentBase == worktreeBase || currentParent == worktreeTargetDir {
+					log.Debug("  → ✓ Disambiguated by worktreetargetdir match!", "repo", repoName)
+					return "repos." + repoName
+				}
+			}
+		}
+	}
+
+	// If we still can't disambiguate, return the first match but warn
+	log.Warn("  → ⚠ Multiple repos with same bareRepoName, using first match", "bareRepoName", bareRepoName, "matches", matches, "selected", matches[0])
+	return "repos." + matches[0]
 }
 
 // findRepoByBareRepoInSiblings checks sibling directories to see if any match a configured bareRepoName
@@ -163,7 +212,7 @@ func findRepoByBareRepoInSiblings(parentDir string) (string, string) {
 		if entry.IsDir() {
 			dirName := entry.Name()
 			log.Debug("  → Checking sibling directory", "name", dirName)
-			repoKey := findRepoByBareRepoName(dirName)
+			repoKey := findRepoByBareRepoName(dirName, parentDir)
 			if repoKey != "" {
 				bareRepoPath := filepath.Join(parentDir, dirName)
 				log.Debug("  → ✓ Found bare repo in sibling directory!", "directory", dirName, "repo", repoKey, "path", bareRepoPath)
@@ -298,7 +347,9 @@ func getGitConfig(c *com.AddConfig) {
 		log.Fatal("please include new branch name as an argument")
 	}
 
-	c.GitInfo.RepoName = deps.ResolvedRepo
+	repoName := deps.ResolvedRepo
+
+	c.GitInfo.RepoName = repoName
 
 	if c.Flags.BaseBranch != nil {
 		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
@@ -327,7 +378,11 @@ func getGitConfig(c *com.AddConfig) {
 	c.GitInfo.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, c.GetBaseBranchName())
 	c.GitInfo.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, c.GetBaseBranchName())
 
-	c.WorktreeTargetDir = resolveWorktreeTargetDir(deps.ResolvedRepo, c)
+	c.WorktreeTargetDir = resolveWorktreeTargetDir(repoName, c)
+	autoPull := viper.GetBool("repos."+repoName+".autoPull") == true
+	if autoPull == true {
+		c.AutoPull = true
+	}
 }
 
 // resolveWorktreeTargetDir determines the target directory for the new worktree

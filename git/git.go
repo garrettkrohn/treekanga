@@ -146,7 +146,7 @@ func (g *RealGit) determineBranchArguments(c *com.AddConfig) []string {
 
 	// Case 2: Base branch exists locally
 	if c.GitInfo.BaseBranchExistsLocally {
-		if c.ShouldPull() {
+		if c.ShouldPull() || c.AutoPull {
 			// Create new branch from remote version of base branch
 			return []string{"-b", c.GetNewBranchName(), "origin/" + c.GetBaseBranchName(), "--no-track"}
 		} else {
