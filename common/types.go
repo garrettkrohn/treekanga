@@ -100,6 +100,7 @@ type AddCmdFlags struct {
 	VsCode                *bool
 	SpecifiedWorktreeName *string
 	ExecuteScript         *bool
+	From                  *bool
 }
 
 type GitInfo struct {

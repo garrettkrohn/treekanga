@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,6 +14,7 @@ import (
 	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
+	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 // resolveRepoNameAndPath implements the fallback logic for determining the repo name and bare repo path
@@ -197,6 +199,11 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 
 	setWorkingAndParentDir(c)
 
+	// Handle the --from flag to select base branch from worktrees
+	if c.Flags.From != nil && *c.Flags.From {
+		handleFromFlag(c)
+	}
+
 	getGitConfig(c)
 	getZoxideConfig(c)
 	getPostScript(c)
@@ -270,6 +277,14 @@ func addCmdFlagsAndArgs(cmd *cobra.Command, args []string, c *com.AddConfig) {
 		flags.ExecuteScript = nil
 	} else {
 		flags.ExecuteScript = &executeScript
+	}
+	util.CheckError(err)
+
+	from, err := cmd.Flags().GetBool("from")
+	if err != nil {
+		flags.From = nil
+	} else {
+		flags.From = &from
 	}
 	util.CheckError(err)
 
@@ -405,4 +420,112 @@ func getPostScript(c *com.AddConfig) {
 	autoRunPostScript := viper.GetBool(deps.ResolvedRepo + ".autoRunPostScript")
 	c.AutoRunPostScript = &autoRunPostScript
 
+}
+
+// handleFromFlag prompts the user to select a base branch from existing worktrees
+// sorted by most recent use (via zoxide scores)
+func handleFromFlag(c *com.AddConfig) {
+	log.Debug("Handling --from flag to select base branch from worktrees")
+
+	// Get all worktrees
+	var rawWorktrees []string
+	var err error
+
+	if c.Flags.Directory != nil {
+		log.Debug("Using provided directory for worktree list", "path", *c.Flags.Directory)
+		rawWorktrees, err = deps.Git.GetWorktrees(c.Flags.Directory)
+	} else {
+		log.Debug("No directory provided, using current directory")
+		rawWorktrees, err = deps.Git.GetWorktrees(nil)
+	}
+
+	if err != nil {
+		log.Fatal("Error getting worktrees:", err)
+	}
+
+	// Transform worktrees to objects
+	worktreetransformer := transformer.NewTransformer()
+	worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
+
+	if len(worktreeObjects) == 0 {
+		log.Fatal("No worktrees found")
+	}
+
+	// Sort worktrees by zoxide score (most recent first)
+	sortedWorktrees := sortWorktreesByZoxideScore(worktreeObjects)
+
+	// Create options for selection (branch names)
+	var options []string
+	for _, wt := range sortedWorktrees {
+		options = append(options, wt.BranchName)
+	}
+
+	// Present selection interface
+	var selectedBranch string
+	err = selectBranchForm(&selectedBranch, options)
+	util.CheckError(err)
+
+	if selectedBranch == "" {
+		log.Fatal("No branch selected")
+	}
+
+	log.Info("Selected base branch", "branch", selectedBranch)
+
+	// Set the selected branch as the base branch
+	c.Flags.BaseBranch = &selectedBranch
+}
+
+// sortWorktreesByZoxideScore sorts worktrees by their zoxide scores (most recent first)
+func sortWorktreesByZoxideScore(worktrees []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+	type worktreeWithScore struct {
+		worktree worktreeobj.WorktreeObj
+		score    float64
+	}
+
+	// Get scores for all worktrees
+	var worktreesWithScores []worktreeWithScore
+	for _, wt := range worktrees {
+		score, err := deps.Zoxide.QueryScore(wt.FullPath)
+		if err != nil {
+			log.Debug("Error querying zoxide score", "path", wt.FullPath, "error", err)
+			score = 0
+		}
+		log.Debug("Zoxide score", "branch", wt.BranchName, "path", wt.FullPath, "score", score)
+		worktreesWithScores = append(worktreesWithScores, worktreeWithScore{
+			worktree: wt,
+			score:    score,
+		})
+	}
+
+	// Sort by score (highest first)
+	slices.SortFunc(worktreesWithScores, func(a, b worktreeWithScore) int {
+		if a.score > b.score {
+			return -1
+		}
+		if a.score < b.score {
+			return 1
+		}
+		return 0
+	})
+
+	// Extract sorted worktrees
+	var sorted []worktreeobj.WorktreeObj
+	for _, wts := range worktreesWithScores {
+		sorted = append(sorted, wts.worktree)
+	}
+
+	return sorted
+}
+
+// selectBranchForm presents a selection interface for choosing a branch
+func selectBranchForm(selection *string, options []string) error {
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select base branch for new worktree:").
+				Options(huh.NewOptions(options...)...).
+				Value(selection),
+		),
+	)
+	return form.Run()
 }
