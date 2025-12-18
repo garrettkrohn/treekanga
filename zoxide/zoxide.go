@@ -1,6 +1,7 @@
 package zoxide
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/garrettkrohn/treekanga/common"
@@ -13,6 +14,7 @@ type Zoxide interface {
 	AddPath(path string) error
 	RemovePath(path string) error
 	AddZoxideEntries(c *common.AddConfig)
+	QueryScore(path string) (float64, error)
 }
 
 type RealZoxide struct {
@@ -45,6 +47,26 @@ func (r *RealZoxide) AddZoxideEntries(c *common.AddConfig) {
 		err := r.AddPath(folder)
 		util.CheckError(err)
 	}
+}
+
+func (r *RealZoxide) QueryScore(path string) (float64, error) {
+	output, err := r.shell.Cmd("zoxide", "query", "--score", path)
+	if err != nil {
+		// If zoxide doesn't have this path, return 0
+		return 0, nil
+	}
+	// Parse the output which should be in format "score path"
+	parts := strings.Fields(output)
+	if len(parts) < 1 {
+		return 0, nil
+	}
+	// Try to parse the score
+	var score float64
+	_, parseErr := fmt.Sscanf(parts[0], "%f", &score)
+	if parseErr != nil {
+		return 0, nil
+	}
+	return score, nil
 }
 
 func addConfigFolders(foldersToAdd []string, foldersToAddFromConfig []string, baseName string, directoryReader directoryReader.DirectoryReader) []string {

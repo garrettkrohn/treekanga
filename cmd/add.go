@@ -27,6 +27,7 @@ var addCmd = &cobra.Command{
 
     Available flags:
     -b, --base: Specify the base branch for the new worktree
+    -f, --from: Select base branch from list of existing worktrees (sorted by recent use)
     -p, --pull: Pull the base branch before creating new branch
     -c, --cursor: Open the new worktree in Cursor
     -v, --vscode: Open the new worktree in VS Code
@@ -74,6 +75,7 @@ func init() {
 	addCmd.Flags().BoolP("cursor", "c", false, "Open up new worktree in cursor")
 	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
 	addCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
+	addCmd.Flags().BoolP("from", "f", false, "Select base branch from list of branches")
 	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
