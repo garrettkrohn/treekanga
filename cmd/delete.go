@@ -166,6 +166,9 @@ func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []workt
 
 	worktrees := transformer.TransformWorktrees(worktreeStrings)
 
+	// Sort worktrees by most recently modified
+	sortWorktreesByModTime(worktrees)
+
 	return worktrees
 }
 

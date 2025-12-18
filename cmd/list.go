@@ -5,6 +5,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"sort"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -73,6 +75,9 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 	worktreetransformer := transformer.NewTransformer()
 	worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
 
+	// Sort worktrees by most recently modified
+	sortWorktreesByModTime(worktreeObjects)
+
 	// Get the display mode from config (default to "branch" for backward compatibility)
 	displayMode := getListDisplayMode()
 	log.Debug("List display mode", "mode", displayMode)
@@ -109,6 +114,27 @@ func getDisplayString(worktree worktreeobj.WorktreeObj, displayMode string) stri
 		return worktree.Folder
 	}
 	return worktree.BranchName
+}
+
+// sortWorktreesByModTime sorts worktrees by modification time (most recent first)
+func sortWorktreesByModTime(worktrees []worktreeobj.WorktreeObj) {
+	sort.Slice(worktrees, func(i, j int) bool {
+		statI, errI := os.Stat(worktrees[i].FullPath)
+		statJ, errJ := os.Stat(worktrees[j].FullPath)
+
+		// If there's an error accessing either path, push it to the end
+		if errI != nil {
+			log.Debug("Error stat'ing worktree", "path", worktrees[i].FullPath, "error", errI)
+			return false
+		}
+		if errJ != nil {
+			log.Debug("Error stat'ing worktree", "path", worktrees[j].FullPath, "error", errJ)
+			return true
+		}
+
+		// Sort by modification time, most recent first
+		return statI.ModTime().After(statJ.ModTime())
+	})
 }
 
 func init() {
