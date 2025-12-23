@@ -54,7 +54,7 @@ func NewRootCmd(git git.Git,
 				BareRepoPath:    "",
 			}
 
-			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
+			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" || cmd.Name() == "clone" {
 				return
 			}
 
@@ -87,7 +87,7 @@ func Execute(version string) {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(cloneCmd)
-	
+
 	if err := fang.Execute(context.Background(), rootCmd); err != nil {
 		os.Exit(1)
 	}
