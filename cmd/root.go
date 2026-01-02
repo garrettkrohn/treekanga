@@ -88,7 +88,11 @@ func Execute(version string) {
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(cloneCmd)
 
-	if err := fang.Execute(context.Background(), rootCmd); err != nil {
+	options := []fang.Option{
+		fang.WithVersion(version),
+	}
+
+	if err := fang.Execute(context.Background(), rootCmd, options...); err != nil {
 		os.Exit(1)
 	}
 }
