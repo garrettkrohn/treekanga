@@ -35,6 +35,7 @@ var addCmd = &cobra.Command{
     -d, --directory: Specify the directory to the bare repo`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		log.Info("Validating configuration")
 		c := com.AddConfig{}
 		getAddCmdConfig(cmd, args, &c)
 
@@ -45,8 +46,15 @@ var addCmd = &cobra.Command{
 		err := deps.Git.AddWorktree(&c)
 		util.CheckError(err)
 
-		log.Info("worktree created", "branch", c.GetNewBranchName())
+		if c.GitInfo.NewBranchExistsLocally {
+			log.Info("worktree created with existing branch", "branch", c.GetNewBranchName())
+		} else {
+			log.Info("worktree created with new branch cut from branch",
+				"newBranch", c.GetNewBranchName(),
+				"baseBranch", c.GitInfo.BaseBranchName)
+		}
 
+		log.Info("adding zoxide entries")
 		deps.Zoxide.AddZoxideEntries(&c)
 
 		if c.HasSeshTarget() {
@@ -62,6 +70,7 @@ var addCmd = &cobra.Command{
 		}
 
 		if c.HasPostScript() && *c.Flags.ExecuteScript {
+			log.Info("Runnning post script")
 			script := c.GetPostScript()
 			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
 			log.Info("post script run", "command", script)
