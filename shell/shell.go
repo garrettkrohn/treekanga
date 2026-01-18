@@ -15,6 +15,7 @@ type Shell interface {
 	Cmd(cmd string, arg ...string) (string, error)
 	ListCmd(cmd string, arg ...string) ([]string, error)
 	CmdWithDir(dir string, cmd string, args ...string) (string, error)
+	CmdWithStreaming(cmd string, args ...string) error
 }
 
 type RealShell struct {
@@ -79,4 +80,23 @@ func (c *RealShell) ListCmd(cmd string, arg ...string) ([]string, error) {
 	command := c.exec.Command(cmd, arg...)
 	output, err := command.Output()
 	return strings.Split(string(output), "\n"), err
+}
+
+// CmdWithStreaming executes a command and streams output directly to stdout/stderr
+func (c *RealShell) CmdWithStreaming(cmd string, args ...string) error {
+	log.Debug(cmd, "args", args)
+
+	foundCmd, err := c.exec.LookPath(cmd)
+	if err != nil {
+		return err
+	}
+	command := exec.Command(foundCmd, args...)
+	command.Stdin = os.Stdin
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	if err := command.Start(); err != nil {
+		return err
+	}
+	return command.Wait()
 }

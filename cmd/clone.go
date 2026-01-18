@@ -49,19 +49,18 @@ func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
 		folderName = fmt.Sprintf("%s_bare", folderName)
 	}
 
-	spinner.Title("Cloning bare repo")
-	spinner.Action(func() {
-		err := git.CloneBare(url, folderName)
-		util.CheckError(err)
+	// Clone with streaming output so user can see git progress
+	err := git.CloneBare(url, folderName)
+	util.CheckError(err)
 
-		workingDir, err := os.Getwd()
-		util.CheckError(err)
+	workingDir, err := os.Getwd()
+	util.CheckError(err)
 
-		barePath := workingDir + "/" + folderName
+	barePath := workingDir + "/" + folderName
 
-		git.ConfigureGitBare(barePath)
-	})
-	spinner.Run()
+	git.ConfigureGitBare(barePath)
+	
+	fmt.Printf("\n✓ Successfully cloned %s\n", folderName)
 }
 
 func getProjectName(url string) string {
