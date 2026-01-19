@@ -159,6 +159,53 @@ func (_c *MockGit_ConfigureGitBare_Call) RunAndReturn(run func(string) error) *M
 	return _c
 }
 
+// DeleteBranch provides a mock function with given fields: branch, path
+func (_m *MockGit) DeleteBranch(branch string, path string) error {
+	ret := _m.Called(branch, path)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteBranch")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(branch, path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockGit_DeleteBranch_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteBranch'
+type MockGit_DeleteBranch_Call struct {
+	*mock.Call
+}
+
+// DeleteBranch is a helper method to define mock.On call
+//   - branch string
+//   - path string
+func (_e *MockGit_Expecter) DeleteBranch(branch interface{}, path interface{}) *MockGit_DeleteBranch_Call {
+	return &MockGit_DeleteBranch_Call{Call: _e.mock.On("DeleteBranch", branch, path)}
+}
+
+func (_c *MockGit_DeleteBranch_Call) Run(run func(branch string, path string)) *MockGit_DeleteBranch_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockGit_DeleteBranch_Call) Return(_a0 error) *MockGit_DeleteBranch_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockGit_DeleteBranch_Call) RunAndReturn(run func(string, string) error) *MockGit_DeleteBranch_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // DeleteBranchRef provides a mock function with given fields: branch, path
 func (_m *MockGit) DeleteBranchRef(branch string, path string) error {
 	ret := _m.Called(branch, path)
