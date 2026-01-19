@@ -24,6 +24,7 @@ type Git interface {
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
 	DeleteBranchRef(branch string, path string) error
+	DeleteBranch(branch string, path string) error
 	ConfigureGitBare(path string) error
 }
 
@@ -82,14 +83,14 @@ func (g *RealGit) RemoveWorktree(worktreeName string, path *string) (string, err
 		if err != nil {
 			log.Debug("Could not fix .git file", "error", err)
 		}
-		
+
 		relPath, err := filepath.Rel(*path, worktreeName)
 		if err == nil {
 			worktreePath = relPath
 			log.Debug("Using relative path for worktree removal", "absolute", worktreeName, "relative", relPath)
 		}
 	}
-	
+
 	gitCmd := getBaseArguementsWithOrWithoutPath(path)
 	gitCmd = append(gitCmd, "worktree", "remove", worktreePath, "--force")
 	log.Debug("git args", "args", gitCmd)
@@ -105,7 +106,7 @@ func (g *RealGit) fixWorktreeGitFile(worktreePath string, bareRepoPath string) e
 	gitFilePath := filepath.Join(worktreePath, ".git")
 	worktreeName := filepath.Base(worktreePath)
 	expectedGitDir := filepath.Join(bareRepoPath, "worktrees", worktreeName)
-	
+
 	// Write the corrected .git file using Go's file I/O
 	content := fmt.Sprintf("gitdir: %s\n", expectedGitDir)
 	err := os.WriteFile(gitFilePath, []byte(content), 0644)
@@ -194,6 +195,18 @@ func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (g *RealGit) DeleteBranch(branch string, path string) error {
+	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
+	gitCmd = append(gitCmd, "branch", "-d", branch)
+	_, err := g.shell.Cmd("git", gitCmd...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -204,7 +217,7 @@ func (g *RealGit) ConfigureGitBare(path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// After configuring the fetch refspec, we need to fetch to populate remote-tracking branches
 	// In a bare clone, branches are initially in refs/heads/, but we want them in refs/remotes/origin/
 	_, err = g.shell.Cmd("git", "-C", path, "fetch", "origin")
@@ -212,7 +225,7 @@ func (g *RealGit) ConfigureGitBare(path string) error {
 		log.Debug("Warning: fetch after bare config failed", "error", err)
 		// Don't return error as the repo might still be usable
 	}
-	
+
 	return nil
 }
 
