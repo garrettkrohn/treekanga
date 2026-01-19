@@ -24,6 +24,7 @@ type Git interface {
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
 	DeleteBranchRef(branch string, path string) error
+	DeleteBranch(branch string, path string) error
 	ConfigureGitBare(path string) error
 }
 
@@ -194,6 +195,18 @@ func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (g *RealGit) DeleteBranch(branch string, path string) error {
+	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
+	gitCmd = append(gitCmd, "branch", "-d", branch)
+	_, err := g.shell.Cmd("git", gitCmd...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

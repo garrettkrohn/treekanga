@@ -143,6 +143,9 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
 			}
 			log.Debug("Deleting branch ref", "branch", worktreeObj.BranchName, "path", dir)
 			deps.Git.DeleteBranchRef(worktreeObj.BranchName, dir)
+
+			log.Debug("Deleting branch", "branch", worktreeObj.BranchName, "path", dir)
+			deps.Git.DeleteBranch(worktreeObj.BranchName, dir)
 		}
 	} else {
 		log.Info("No local branches were deleted")

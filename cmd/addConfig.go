@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
@@ -107,6 +108,26 @@ func determineBareRepoPath(repoName string, workingDir string) string {
 		if _, err := os.Stat(bareRepoPath); err == nil {
 			log.Debug("  → ✓ Found bare repo at expected location", "path", bareRepoPath)
 			return bareRepoPath
+		}
+	}
+	// If we're in a worktree, read the .git file to find the bare repo
+	gitFilePath := filepath.Join(workingDir, ".git")
+	if content, err := os.ReadFile(gitFilePath); err == nil {
+		gitFileContent := string(content)
+		// Check if this is a worktree (file format: "gitdir: /path/to/.bare/worktrees/worktree_name")
+		if strings.HasPrefix(gitFileContent, "gitdir: ") {
+			gitdir := strings.TrimSpace(strings.TrimPrefix(gitFileContent, "gitdir: "))
+			log.Debug("  → Found .git file pointing to", "gitdir", gitdir)
+			// Extract bare repo path from gitdir
+			// gitdir format: /path/to/.bare/worktrees/worktree_name
+			// We need to go up two levels: worktree_name -> worktrees -> .bare
+			if gitdir != "" {
+				bareRepoPath := filepath.Dir(filepath.Dir(gitdir))
+				if _, err := os.Stat(bareRepoPath); err == nil {
+					log.Debug("  → ✓ Found bare repo from .git file", "path", bareRepoPath)
+					return bareRepoPath
+				}
+			}
 		}
 	}
 
