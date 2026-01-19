@@ -160,6 +160,67 @@ func (_c *MockShell_CmdWithDir_Call) RunAndReturn(run func(string, string, ...st
 	return _c
 }
 
+// CmdWithStreaming provides a mock function with given fields: cmd, args
+func (_m *MockShell) CmdWithStreaming(cmd string, args ...string) error {
+	_va := make([]interface{}, len(args))
+	for _i := range args {
+		_va[_i] = args[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, cmd)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CmdWithStreaming")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, ...string) error); ok {
+		r0 = rf(cmd, args...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockShell_CmdWithStreaming_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CmdWithStreaming'
+type MockShell_CmdWithStreaming_Call struct {
+	*mock.Call
+}
+
+// CmdWithStreaming is a helper method to define mock.On call
+//   - cmd string
+//   - args ...string
+func (_e *MockShell_Expecter) CmdWithStreaming(cmd interface{}, args ...interface{}) *MockShell_CmdWithStreaming_Call {
+	return &MockShell_CmdWithStreaming_Call{Call: _e.mock.On("CmdWithStreaming",
+		append([]interface{}{cmd}, args...)...)}
+}
+
+func (_c *MockShell_CmdWithStreaming_Call) Run(run func(cmd string, args ...string)) *MockShell_CmdWithStreaming_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]string, len(args)-1)
+		for i, a := range args[1:] {
+			if a != nil {
+				variadicArgs[i] = a.(string)
+			}
+		}
+		run(args[0].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockShell_CmdWithStreaming_Call) Return(_a0 error) *MockShell_CmdWithStreaming_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockShell_CmdWithStreaming_Call) RunAndReturn(run func(string, ...string) error) *MockShell_CmdWithStreaming_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListCmd provides a mock function with given fields: cmd, arg
 func (_m *MockShell) ListCmd(cmd string, arg ...string) ([]string, error) {
 	_va := make([]interface{}, len(arg))
@@ -229,67 +290,6 @@ func (_c *MockShell_ListCmd_Call) Return(_a0 []string, _a1 error) *MockShell_Lis
 }
 
 func (_c *MockShell_ListCmd_Call) RunAndReturn(run func(string, ...string) ([]string, error)) *MockShell_ListCmd_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CmdWithStreaming provides a mock function with given fields: cmd, args
-func (_m *MockShell) CmdWithStreaming(cmd string, args ...string) error {
-	_va := make([]interface{}, len(args))
-	for _i := range args {
-		_va[_i] = args[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, cmd)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CmdWithStreaming")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, ...string) error); ok {
-		r0 = rf(cmd, args...)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockShell_CmdWithStreaming_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CmdWithStreaming'
-type MockShell_CmdWithStreaming_Call struct {
-	*mock.Call
-}
-
-// CmdWithStreaming is a helper method to define mock.On call
-//   - cmd string
-//   - args ...string
-func (_e *MockShell_Expecter) CmdWithStreaming(cmd interface{}, args ...interface{}) *MockShell_CmdWithStreaming_Call {
-	return &MockShell_CmdWithStreaming_Call{Call: _e.mock.On("CmdWithStreaming",
-		append([]interface{}{cmd}, args...)...)}
-}
-
-func (_c *MockShell_CmdWithStreaming_Call) Run(run func(cmd string, args ...string)) *MockShell_CmdWithStreaming_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]string, len(args)-1)
-		for i, a := range args[1:] {
-			if a != nil {
-				variadicArgs[i] = a.(string)
-			}
-		}
-		run(args[0].(string), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *MockShell_CmdWithStreaming_Call) Return(_a0 error) *MockShell_CmdWithStreaming_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockShell_CmdWithStreaming_Call) RunAndReturn(run func(string, ...string) error) *MockShell_CmdWithStreaming_Call {
 	_c.Call.Return(run)
 	return _c
 }

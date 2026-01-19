@@ -196,8 +196,8 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 
 	for _, worktreeObj := range worktrees {
 		log.Debug("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
-		output, err := git.RemoveWorktree(worktreeObj.FullPath, path)
-		log.Debug("RemoveWorktree returned", "output", output, "error", err)
+		err := git.RemoveWorktree(worktreeObj.FullPath, path)
+		// log.Debug("RemoveWorktree returned", "error", err)
 		_ = zoxide.RemovePath(worktreeObj.FullPath)
 		util.CheckError(err)
 		log.Debug("Worktree removed successfully")

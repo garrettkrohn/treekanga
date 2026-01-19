@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"bufio"
 	"bytes"
 	"os"
 	"os/exec"
@@ -82,7 +83,7 @@ func (c *RealShell) ListCmd(cmd string, arg ...string) ([]string, error) {
 	return strings.Split(string(output), "\n"), err
 }
 
-// CmdWithStreaming executes a command and streams output directly to stdout/stderr
+// CmdWithStreaming executes a command and streams output through the logger
 func (c *RealShell) CmdWithStreaming(cmd string, args ...string) error {
 	log.Debug(cmd, "args", args)
 
@@ -92,11 +93,77 @@ func (c *RealShell) CmdWithStreaming(cmd string, args ...string) error {
 	}
 	command := exec.Command(foundCmd, args...)
 	command.Stdin = os.Stdin
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
 
+	// Create pipes for stdout and stderr
+	stdoutPipe, err := command.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	stderrPipe, err := command.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	// Start the command
 	if err := command.Start(); err != nil {
 		return err
 	}
-	return command.Wait()
+
+	// Create channels to signal when reading is done and collect stderr
+	done := make(chan bool, 2)
+	var stderrBuffer bytes.Buffer
+
+	// Read stdout and log it
+	go func() {
+		scanner := bufio.NewScanner(stdoutPipe)
+		for scanner.Scan() {
+			log.Info(scanner.Text())
+		}
+		done <- true
+	}()
+
+	// Read stderr, log it, and capture it
+	go func() {
+		scanner := bufio.NewScanner(stderrPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			log.Info(line)
+			stderrBuffer.WriteString(line)
+			stderrBuffer.WriteString("\n")
+		}
+		done <- true
+	}()
+
+	// Wait for both readers to finish
+	<-done
+	<-done
+
+	// Wait for command to complete
+	err = command.Wait()
+	if err != nil {
+		// Include stderr output in the error message
+		stderrOutput := strings.TrimSpace(stderrBuffer.String())
+		if stderrOutput != "" {
+			return &ExecError{
+				Err:    err,
+				Stderr: stderrOutput,
+			}
+		}
+		return err
+	}
+	return nil
+}
+
+// ExecError wraps an execution error with stderr output
+type ExecError struct {
+	Err    error
+	Stderr string
+}
+
+func (e *ExecError) Error() string {
+	return e.Stderr
+}
+
+func (e *ExecError) Unwrap() error {
+	return e.Err
 }

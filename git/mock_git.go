@@ -484,31 +484,21 @@ func (_c *MockGit_GetWorktrees_Call) RunAndReturn(run func(*string) ([]string, e
 }
 
 // RemoveWorktree provides a mock function with given fields: worktreeName, path
-func (_m *MockGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
+func (_m *MockGit) RemoveWorktree(worktreeName string, path *string) error {
 	ret := _m.Called(worktreeName, path)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RemoveWorktree")
 	}
 
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(string, *string) (string, error)); ok {
-		return rf(worktreeName, path)
-	}
-	if rf, ok := ret.Get(0).(func(string, *string) string); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, *string) error); ok {
 		r0 = rf(worktreeName, path)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, *string) error); ok {
-		r1 = rf(worktreeName, path)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MockGit_RemoveWorktree_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveWorktree'
@@ -530,12 +520,12 @@ func (_c *MockGit_RemoveWorktree_Call) Run(run func(worktreeName string, path *s
 	return _c
 }
 
-func (_c *MockGit_RemoveWorktree_Call) Return(_a0 string, _a1 error) *MockGit_RemoveWorktree_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockGit_RemoveWorktree_Call) Return(_a0 error) *MockGit_RemoveWorktree_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string) (string, error)) *MockGit_RemoveWorktree_Call {
+func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string) error) *MockGit_RemoveWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }
