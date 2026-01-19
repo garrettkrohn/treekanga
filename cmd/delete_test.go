@@ -103,7 +103,7 @@ func getMockGit(t *testing.T) *git.MockGit {
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything).Return("", nil)
+	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything).Return(nil)
 	return mockGit
 }
 

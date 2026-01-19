@@ -282,7 +282,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	}
 
 	// Remove the worktree directly using the resolved path
-	_, err = realGit.RemoveWorktree(testWorktree.FullPath, &resolvedBareRepoPath)
+	err = realGit.RemoveWorktree(testWorktree.FullPath, &resolvedBareRepoPath)
 	assert.NoError(t, err, "Should successfully remove worktree")
 
 	t.Logf("✓ Successfully deleted worktree")
