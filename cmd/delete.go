@@ -185,7 +185,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 }
 
 func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
-	log.Debug("removeWorktrees called", "count", len(worktrees))
+	log.Info("removing %d worktrees", len(worktrees))
 
 	// Use the resolved bare repo path if available
 	var path *string
@@ -195,7 +195,7 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 	}
 
 	for _, worktreeObj := range worktrees {
-		log.Debug("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
+		log.Info("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
 		output, err := git.RemoveWorktree(worktreeObj.FullPath, path)
 		log.Debug("RemoveWorktree returned", "output", output, "error", err)
 		_ = zoxide.RemovePath(worktreeObj.FullPath)
