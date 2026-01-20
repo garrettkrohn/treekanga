@@ -69,13 +69,25 @@ var addCmd = &cobra.Command{
 			deps.Connector.VsCodeConnect(&c)
 		}
 
-		if c.HasPostScript() && *c.Flags.ExecuteScript {
+		if runPostScript(c) {
 			log.Info("Runnning post script")
 			script := c.GetPostScript()
 			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
 			log.Info("post script run", "command", script)
 		}
 	},
+}
+
+func runPostScript(c com.AddConfig) bool {
+	if !c.HasPostScript() {
+		return false
+	}
+
+	if *c.Flags.ExecuteScript || *c.AutoRunPostScript {
+		return true
+	}
+
+	return false
 }
 
 func init() {
