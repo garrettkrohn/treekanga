@@ -27,7 +27,8 @@ var deleteCmd = &cobra.Command{
     
     Available flags:
     -s, --stale: Only show worktrees where branches don't exist on remote
-    -d, --delete: CAUTION - Also delete the local branches`,
+    -d, --delete: CAUTION - Also delete the local branches
+    -f, --force: CAUTION - Forces delete of worktree and branch`,
 	Run: func(cmd *cobra.Command, args []string) {
 		stale, err := cmd.Flags().GetBool("stale")
 		util.CheckError(err)
