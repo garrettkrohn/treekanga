@@ -159,17 +159,17 @@ func (_c *MockGit_ConfigureGitBare_Call) RunAndReturn(run func(string) error) *M
 	return _c
 }
 
-// DeleteBranch provides a mock function with given fields: branch, path
-func (_m *MockGit) DeleteBranch(branch string, path string) error {
-	ret := _m.Called(branch, path)
+// DeleteBranch provides a mock function with given fields: branch, path, forceDelete
+func (_m *MockGit) DeleteBranch(branch string, path string, forceDelete bool) error {
+	ret := _m.Called(branch, path, forceDelete)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteBranch")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(branch, path)
+	if rf, ok := ret.Get(0).(func(string, string, bool) error); ok {
+		r0 = rf(branch, path, forceDelete)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -185,13 +185,14 @@ type MockGit_DeleteBranch_Call struct {
 // DeleteBranch is a helper method to define mock.On call
 //   - branch string
 //   - path string
-func (_e *MockGit_Expecter) DeleteBranch(branch interface{}, path interface{}) *MockGit_DeleteBranch_Call {
-	return &MockGit_DeleteBranch_Call{Call: _e.mock.On("DeleteBranch", branch, path)}
+//   - forceDelete bool
+func (_e *MockGit_Expecter) DeleteBranch(branch interface{}, path interface{}, forceDelete interface{}) *MockGit_DeleteBranch_Call {
+	return &MockGit_DeleteBranch_Call{Call: _e.mock.On("DeleteBranch", branch, path, forceDelete)}
 }
 
-func (_c *MockGit_DeleteBranch_Call) Run(run func(branch string, path string)) *MockGit_DeleteBranch_Call {
+func (_c *MockGit_DeleteBranch_Call) Run(run func(branch string, path string, forceDelete bool)) *MockGit_DeleteBranch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(string), args[1].(string), args[2].(bool))
 	})
 	return _c
 }
@@ -201,7 +202,7 @@ func (_c *MockGit_DeleteBranch_Call) Return(_a0 error) *MockGit_DeleteBranch_Cal
 	return _c
 }
 
-func (_c *MockGit_DeleteBranch_Call) RunAndReturn(run func(string, string) error) *MockGit_DeleteBranch_Call {
+func (_c *MockGit_DeleteBranch_Call) RunAndReturn(run func(string, string, bool) error) *MockGit_DeleteBranch_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -483,17 +484,17 @@ func (_c *MockGit_GetWorktrees_Call) RunAndReturn(run func(*string) ([]string, e
 	return _c
 }
 
-// RemoveWorktree provides a mock function with given fields: worktreeName, path
-func (_m *MockGit) RemoveWorktree(worktreeName string, path *string) error {
-	ret := _m.Called(worktreeName, path)
+// RemoveWorktree provides a mock function with given fields: worktreeName, path, forceDelete
+func (_m *MockGit) RemoveWorktree(worktreeName string, path *string, forceDelete bool) error {
+	ret := _m.Called(worktreeName, path, forceDelete)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RemoveWorktree")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, *string) error); ok {
-		r0 = rf(worktreeName, path)
+	if rf, ok := ret.Get(0).(func(string, *string, bool) error); ok {
+		r0 = rf(worktreeName, path, forceDelete)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -509,13 +510,14 @@ type MockGit_RemoveWorktree_Call struct {
 // RemoveWorktree is a helper method to define mock.On call
 //   - worktreeName string
 //   - path *string
-func (_e *MockGit_Expecter) RemoveWorktree(worktreeName interface{}, path interface{}) *MockGit_RemoveWorktree_Call {
-	return &MockGit_RemoveWorktree_Call{Call: _e.mock.On("RemoveWorktree", worktreeName, path)}
+//   - forceDelete bool
+func (_e *MockGit_Expecter) RemoveWorktree(worktreeName interface{}, path interface{}, forceDelete interface{}) *MockGit_RemoveWorktree_Call {
+	return &MockGit_RemoveWorktree_Call{Call: _e.mock.On("RemoveWorktree", worktreeName, path, forceDelete)}
 }
 
-func (_c *MockGit_RemoveWorktree_Call) Run(run func(worktreeName string, path *string)) *MockGit_RemoveWorktree_Call {
+func (_c *MockGit_RemoveWorktree_Call) Run(run func(worktreeName string, path *string, forceDelete bool)) *MockGit_RemoveWorktree_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(*string))
+		run(args[0].(string), args[1].(*string), args[2].(bool))
 	})
 	return _c
 }
@@ -525,7 +527,7 @@ func (_c *MockGit_RemoveWorktree_Call) Return(_a0 error) *MockGit_RemoveWorktree
 	return _c
 }
 
-func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string) error) *MockGit_RemoveWorktree_Call {
+func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string, bool) error) *MockGit_RemoveWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }

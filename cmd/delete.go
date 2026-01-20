@@ -27,11 +27,14 @@ var deleteCmd = &cobra.Command{
     
     Available flags:
     -s, --stale: Only show worktrees where branches don't exist on remote
-    -d, --delete: CAUTION - Also delete the local branches`,
+    -d, --delete: CAUTION - Also delete the local branches
+    -f, --force: CAUTION - Forces delete of worktree and branch`,
 	Run: func(cmd *cobra.Command, args []string) {
 		stale, err := cmd.Flags().GetBool("stale")
 		util.CheckError(err)
 		deleteBranches, err := cmd.Flags().GetBool("delete")
+		util.CheckError(err)
+		forceDelete, err := cmd.Flags().GetBool("force")
 		util.CheckError(err)
 
 		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
@@ -42,7 +45,8 @@ var deleteCmd = &cobra.Command{
 			deps.Zoxide,
 			args,
 			stale,
-			deleteBranches)
+			deleteBranches,
+			forceDelete)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -59,7 +63,8 @@ func deleteWorktrees(git git.Git,
 	zoxide zoxide.Zoxide,
 	listOfBranchesToDelete []string,
 	applyStaleFilter bool,
-	deleteBranches bool) (int, error) {
+	deleteBranches bool,
+	forceDelete bool) (int, error) {
 
 	var selections []string
 	treesToDeleteAreValid := false
@@ -101,18 +106,18 @@ func deleteWorktrees(git git.Git,
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
 	// remove worktrees
-	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide)
+	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide, forceDelete)
 
 	// delete branches
 	if deleteBranches {
 		log.Debug("delete branches flag true")
-		deleteLocalBranches(selectedWorktreeObj)
+		deleteLocalBranches(selectedWorktreeObj, forceDelete)
 	}
 
 	return len(selectedWorktreeObj), nil
 }
 
-func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
+func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj, forceDelete bool) {
 	confirm := false
 
 	confirmationMessage := "Are you sure you want to delete these branches: "
@@ -145,7 +150,7 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj) {
 			deps.Git.DeleteBranchRef(worktreeObj.BranchName, dir)
 
 			log.Debug("Deleting branch", "branch", worktreeObj.BranchName, "path", dir)
-			deps.Git.DeleteBranch(worktreeObj.BranchName, dir)
+			deps.Git.DeleteBranch(worktreeObj.BranchName, dir, forceDelete)
 		}
 	} else {
 		log.Info("No local branches were deleted")
@@ -184,7 +189,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide) {
+func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide, forceDelete bool) {
 	log.Debug("removeWorktrees called", "count", len(worktrees))
 
 	// Use the resolved bare repo path if available
@@ -196,8 +201,7 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 
 	for _, worktreeObj := range worktrees {
 		log.Debug("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
-		err := git.RemoveWorktree(worktreeObj.FullPath, path)
-		// log.Debug("RemoveWorktree returned", "error", err)
+		err := git.RemoveWorktree(worktreeObj.FullPath, path, forceDelete)
 		_ = zoxide.RemovePath(worktreeObj.FullPath)
 		util.CheckError(err)
 		log.Debug("Worktree removed successfully")
@@ -227,4 +231,5 @@ func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
 func init() {
 	deleteCmd.Flags().BoolP("stale", "s", false, "Only show worktrees where the branches don't exist on remote")
 	deleteCmd.Flags().BoolP("delete", "d", false, "CAUTION: delete the local branch")
+	deleteCmd.Flags().BoolP("force", "f", false, "CAUTION: force delete the worktree and branch")
 }
