@@ -123,7 +123,7 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj, forceDel
 	confirmationMessage := "Are you sure you want to delete these branches: "
 
 	for _, worktreeObj := range selectedWorktreeObj {
-		confirmationMessage += worktreeObj.BranchName
+		confirmationMessage += " - " + worktreeObj.BranchName
 	}
 
 	confirmDialog := huh.NewConfirm().
@@ -190,7 +190,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 }
 
 func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide, forceDelete bool) {
-	log.Debug("removeWorktrees called", "count", len(worktrees))
+	log.Info("removing %d worktrees", len(worktrees))
 
 	// Use the resolved bare repo path if available
 	var path *string
@@ -200,7 +200,7 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 	}
 
 	for _, worktreeObj := range worktrees {
-		log.Debug("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
+		log.Info("Removing worktree", "fullPath", worktreeObj.FullPath, "folder", worktreeObj.Folder, "branch", worktreeObj.BranchName)
 		err := git.RemoveWorktree(worktreeObj.FullPath, path, forceDelete)
 		_ = zoxide.RemovePath(worktreeObj.FullPath)
 		util.CheckError(err)
