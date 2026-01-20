@@ -19,12 +19,12 @@ type Git interface {
 	GetRemoteBranches(*string) ([]string, error)
 	GetLocalBranches(*string) ([]string, error)
 	GetWorktrees(path *string) ([]string, error)
-	RemoveWorktree(worktreeName string, path *string) (string, error)
+	RemoveWorktree(worktreeName string, path *string, forceDelete bool) error
 	AddWorktree(c *com.AddConfig) error
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
 	DeleteBranchRef(branch string, path string) error
-	DeleteBranch(branch string, path string) error
+	DeleteBranch(branch string, path string, forceDelete bool) error
 	ConfigureGitBare(path string) error
 }
 
@@ -74,31 +74,18 @@ func (g *RealGit) GetWorktrees(path *string) ([]string, error) {
 	return out, nil
 }
 
-func (g *RealGit) RemoveWorktree(worktreeName string, path *string) (string, error) {
-	// When using a bare repo, convert absolute worktree path to relative path
-	worktreePath := worktreeName
-	if path != nil && filepath.IsAbs(worktreeName) {
-		// Fix the .git file if it points to the wrong location (from old bare repo)
-		err := g.fixWorktreeGitFile(worktreeName, *path)
-		if err != nil {
-			log.Debug("Could not fix .git file", "error", err)
-		}
-
-		relPath, err := filepath.Rel(*path, worktreeName)
-		if err == nil {
-			worktreePath = relPath
-			log.Debug("Using relative path for worktree removal", "absolute", worktreeName, "relative", relPath)
-		}
-	}
-
+func (g *RealGit) RemoveWorktree(worktreeName string, path *string, forceDelete bool) error {
 	gitCmd := getBaseArguementsWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "worktree", "remove", worktreePath, "--force")
-	log.Debug("git args", "args", gitCmd)
-	out, err := g.shell.Cmd("git", gitCmd...)
-	if err != nil {
-		return "", fmt.Errorf("failed to remove worktree %s: %w", worktreeName, err)
+	gitCmd = append(gitCmd, "worktree", "remove", worktreeName)
+	if forceDelete {
+		gitCmd = append(gitCmd, "--force")
 	}
-	return out, nil
+	err := g.shell.CmdWithStreaming("git", gitCmd...)
+	if err != nil {
+		log.Debug(fmt.Errorf("failed to remove worktree %s: %w", worktreeName, err))
+		return err
+	}
+	return nil
 }
 
 // fixWorktreeGitFile fixes the .git file in a worktree to point to the correct bare repo location
@@ -131,9 +118,9 @@ func (g *RealGit) AddWorktree(c *com.AddConfig) error {
 	fullCommand := strings.Join(append([]string{"git"}, gitCommand...), " ")
 	log.Debug("Executing git worktree command", "command", fullCommand)
 
-	output, err := g.shell.Cmd("git", gitCommand...)
+	err := g.shell.CmdWithStreaming("git", gitCommand...)
 	if err != nil {
-		return fmt.Errorf("failed to add worktree: %v\nCommand: %s\nOutput: %s", err, fullCommand, output)
+		return fmt.Errorf("failed to add worktree: %v\nCommand: %s", err, fullCommand)
 	}
 
 	return nil
@@ -191,7 +178,7 @@ func (g *RealGit) CreateTempBranch(path string) error {
 
 func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)
-	_, err := g.shell.Cmd("update-ref", "-d", gitCmd)
+	err := g.shell.CmdWithStreaming("update-ref", "-d", gitCmd)
 	if err != nil {
 		return err
 	}
@@ -199,10 +186,15 @@ func (g *RealGit) DeleteBranchRef(branch string, path string) error {
 	return nil
 }
 
-func (g *RealGit) DeleteBranch(branch string, path string) error {
+func (g *RealGit) DeleteBranch(branch string, path string, forceDelete bool) error {
 	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
-	gitCmd = append(gitCmd, "branch", "-d", branch)
-	_, err := g.shell.Cmd("git", gitCmd...)
+	if forceDelete {
+		gitCmd = append(gitCmd, "branch", "-D", branch)
+	} else {
+		gitCmd = append(gitCmd, "branch", "-d", branch)
+
+	}
+	err := g.shell.CmdWithStreaming("git", gitCmd...)
 	if err != nil {
 		return err
 	}

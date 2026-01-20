@@ -40,7 +40,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 	var branches []string
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches, false, false)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches, false, false, false)
 
 	// Assert
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	branches := []string{"development"}
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false, false)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false, false, false)
 
 	// Assert
 	assert.NoError(t, err)
@@ -103,7 +103,7 @@ func getMockGit(t *testing.T) *git.MockGit {
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
 	}, nil)
-	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything).Return("", nil)
+	mockGit.On("RemoveWorktree", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	return mockGit
 }
 
