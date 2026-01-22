@@ -14,7 +14,6 @@ import (
 
 const tempZoxideName = "temp_treekanga_worktree"
 
-// TODO: make a a function to add the directory
 type Git interface {
 	GetRemoteBranches(*string) ([]string, error)
 	GetLocalBranches(*string) ([]string, error)

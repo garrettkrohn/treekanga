@@ -15,6 +15,7 @@ type Zoxide interface {
 	RemovePath(path string) error
 	AddZoxideEntries(c *common.AddConfig)
 	QueryScore(path string) (float64, error)
+	GetQueryList(pathSearch string) ([]string, error)
 }
 
 type RealZoxide struct {
@@ -67,6 +68,29 @@ func (r *RealZoxide) QueryScore(path string) (float64, error) {
 		return 0, nil
 	}
 	return score, nil
+}
+
+func (r *RealZoxide) GetQueryList(pathSearch string) ([]string, error) {
+	// Get all zoxide entries
+	output, err := r.shell.Cmd("zoxide", "query", "--list")
+	if err != nil {
+		return []string{}, err
+	}
+	if output == "" {
+		return []string{}, nil
+	}
+
+	// Split into lines and filter for entries that start with pathSearch
+	allEntries := strings.Split(output, "\n")
+	var filteredEntries []string
+	for _, entry := range allEntries {
+		entry = strings.TrimSpace(entry)
+		if entry != "" && strings.HasPrefix(entry, pathSearch) {
+			filteredEntries = append(filteredEntries, entry)
+		}
+	}
+
+	return filteredEntries, nil
 }
 
 func addConfigFolders(foldersToAdd []string, foldersToAddFromConfig []string, baseName string, directoryReader directoryReader.DirectoryReader) []string {
