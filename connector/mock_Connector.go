@@ -132,6 +132,39 @@ func (_c *MockConnector_SeshConnect_Call) RunAndReturn(run func(*common.AddConfi
 	return _c
 }
 
+// SeshConnectWithString provides a mock function with given fields: path
+func (_m *MockConnector) SeshConnectWithString(path string) {
+	_m.Called(path)
+}
+
+// MockConnector_SeshConnectWithString_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SeshConnectWithString'
+type MockConnector_SeshConnectWithString_Call struct {
+	*mock.Call
+}
+
+// SeshConnectWithString is a helper method to define mock.On call
+//   - path string
+func (_e *MockConnector_Expecter) SeshConnectWithString(path interface{}) *MockConnector_SeshConnectWithString_Call {
+	return &MockConnector_SeshConnectWithString_Call{Call: _e.mock.On("SeshConnectWithString", path)}
+}
+
+func (_c *MockConnector_SeshConnectWithString_Call) Run(run func(path string)) *MockConnector_SeshConnectWithString_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *MockConnector_SeshConnectWithString_Call) Return() *MockConnector_SeshConnectWithString_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockConnector_SeshConnectWithString_Call) RunAndReturn(run func(string)) *MockConnector_SeshConnectWithString_Call {
+	_c.Run(run)
+	return _c
+}
+
 // VsCodeConnect provides a mock function with given fields: c
 func (_m *MockConnector) VsCodeConnect(c *common.AddConfig) {
 	_m.Called(c)
