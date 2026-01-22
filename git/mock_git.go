@@ -530,6 +530,53 @@ func (_c *MockGit_RemoveWorktree_Call) RunAndReturn(run func(string, *string) er
 	return _c
 }
 
+// RemoveWorktreeForce provides a mock function with given fields: worktreeName, path
+func (_m *MockGit) RemoveWorktreeForce(worktreeName string, path *string) error {
+	ret := _m.Called(worktreeName, path)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveWorktreeForce")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, *string) error); ok {
+		r0 = rf(worktreeName, path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockGit_RemoveWorktreeForce_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveWorktreeForce'
+type MockGit_RemoveWorktreeForce_Call struct {
+	*mock.Call
+}
+
+// RemoveWorktreeForce is a helper method to define mock.On call
+//   - worktreeName string
+//   - path *string
+func (_e *MockGit_Expecter) RemoveWorktreeForce(worktreeName interface{}, path interface{}) *MockGit_RemoveWorktreeForce_Call {
+	return &MockGit_RemoveWorktreeForce_Call{Call: _e.mock.On("RemoveWorktreeForce", worktreeName, path)}
+}
+
+func (_c *MockGit_RemoveWorktreeForce_Call) Run(run func(worktreeName string, path *string)) *MockGit_RemoveWorktreeForce_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string), args[1].(*string))
+	})
+	return _c
+}
+
+func (_c *MockGit_RemoveWorktreeForce_Call) Return(_a0 error) *MockGit_RemoveWorktreeForce_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockGit_RemoveWorktreeForce_Call) RunAndReturn(run func(string, *string) error) *MockGit_RemoveWorktreeForce_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockGit creates a new instance of MockGit. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockGit(t interface {

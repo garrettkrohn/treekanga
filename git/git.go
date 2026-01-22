@@ -19,6 +19,7 @@ type Git interface {
 	GetLocalBranches(*string) ([]string, error)
 	GetWorktrees(path *string) ([]string, error)
 	RemoveWorktree(worktreeName string, path *string) error
+	RemoveWorktreeForce(worktreeName string, path *string) error
 	AddWorktree(c *com.AddConfig) error
 	GetRepoName(path string) (string, error)
 	CloneBare(string, string) error
@@ -74,24 +75,21 @@ func (g *RealGit) GetWorktrees(path *string) ([]string, error) {
 }
 
 func (g *RealGit) RemoveWorktree(worktreeName string, path *string) error {
-	// When using a bare repo, convert absolute worktree path to relative path
-	// worktreePath := worktreeName
-	// if path != nil && filepath.IsAbs(worktreeName) {
-	// 	// Fix the .git file if it points to the wrong location (from old bare repo)
-	// 	err := g.fixWorktreeGitFile(worktreeName, *path)
-	// 	if err != nil {
-	// 		log.Debug("Could not fix .git file", "error", err)
-	// 	}
-	//
-	// 	relPath, err := filepath.Rel(*path, worktreeName)
-	// 	if err == nil {
-	// 		worktreePath = relPath
-	// 		log.Debug("Using relative path for worktree removal", "absolute", worktreeName, "relative", relPath)
-	// 	}
-	// }
+	return g.removeWorktreeWithOptions(worktreeName, path, false)
+}
 
+func (g *RealGit) RemoveWorktreeForce(worktreeName string, path *string) error {
+	return g.removeWorktreeWithOptions(worktreeName, path, true)
+}
+
+func (g *RealGit) removeWorktreeWithOptions(worktreeName string, path *string, force bool) error {
 	gitCmd := getBaseArguementsWithOrWithoutPath(path)
-	gitCmd = append(gitCmd, "worktree", "remove", worktreeName)
+	gitCmd = append(gitCmd, "worktree", "remove")
+	if force {
+		gitCmd = append(gitCmd, "--force")
+	}
+	gitCmd = append(gitCmd, worktreeName)
+	
 	err := g.shell.CmdWithStreaming("git", gitCmd...)
 	if err != nil {
 		log.Debug(fmt.Errorf("failed to remove worktree %s: %w", worktreeName, err))

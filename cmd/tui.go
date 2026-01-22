@@ -27,14 +27,18 @@ var baseStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240"))
 
 type tuiModel struct {
-	table        table.Model
-	showPopup    bool
-	popupList    list.Model
-	termWidth    int
-	termHeight   int
-	spinner      spinner.Model
-	isDeleting   bool
-	deletingName string
+	table              table.Model
+	showPopup          bool
+	popupList          list.Model
+	termWidth          int
+	termHeight         int
+	spinner            spinner.Model
+	isDeleting         bool
+	deletingName       string
+	showDeleteConfirm  bool
+	deleteConfirmError string
+	pendingDeletePath  string
+	pendingDeleteName  string
 }
 
 // popupItem represents an item in the popup list
@@ -53,15 +57,38 @@ type deleteCompleteMsg struct {
 	worktreeName string
 }
 
+// deleteErrorMsg is sent when deletion fails
+type deleteErrorMsg struct {
+	err          error
+	worktreePath string
+	worktreeName string
+}
+
 // performDelete performs the deletion in the background
-func performDelete(worktreePath, worktreeName string) tea.Cmd {
+func performDelete(worktreePath, worktreeName string, force bool) tea.Cmd {
 	return func() tea.Msg {
 		// Add a minimum display time for the spinner
 		startTime := time.Now()
 		minDisplayTime := 1 * time.Second
 
-		log.Debug("Removing worktree", "fullPath", worktreePath)
-		err := deps.Git.RemoveWorktree(worktreePath, &worktreePath)
+		log.Debug("Removing worktree", "fullPath", worktreePath, "force", force)
+
+		var err error
+		if force {
+			err = deps.Git.RemoveWorktreeForce(worktreePath, &worktreePath)
+		} else {
+			err = deps.Git.RemoveWorktree(worktreePath, &worktreePath)
+		}
+
+		if err != nil {
+			// Ensure spinner shows for at least minDisplayTime before showing error
+			elapsed := time.Since(startTime)
+			if elapsed < minDisplayTime {
+				time.Sleep(minDisplayTime - elapsed)
+			}
+			return deleteErrorMsg{err: err, worktreePath: worktreePath, worktreeName: worktreeName}
+		}
+
 		_ = deps.Zoxide.RemovePath(worktreePath)
 		log.Debug("Worktree removed successfully")
 
@@ -71,7 +98,7 @@ func performDelete(worktreePath, worktreeName string) tea.Cmd {
 			time.Sleep(minDisplayTime - elapsed)
 		}
 
-		return deleteCompleteMsg{err: err, worktreeName: worktreeName}
+		return deleteCompleteMsg{err: nil, worktreeName: worktreeName}
 	}
 }
 
@@ -89,9 +116,6 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case deleteCompleteMsg:
 		m.isDeleting = false
-		if msg.err != nil {
-			return m, tea.Printf("Error deleting worktree: %v", msg.err)
-		}
 		// Rebuild the table with updated data
 		rows, err := buildWorktreeTableRows()
 		if err != nil {
@@ -99,6 +123,36 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.table.SetRows(rows)
 		return m, tea.Printf("Deleted worktree: %s", msg.worktreeName)
+	case deleteErrorMsg:
+		m.isDeleting = false
+		m.showDeleteConfirm = true
+		m.deleteConfirmError = msg.err.Error()
+		m.pendingDeletePath = msg.worktreePath
+		m.pendingDeleteName = msg.worktreeName
+		return m, nil
+	}
+
+	// If delete confirmation is showing, handle it first
+	if m.showDeleteConfirm {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "y", "Y":
+				// User confirmed force delete
+				m.showDeleteConfirm = false
+				m.isDeleting = true
+				m.deletingName = m.pendingDeleteName
+				return m, performDelete(m.pendingDeletePath, m.pendingDeleteName, true)
+			case "n", "N", "esc", "q":
+				// User cancelled
+				m.showDeleteConfirm = false
+				m.deleteConfirmError = ""
+				m.pendingDeletePath = ""
+				m.pendingDeleteName = ""
+				return m, nil
+			}
+		}
+		return m, nil
 	}
 
 	// If popup is open, handle its inputs first
@@ -149,7 +203,7 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Start the deletion process with spinner
 			m.isDeleting = true
 			m.deletingName = worktreeName
-			return m, performDelete(worktreePath, worktreeName)
+			return m, performDelete(worktreePath, worktreeName, false)
 		case "o":
 			selectedRow := m.table.SelectedRow()
 			if len(selectedRow) < 3 {
@@ -192,6 +246,27 @@ func (m tuiModel) View() string {
 	// Show spinner if deleting
 	if m.isDeleting {
 		return fmt.Sprintf("\n\n   %s Deleting worktree: %s...\n\n", m.spinner.View(), m.deletingName)
+	}
+
+	// Show delete confirmation dialog
+	if m.showDeleteConfirm {
+		errorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Bold(true)
+
+		confirmStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("196")).
+			Padding(1, 2).
+			Width(m.termWidth - 4)
+
+		errorMsg := errorStyle.Render("Error deleting worktree:")
+		confirmMsg := fmt.Sprintf("\n%s\n\n%s\n\nWorktree '%s' contains uncommitted changes.\nForce delete and discard all changes?\n\n[Y]es / [N]o",
+			errorMsg,
+			m.deleteConfirmError,
+			m.pendingDeleteName)
+
+		return "\n" + confirmStyle.Render(confirmMsg) + "\n"
 	}
 
 	if m.showPopup {
