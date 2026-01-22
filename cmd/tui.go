@@ -19,7 +19,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/utility"
-	util "github.com/garrettkrohn/treekanga/utility"
 )
 
 var baseStyle = lipgloss.NewStyle().
@@ -39,6 +38,7 @@ type tuiModel struct {
 	deleteConfirmError string
 	pendingDeletePath  string
 	pendingDeleteName  string
+	pendingBranchName  string
 }
 
 // popupItem represents an item in the popup list
@@ -62,10 +62,11 @@ type deleteErrorMsg struct {
 	err          error
 	worktreePath string
 	worktreeName string
+	branchName   string
 }
 
 // performDelete performs the deletion in the background
-func performDelete(worktreePath, worktreeName string, force bool) tea.Cmd {
+func performDelete(worktreePath, worktreeName, branchName string, force bool, deleteBranch bool) tea.Cmd {
 	return func() tea.Msg {
 		// Add a minimum display time for the spinner
 		startTime := time.Now()
@@ -86,11 +87,19 @@ func performDelete(worktreePath, worktreeName string, force bool) tea.Cmd {
 			if elapsed < minDisplayTime {
 				time.Sleep(minDisplayTime - elapsed)
 			}
-			return deleteErrorMsg{err: err, worktreePath: worktreePath, worktreeName: worktreeName}
+			return deleteErrorMsg{err: err, worktreePath: worktreePath, worktreeName: worktreeName, branchName: branchName}
 		}
 
 		_ = deps.Zoxide.RemovePath(worktreePath)
 		log.Debug("Worktree removed successfully")
+
+		if deleteBranch {
+			log.Debug("Deleting branch", "branchName", branchName)
+			err = deps.Git.DeleteBranch(branchName, deps.BareRepoPath)
+			if err != nil {
+				log.Warn("Failed to delete branch", "branchName", branchName, "error", err)
+			}
+		}
 
 		// Ensure spinner shows for at least minDisplayTime
 		elapsed := time.Since(startTime)
@@ -129,6 +138,7 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.deleteConfirmError = msg.err.Error()
 		m.pendingDeletePath = msg.worktreePath
 		m.pendingDeleteName = msg.worktreeName
+		m.pendingBranchName = msg.branchName
 		return m, nil
 	}
 
@@ -142,13 +152,14 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showDeleteConfirm = false
 				m.isDeleting = true
 				m.deletingName = m.pendingDeleteName
-				return m, performDelete(m.pendingDeletePath, m.pendingDeleteName, true)
+				return m, performDelete(m.pendingDeletePath, m.pendingDeleteName, m.pendingBranchName, true, false)
 			case "n", "N", "esc", "q":
 				// User cancelled
 				m.showDeleteConfirm = false
 				m.deleteConfirmError = ""
 				m.pendingDeletePath = ""
 				m.pendingDeleteName = ""
+				m.pendingBranchName = ""
 				return m, nil
 			}
 		}
@@ -199,11 +210,25 @@ func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			worktreePath := selectedRow[2]
 			worktreeName := selectedRow[0]
+			branchName := selectedRow[1]
 
 			// Start the deletion process with spinner
 			m.isDeleting = true
 			m.deletingName = worktreeName
-			return m, performDelete(worktreePath, worktreeName, false)
+			return m, performDelete(worktreePath, worktreeName, branchName, false, false)
+		case "D":
+			selectedRow := m.table.SelectedRow()
+			if len(selectedRow) < 3 {
+				return m, tea.Printf("No worktree selected")
+			}
+			worktreePath := selectedRow[2]
+			worktreeName := selectedRow[0]
+			branchName := selectedRow[1]
+
+			// Start the deletion process with spinner
+			m.isDeleting = true
+			m.deletingName = worktreeName
+			return m, performDelete(worktreePath, worktreeName, branchName, false, true)
 		case "o":
 			selectedRow := m.table.SelectedRow()
 			if len(selectedRow) < 3 {
@@ -288,7 +313,16 @@ func (m tuiModel) View() string {
 		return tableView + "\n\n" + popup + "\n"
 	}
 
-	return baseStyle.Render(m.table.View()) + "\n"
+	// Render help text with keymaps
+	helpStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("241")).
+		Padding(1, 0, 0, 2)
+
+	helpText := helpStyle.Render(
+		"Keymaps: [↑/↓] Navigate • [o] Open • [d] Delete Worktree • [D] Delete Worktree and Branch • [enter] Select • [q] Quit",
+	)
+
+	return baseStyle.Render(m.table.View()) + "\n" + helpText + "\n"
 }
 
 // getPopupItems returns the list of items to display in the popup
@@ -364,14 +398,6 @@ var tuiCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
-}
-
-func deleteWorktree(fullPath string) {
-	log.Debug("Removing worktree", "fullPath", fullPath)
-	err := deps.Git.RemoveWorktree(fullPath, &fullPath)
-	_ = deps.Zoxide.RemovePath(fullPath)
-	util.CheckError(err)
-	log.Debug("Worktree removed successfully")
 }
 
 func buildWorktreeTableRows() ([]table.Row, error) {
