@@ -53,8 +53,10 @@ func resolveRepoNameAndPath() (string, string) {
 	log.Debug("Step 2: Checking if parent directory name exists in config", "checking", "repos."+directoryName)
 	if viper.IsSet("repos." + directoryName) {
 		log.Debug("✓ Repo directory name found in config", "directory name", directoryName)
-		// Parent directory is likely the bare repo
-		return "repos." + directoryName, parentDir
+		bareRepoName := viper.GetString("repos." + directoryName + ".bareRepoName")
+		log.Debug(fmt.Sprintf("bareRepoName %s", bareRepoName))
+
+		return "repos." + directoryName, parentDir + "/" + bareRepoName
 	}
 	log.Debug("✗ Parent directory name not found in config")
 
