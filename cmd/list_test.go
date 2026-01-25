@@ -39,7 +39,7 @@ func TestListCmdWithBranchDisplayMode(t *testing.T) {
 	}, nil)
 
 	deps.Git = mockGit
-	deps.AppConfig.RepoName = "testRepo"
+	deps.AppConfig.RepoNameForConfig = "testRepo"
 
 	// Set display mode to branch
 	viper.Set("repos.testRepo.listDisplayMode", "branch")
@@ -63,7 +63,7 @@ func TestListCmdWithDirectoryDisplayMode(t *testing.T) {
 	}, nil)
 
 	deps.Git = mockGit
-	deps.AppConfig.RepoName = "testRepo"
+	deps.AppConfig.RepoNameForConfig = "testRepo"
 
 	// Set display mode to directory
 	viper.Set("repos.testRepo.listDisplayMode", "directory")
@@ -87,7 +87,7 @@ func TestListCmdWithFolderDisplayMode(t *testing.T) {
 	}, nil)
 
 	deps.Git = mockGit
-	deps.AppConfig.RepoName = "testRepo"
+	deps.AppConfig.RepoNameForConfig = "testRepo"
 
 	// Set display mode to folder (alias for directory)
 	viper.Set("repos.testRepo.listDisplayMode", "folder")
@@ -111,7 +111,7 @@ func TestListCmdWithDefaultDisplayMode(t *testing.T) {
 	}, nil)
 
 	deps.Git = mockGit
-	deps.AppConfig.RepoName = "testRepo"
+	deps.AppConfig.RepoNameForConfig = "testRepo"
 
 	// Don't set any display mode - should default to branch
 
@@ -134,7 +134,7 @@ func TestListCmdVerboseOverridesDisplayMode(t *testing.T) {
 	}, nil)
 
 	deps.Git = mockGit
-	deps.AppConfig.RepoName = "testRepo"
+	deps.AppConfig.RepoNameForConfig = "testRepo"
 
 	// Set display mode to directory
 	viper.Set("repos.testRepo.listDisplayMode", "directory")

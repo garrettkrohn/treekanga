@@ -12,6 +12,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/utility"
 	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
 )
@@ -44,24 +45,25 @@ func NewRootCmd(git git.Git,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			logger.LoggerInit(logLevel)
 
-			repoName, bareRepoPath := resolveRepoNameAndPath()
-			cfg := config.AppConfig{
-				BareRepoPath: bareRepoPath,
-				RepoName:     repoName,
-			}
-
 			deps = Dependencies{
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
-				AppConfig:       cfg,
 			}
 
 			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" || cmd.Name() == "clone" {
 				return
 			}
+
+			// get app config
+			configuration := config.NewConfig(git)
+			cfg, err := configuration.GetDefaultConfig()
+			utility.CheckError(err)
+			deps.AppConfig = cfg
+
+			cfg, err = configuration.ImportYamlConfigFile(cfg)
 
 		},
 	}
@@ -96,6 +98,7 @@ func Execute(version string) {
 	if err := fang.Execute(context.Background(), rootCmd, options...); err != nil {
 		os.Exit(1)
 	}
+
 }
 
 func init() {

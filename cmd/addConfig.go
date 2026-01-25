@@ -245,7 +245,7 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 
 func getZoxideConfig(c *com.AddConfig) {
 	//TODO: check this
-	c.ZoxideFolders = viper.GetStringSlice("reopos." + deps.AppConfig.RepoName + ".zoxideFolders")
+	c.ZoxideFolders = viper.GetStringSlice("reopos." + deps.AppConfig.RepoNameForConfig + ".zoxideFolders")
 	c.DirectoryReader = deps.DirectoryReader
 }
 
@@ -350,7 +350,7 @@ func getGitConfig(c *com.AddConfig) {
 	} else {
 		log.Fatal("please include new branch name as an argument")
 	}
-	repoName := deps.AppConfig.RepoName
+	repoName := deps.AppConfig.RepoNameForConfig
 
 	c.GitInfo.RepoName = repoName
 
@@ -444,14 +444,14 @@ func validateConfig(c *com.AddConfig) {
 }
 
 func getPostScript(c *com.AddConfig) {
-	postScript := viper.GetString("repos." + deps.AppConfig.RepoName + ".postScript")
+	postScript := viper.GetString("repos." + deps.AppConfig.RepoNameForConfig + ".postScript")
 	if postScript == "" {
 		log.Debug("no post script found in config file")
 		return
 	}
 	c.PostScript = postScript
 
-	autoRunPostScript := viper.GetBool("repos." + deps.AppConfig.RepoName + ".autoRunPostScript")
+	autoRunPostScript := viper.GetBool("repos." + deps.AppConfig.RepoNameForConfig + ".autoRunPostScript")
 	c.AutoRunPostScript = &autoRunPostScript
 
 }

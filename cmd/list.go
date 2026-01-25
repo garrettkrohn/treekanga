@@ -99,8 +99,8 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 // getListDisplayMode retrieves the configured display mode for list command
 // Returns "branch" or "directory" (default: "branch")
 func getListDisplayMode() string {
-	if deps.AppConfig.RepoName != "" {
-		displayMode := viper.GetString("repos." + deps.AppConfig.RepoName + ".listDisplayMode")
+	if deps.AppConfig.RepoNameForConfig != "" {
+		displayMode := viper.GetString("repos." + deps.AppConfig.RepoNameForConfig + ".listDisplayMode")
 		if displayMode == "directory" || displayMode == "folder" {
 			return "directory"
 		}
