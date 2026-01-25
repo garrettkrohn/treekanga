@@ -26,6 +26,8 @@ type Git interface {
 	DeleteBranchRef(branch string, path string) error
 	DeleteBranch(branch string, path string, forceDelete bool) error
 	ConfigureGitBare(path string) error
+	GetBareRepoPath() (string, error)
+	GetProjectName() (string, error)
 }
 
 type RealGit struct {
@@ -219,6 +221,21 @@ func (g *RealGit) ConfigureGitBare(path string) error {
 	}
 
 	return nil
+}
+
+func (g *RealGit) GetBareRepoPath() (string, error) {
+	return g.shell.Cmd("git", "rev-parse", "--git-common-dir")
+}
+
+func (g *RealGit) GetProjectName() (string, error) {
+	// First get the remote URL
+	url, err := g.shell.Cmd("git", "config", "--get", "remote.origin.url")
+	if err != nil {
+		return "", err
+	}
+
+	// Then extract the basename
+	return g.shell.Cmd("basename", "-s", ".git", strings.TrimSpace(url))
 }
 
 func getBaseArguementsWithOrWithoutPath(path *string) []string {

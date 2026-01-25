@@ -254,6 +254,61 @@ func (_c *MockGit_DeleteBranchRef_Call) RunAndReturn(run func(string, string) er
 	return _c
 }
 
+// GetBareRepoPath provides a mock function with no fields
+func (_m *MockGit) GetBareRepoPath() (string, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetBareRepoPath")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (string, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockGit_GetBareRepoPath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetBareRepoPath'
+type MockGit_GetBareRepoPath_Call struct {
+	*mock.Call
+}
+
+// GetBareRepoPath is a helper method to define mock.On call
+func (_e *MockGit_Expecter) GetBareRepoPath() *MockGit_GetBareRepoPath_Call {
+	return &MockGit_GetBareRepoPath_Call{Call: _e.mock.On("GetBareRepoPath")}
+}
+
+func (_c *MockGit_GetBareRepoPath_Call) Run(run func()) *MockGit_GetBareRepoPath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockGit_GetBareRepoPath_Call) Return(_a0 string, _a1 error) *MockGit_GetBareRepoPath_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockGit_GetBareRepoPath_Call) RunAndReturn(run func() (string, error)) *MockGit_GetBareRepoPath_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetLocalBranches provides a mock function with given fields: _a0
 func (_m *MockGit) GetLocalBranches(_a0 *string) ([]string, error) {
 	ret := _m.Called(_a0)
@@ -308,6 +363,61 @@ func (_c *MockGit_GetLocalBranches_Call) Return(_a0 []string, _a1 error) *MockGi
 }
 
 func (_c *MockGit_GetLocalBranches_Call) RunAndReturn(run func(*string) ([]string, error)) *MockGit_GetLocalBranches_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetProjectName provides a mock function with no fields
+func (_m *MockGit) GetProjectName() (string, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetProjectName")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (string, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockGit_GetProjectName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetProjectName'
+type MockGit_GetProjectName_Call struct {
+	*mock.Call
+}
+
+// GetProjectName is a helper method to define mock.On call
+func (_e *MockGit_Expecter) GetProjectName() *MockGit_GetProjectName_Call {
+	return &MockGit_GetProjectName_Call{Call: _e.mock.On("GetProjectName")}
+}
+
+func (_c *MockGit_GetProjectName_Call) Run(run func()) *MockGit_GetProjectName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockGit_GetProjectName_Call) Return(_a0 string, _a1 error) *MockGit_GetProjectName_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockGit_GetProjectName_Call) RunAndReturn(run func() (string, error)) *MockGit_GetProjectName_Call {
 	_c.Call.Return(run)
 	return _c
 }

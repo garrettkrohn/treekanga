@@ -14,6 +14,7 @@ import (
 
 	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/utility"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
@@ -38,6 +39,16 @@ func resolveRepoNameAndPath() (string, string) {
 	directoryName := filepath.Base(parentDir)
 	currentDirName := filepath.Base(workingDir)
 	log.Debug("Directory info", "current", currentDirName, "parent", directoryName, "parentPath", parentDir)
+
+	bareRepoPath, err := deps.Git.GetBareRepoPath()
+	utility.CheckError(err)
+
+	projectName, err := deps.Git.GetProjectName()
+	utility.CheckError(err)
+
+	if bareRepoPath != "" && projectName != "" {
+		return projectName, bareRepoPath
+	}
 
 	// Check if the parent directory matches any repo's bareRepoName config
 	log.Debug("Step 1: Checking if parent directory matches any bareRepoName config", "directoryName", directoryName)
@@ -346,7 +357,7 @@ func getGitConfig(c *com.AddConfig) {
 	if c.Flags.BaseBranch != nil {
 		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
 	} else {
-		baseBranch = viper.GetString(deps.ResolvedRepo + ".defaultBranch")
+		baseBranch = viper.GetString("repos." + deps.ResolvedRepo + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
