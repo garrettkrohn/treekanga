@@ -60,9 +60,9 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 	var rawWorktrees []string
 	var err error
 
-	if deps.BareRepoPath != "" {
-		log.Debug("Using bare repo path for worktree list", "path", deps.BareRepoPath)
-		rawWorktrees, err = deps.Git.GetWorktrees(&deps.BareRepoPath)
+	if deps.AppConfig.BareRepoPath != "" {
+		log.Debug("Using bare repo path for worktree list", "path", deps.AppConfig.BareRepoPath)
+		rawWorktrees, err = deps.Git.GetWorktrees(&deps.AppConfig.BareRepoPath)
 	} else {
 		log.Debug("No bare repo path set, using current directory")
 		rawWorktrees, err = deps.Git.GetWorktrees(nil)
@@ -99,8 +99,8 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 // getListDisplayMode retrieves the configured display mode for list command
 // Returns "branch" or "directory" (default: "branch")
 func getListDisplayMode() string {
-	if deps.ResolvedRepo != "" {
-		displayMode := viper.GetString(deps.ResolvedRepo + ".listDisplayMode")
+	if deps.AppConfig.RepoName != "" {
+		displayMode := viper.GetString("repos." + deps.AppConfig.RepoName + ".listDisplayMode")
 		if displayMode == "directory" || displayMode == "folder" {
 			return "directory"
 		}

@@ -197,15 +197,15 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Use the buildWorktreeStrings function (or directly get worktrees and transform)
 	// We need to set up deps for the list command to work
 	// Save the original deps values
-	originalBareRepoPath := deps.BareRepoPath
+	originalBareRepoPath := deps.AppConfig.BareRepoPath
 	originalGit := deps.Git
 	defer func() {
-		deps.BareRepoPath = originalBareRepoPath
+		deps.AppConfig.BareRepoPath = originalBareRepoPath
 		deps.Git = originalGit
 	}()
 
 	// Set deps for the list command
-	deps.BareRepoPath = bareRepoPath
+	deps.AppConfig.BareRepoPath = bareRepoPath
 	deps.Git = realGit
 
 	// Get the list of worktrees

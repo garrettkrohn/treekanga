@@ -221,15 +221,15 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 	addCmdFlagsAndArgs(cmd, args, c)
 
 	// Resolve repo name and bare repo path early
-	repoName, bareRepoPath := resolveRepoNameAndPath()
-	deps.ResolvedRepo = repoName
-	deps.BareRepoPath = bareRepoPath
+	// repoName, bareRepoPath := resolveRepoNameAndPath()
+	// deps.ResolvedRepo = repoName
+	// deps.BareRepoPath = bareRepoPath
 
 	// If user didn't provide -d flag, use the resolved bare repo path for git operations
-	if c.Flags.Directory == nil && bareRepoPath != "" {
-		log.Debug("Using resolved bare repo path for git operations", "path", bareRepoPath)
-		c.Flags.Directory = &bareRepoPath
-	}
+	// if c.Flags.Directory == nil && bareRepoPath != "" {
+	// 	log.Debug("Using resolved bare repo path for git operations", "path", bareRepoPath)
+	// 	c.Flags.Directory = &bareRepoPath
+	// }
 
 	setWorkingAndParentDir(c)
 
@@ -244,7 +244,8 @@ func getAddCmdConfig(cmd *cobra.Command, args []string, c *com.AddConfig) {
 }
 
 func getZoxideConfig(c *com.AddConfig) {
-	c.ZoxideFolders = viper.GetStringSlice(deps.ResolvedRepo + ".zoxideFolders")
+	//TODO: check this
+	c.ZoxideFolders = viper.GetStringSlice("reopos." + deps.AppConfig.RepoName + ".zoxideFolders")
 	c.DirectoryReader = deps.DirectoryReader
 }
 
@@ -349,15 +350,14 @@ func getGitConfig(c *com.AddConfig) {
 	} else {
 		log.Fatal("please include new branch name as an argument")
 	}
-
-	repoName := deps.ResolvedRepo
+	repoName := deps.AppConfig.RepoName
 
 	c.GitInfo.RepoName = repoName
 
 	if c.Flags.BaseBranch != nil {
 		c.GitInfo.BaseBranchName = *c.Flags.BaseBranch
 	} else {
-		baseBranch = viper.GetString("repos." + deps.ResolvedRepo + ".defaultBranch")
+		baseBranch = viper.GetString("repos." + repoName + ".defaultBranch")
 		if baseBranch == "" {
 			log.Fatal("There was no baseBranch provided, and no baseBranch in the config file")
 		}
@@ -444,14 +444,14 @@ func validateConfig(c *com.AddConfig) {
 }
 
 func getPostScript(c *com.AddConfig) {
-	postScript := viper.GetString(deps.ResolvedRepo + ".postScript")
+	postScript := viper.GetString("repos." + deps.AppConfig.RepoName + ".postScript")
 	if postScript == "" {
 		log.Debug("no post script found in config file")
 		return
 	}
 	c.PostScript = postScript
 
-	autoRunPostScript := viper.GetBool(deps.ResolvedRepo + ".autoRunPostScript")
+	autoRunPostScript := viper.GetBool("repos." + deps.AppConfig.RepoName + ".autoRunPostScript")
 	c.AutoRunPostScript = &autoRunPostScript
 
 }

@@ -137,7 +137,7 @@ func deleteLocalBranches(selectedWorktreeObj []worktreeobj.WorktreeObj, forceDel
 	if confirm {
 		for _, worktreeObj := range selectedWorktreeObj {
 			// Use the bare repo path if available, otherwise fall back to current directory
-			dir := deps.BareRepoPath
+			dir := deps.AppConfig.BareRepoPath
 			if dir == "" {
 				var err error
 				dir, err = os.Getwd()
@@ -162,8 +162,8 @@ func getWorktrees(git git.Git, transformer *transformer.RealTransformer) []workt
 	var worktreeStrings []string
 	var wError error
 
-	if deps.BareRepoPath != "" {
-		worktreeStrings, wError = git.GetWorktrees(&deps.BareRepoPath)
+	if deps.AppConfig.BareRepoPath != "" {
+		worktreeStrings, wError = git.GetWorktrees(&deps.AppConfig.BareRepoPath)
 	} else {
 		worktreeStrings, wError = git.GetWorktrees(nil)
 	}
@@ -194,9 +194,9 @@ func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpi
 
 	// Use the resolved bare repo path if available
 	var path *string
-	if deps.BareRepoPath != "" {
-		path = &deps.BareRepoPath
-		log.Debug("Using bare repo path for removing worktrees", "path", deps.BareRepoPath)
+	if deps.AppConfig.BareRepoPath != "" {
+		path = &deps.AppConfig.BareRepoPath
+		log.Debug("Using bare repo path for removing worktrees", "path", deps.AppConfig.BareRepoPath)
 	}
 
 	for _, worktreeObj := range worktrees {
@@ -216,9 +216,9 @@ func filterLocalBranchesOnly(worktrees []worktreeobj.WorktreeObj,
 
 	// Use the resolved bare repo path if available
 	var path *string
-	if deps.BareRepoPath != "" {
-		path = &deps.BareRepoPath
-		log.Debug("Using bare repo path for remote branches", "path", deps.BareRepoPath)
+	if deps.AppConfig.BareRepoPath != "" {
+		path = &deps.AppConfig.BareRepoPath
+		log.Debug("Using bare repo path for remote branches", "path", deps.AppConfig.BareRepoPath)
 	}
 
 	branches, err := deps.Git.GetRemoteBranches(path)

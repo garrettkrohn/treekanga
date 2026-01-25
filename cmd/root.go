@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
@@ -21,8 +22,7 @@ type Dependencies struct {
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
-	ResolvedRepo    string
-	BareRepoPath    string
+	AppConfig       config.AppConfig
 }
 
 var (
@@ -44,23 +44,24 @@ func NewRootCmd(git git.Git,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			logger.LoggerInit(logLevel)
 
+			repoName, bareRepoPath := resolveRepoNameAndPath()
+			cfg := config.AppConfig{
+				BareRepoPath: bareRepoPath,
+				RepoName:     repoName,
+			}
+
 			deps = Dependencies{
 				Git:             git,
 				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
-				ResolvedRepo:    "",
-				BareRepoPath:    "",
+				AppConfig:       cfg,
 			}
 
 			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" || cmd.Name() == "clone" {
 				return
 			}
-
-			repoName, bareRepoPath := resolveRepoNameAndPath()
-			deps.ResolvedRepo = repoName
-			deps.BareRepoPath = bareRepoPath
 
 		},
 	}
