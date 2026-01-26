@@ -12,9 +12,9 @@ import (
 	"github.com/garrettkrohn/treekanga/confirmer"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 func DeleteWorktrees(git adapters.GitAdapter,
@@ -81,7 +81,7 @@ func DeleteWorktrees(git adapters.GitAdapter,
 	return len(selectedWorktreeObj), nil
 }
 
-func getWorktreeFullPaths(worktrees []worktreeobj.WorktreeObj) []string {
+func getWorktreeFullPaths(worktrees []models.Worktree) []string {
 	var worktreeFullPathStrings []string
 
 	for _, worktree := range worktrees {
@@ -91,7 +91,7 @@ func getWorktreeFullPaths(worktrees []worktreeobj.WorktreeObj) []string {
 
 }
 
-func deleteLocalBranches(git adapters.GitAdapter, selectedWorktreeObj []worktreeobj.WorktreeObj, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
+func deleteLocalBranches(git adapters.GitAdapter, selectedWorktreeObj []models.Worktree, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
 	confirm := false
 
 	confirmationMessage := "Are you sure you want to delete these branches: "
@@ -157,10 +157,10 @@ func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, zoxide ada
 	}
 }
 
-func filterLocalBranchesOnly(git adapters.GitAdapter, worktrees []worktreeobj.WorktreeObj,
+func filterLocalBranchesOnly(git adapters.GitAdapter, worktrees []models.Worktree,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
-	bareRepoPath string) []worktreeobj.WorktreeObj {
+	bareRepoPath string) []models.Worktree {
 
 	log.Info("filtering local branches only")
 
@@ -180,7 +180,7 @@ func filterLocalBranchesOnly(git adapters.GitAdapter, worktrees []worktreeobj.Wo
 
 // TODO: remove dupilcate code here
 // sortWorktreesByModTime sorts worktrees by modification time (most recent first)
-func sortWorktreesByModTime(worktrees []worktreeobj.WorktreeObj) {
+func sortWorktreesByModTime(worktrees []models.Worktree) {
 	sort.Slice(worktrees, func(i, j int) bool {
 		statI, errI := os.Stat(worktrees[i].FullPath)
 		statJ, errJ := os.Stat(worktrees[j].FullPath)

@@ -8,10 +8,10 @@ import (
 
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -259,7 +259,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	worktreeObjects := realTransformer.TransformWorktrees(worktreeStrings)
 
 	// Find our test_branch worktree
-	var testWorktree *worktreeobj.WorktreeObj
+	var testWorktree *models.Worktree
 	for i, wt := range worktreeObjects {
 		if wt.BranchName == testBranchName {
 			testWorktree = &worktreeObjects[i]

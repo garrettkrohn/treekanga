@@ -3,13 +3,13 @@ package transformer
 import (
 	"strings"
 
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/models"
 )
 
 type transformer interface {
-	TransformWorktrees([]string) []worktreeobj.WorktreeObj
+	TransformWorktrees([]string) []models.Worktree
 	RemoveOriginPrefix([]string) []string
-	TransformWorktreesToBranchNames([]worktreeobj.WorktreeObj) []string
+	TransformWorktreesToBranchNames([]models.Worktree) []string
 	RemoveQuotes([]string) []string
 }
 
@@ -20,9 +20,9 @@ func NewTransformer() *RealTransformer {
 	return &RealTransformer{}
 }
 
-func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []worktreeobj.WorktreeObj {
+func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []models.Worktree {
 
-	var worktrees []worktreeobj.WorktreeObj
+	var worktrees []models.Worktree
 
 	for _, worktreeString := range worktreeStrings {
 		parts := strings.Fields(worktreeString)
@@ -41,7 +41,7 @@ func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []worktre
 		// Remove the brackets from the branch name
 		BranchName := strings.Trim(parts[2], "[]")
 
-		worktrees = append(worktrees, worktreeobj.WorktreeObj{
+		worktrees = append(worktrees, models.Worktree{
 			FullPath:   FullPath,
 			Folder:     Folder,
 			BranchName: BranchName,
@@ -59,7 +59,7 @@ func (r *RealTransformer) RemoveOriginPrefix(branchStrings []string) []string {
 	return branchStrings
 }
 
-func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []worktreeobj.WorktreeObj) []string {
+func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []models.Worktree) []string {
 	var stringWorktrees []string
 	for _, worktreeObj := range worktreeObjs {
 		stringWorktrees = append(stringWorktrees, worktreeObj.Folder)

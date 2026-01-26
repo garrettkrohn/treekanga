@@ -3,13 +3,13 @@ package filter
 import (
 	"testing"
 
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFilterWorktreesAndBranches(t *testing.T) {
 	remoteBranches := []string{"repo1", "repo2", "repo4"}
-	worktreeObjs := []worktreeobj.WorktreeObj{
+	worktreeObjs := []models.Worktree{
 		{
 			FullPath:   "/path/to/repo1",
 			Folder:     "repo1",
@@ -31,7 +31,7 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 	}
 
 	t.Run("TestGetNoBranchMatch", func(t *testing.T) {
-		expected := []worktreeobj.WorktreeObj{
+		expected := []models.Worktree{
 			{
 				FullPath:   "/path/to/repo3",
 				Folder:     "repo3",
@@ -47,7 +47,7 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 	})
 
 	t.Run("TestGetBranchMatch", func(t *testing.T) {
-		expected := []worktreeobj.WorktreeObj{
+		expected := []models.Worktree{
 			{
 				FullPath:   "/path/to/repo1",
 				Folder:     "repo1",

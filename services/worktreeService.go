@@ -3,11 +3,11 @@ package services
 import (
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/transformer"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
-func getWorktrees(git adapters.GitAdapter, transformer *transformer.RealTransformer, bareRepoPath string) []worktreeobj.WorktreeObj {
+func getWorktrees(git adapters.GitAdapter, transformer *transformer.RealTransformer, bareRepoPath string) []models.Worktree {
 	var worktreeStrings []string
 	var wError error
 

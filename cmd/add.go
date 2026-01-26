@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/log"
-	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/services"
 	util "github.com/garrettkrohn/treekanga/utility"
 
@@ -104,18 +103,6 @@ var addCmd = &cobra.Command{
 
 		services.AddWorktree(deps.Git, deps.Zoxide, deps.Connector, deps.Shell, cfg)
 	},
-}
-
-func runPostScript(c com.AddConfig) bool {
-	if !c.HasPostScript() {
-		return false
-	}
-
-	if *c.Flags.ExecuteScript || *c.AutoRunPostScript {
-		return true
-	}
-
-	return false
 }
 
 func init() {

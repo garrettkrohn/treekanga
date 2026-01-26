@@ -7,9 +7,9 @@ import (
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/models"
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,7 +26,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 
 	mockForm := getMockForm(t)
 
-	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
+	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]models.Worktree{
 		{
 			FullPath:   "/Users/gkrohn/code/development",
 			Folder:     "development",
@@ -70,7 +70,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	transformer := transformer.NewTransformer()
 	mockFilter := filter.NewMockFilter(t)
-	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
+	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]models.Worktree{
 		{
 			FullPath:   "/Users/gkrohn/code/development",
 			Folder:     "development",

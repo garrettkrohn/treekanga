@@ -3,7 +3,7 @@
 package filter
 
 import (
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	models "github.com/garrettkrohn/treekanga/models"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -21,19 +21,19 @@ func (_m *MockFilter) EXPECT() *MockFilter_Expecter {
 }
 
 // GetBranchMatchList provides a mock function with given fields: _a0, _a1
-func (_m *MockFilter) GetBranchMatchList(_a0 []string, _a1 []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+func (_m *MockFilter) GetBranchMatchList(_a0 []string, _a1 []models.Worktree) []models.Worktree {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetBranchMatchList")
 	}
 
-	var r0 []worktreeobj.WorktreeObj
-	if rf, ok := ret.Get(0).(func([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj); ok {
+	var r0 []models.Worktree
+	if rf, ok := ret.Get(0).(func([]string, []models.Worktree) []models.Worktree); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]worktreeobj.WorktreeObj)
+			r0 = ret.Get(0).([]models.Worktree)
 		}
 	}
 
@@ -47,42 +47,42 @@ type MockFilter_GetBranchMatchList_Call struct {
 
 // GetBranchMatchList is a helper method to define mock.On call
 //   - _a0 []string
-//   - _a1 []worktreeobj.WorktreeObj
+//   - _a1 []models.Worktree
 func (_e *MockFilter_Expecter) GetBranchMatchList(_a0 interface{}, _a1 interface{}) *MockFilter_GetBranchMatchList_Call {
 	return &MockFilter_GetBranchMatchList_Call{Call: _e.mock.On("GetBranchMatchList", _a0, _a1)}
 }
 
-func (_c *MockFilter_GetBranchMatchList_Call) Run(run func(_a0 []string, _a1 []worktreeobj.WorktreeObj)) *MockFilter_GetBranchMatchList_Call {
+func (_c *MockFilter_GetBranchMatchList_Call) Run(run func(_a0 []string, _a1 []models.Worktree)) *MockFilter_GetBranchMatchList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]string), args[1].([]worktreeobj.WorktreeObj))
+		run(args[0].([]string), args[1].([]models.Worktree))
 	})
 	return _c
 }
 
-func (_c *MockFilter_GetBranchMatchList_Call) Return(_a0 []worktreeobj.WorktreeObj) *MockFilter_GetBranchMatchList_Call {
+func (_c *MockFilter_GetBranchMatchList_Call) Return(_a0 []models.Worktree) *MockFilter_GetBranchMatchList_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockFilter_GetBranchMatchList_Call) RunAndReturn(run func([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj) *MockFilter_GetBranchMatchList_Call {
+func (_c *MockFilter_GetBranchMatchList_Call) RunAndReturn(run func([]string, []models.Worktree) []models.Worktree) *MockFilter_GetBranchMatchList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetBranchNoMatchList provides a mock function with given fields: _a0, _a1
-func (_m *MockFilter) GetBranchNoMatchList(_a0 []string, _a1 []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+func (_m *MockFilter) GetBranchNoMatchList(_a0 []string, _a1 []models.Worktree) []models.Worktree {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetBranchNoMatchList")
 	}
 
-	var r0 []worktreeobj.WorktreeObj
-	if rf, ok := ret.Get(0).(func([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj); ok {
+	var r0 []models.Worktree
+	if rf, ok := ret.Get(0).(func([]string, []models.Worktree) []models.Worktree); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]worktreeobj.WorktreeObj)
+			r0 = ret.Get(0).([]models.Worktree)
 		}
 	}
 
@@ -96,24 +96,24 @@ type MockFilter_GetBranchNoMatchList_Call struct {
 
 // GetBranchNoMatchList is a helper method to define mock.On call
 //   - _a0 []string
-//   - _a1 []worktreeobj.WorktreeObj
+//   - _a1 []models.Worktree
 func (_e *MockFilter_Expecter) GetBranchNoMatchList(_a0 interface{}, _a1 interface{}) *MockFilter_GetBranchNoMatchList_Call {
 	return &MockFilter_GetBranchNoMatchList_Call{Call: _e.mock.On("GetBranchNoMatchList", _a0, _a1)}
 }
 
-func (_c *MockFilter_GetBranchNoMatchList_Call) Run(run func(_a0 []string, _a1 []worktreeobj.WorktreeObj)) *MockFilter_GetBranchNoMatchList_Call {
+func (_c *MockFilter_GetBranchNoMatchList_Call) Run(run func(_a0 []string, _a1 []models.Worktree)) *MockFilter_GetBranchNoMatchList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]string), args[1].([]worktreeobj.WorktreeObj))
+		run(args[0].([]string), args[1].([]models.Worktree))
 	})
 	return _c
 }
 
-func (_c *MockFilter_GetBranchNoMatchList_Call) Return(_a0 []worktreeobj.WorktreeObj) *MockFilter_GetBranchNoMatchList_Call {
+func (_c *MockFilter_GetBranchNoMatchList_Call) Return(_a0 []models.Worktree) *MockFilter_GetBranchNoMatchList_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockFilter_GetBranchNoMatchList_Call) RunAndReturn(run func([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj) *MockFilter_GetBranchNoMatchList_Call {
+func (_c *MockFilter_GetBranchNoMatchList_Call) RunAndReturn(run func([]string, []models.Worktree) []models.Worktree) *MockFilter_GetBranchNoMatchList_Call {
 	_c.Call.Return(run)
 	return _c
 }

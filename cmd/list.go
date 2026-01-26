@@ -13,9 +13,9 @@ import (
 
 	"github.com/charmbracelet/log"
 
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 type Worktree struct {
@@ -109,7 +109,7 @@ func getListDisplayMode() string {
 }
 
 // getDisplayString returns the appropriate display string based on the configured mode
-func getDisplayString(worktree worktreeobj.WorktreeObj, displayMode string) string {
+func getDisplayString(worktree models.Worktree, displayMode string) string {
 	if displayMode == "directory" {
 		return worktree.Folder
 	}
@@ -117,7 +117,7 @@ func getDisplayString(worktree worktreeobj.WorktreeObj, displayMode string) stri
 }
 
 // sortWorktreesByModTime sorts worktrees by modification time (most recent first)
-func sortWorktreesByModTime(worktrees []worktreeobj.WorktreeObj) {
+func sortWorktreesByModTime(worktrees []models.Worktree) {
 	sort.Slice(worktrees, func(i, j int) bool {
 		statI, errI := os.Stat(worktrees[i].FullPath)
 		statJ, errJ := os.Stat(worktrees[j].FullPath)

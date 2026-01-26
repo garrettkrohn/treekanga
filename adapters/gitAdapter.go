@@ -8,11 +8,9 @@ import (
 
 	"github.com/charmbracelet/log"
 
-	"github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
-// TODO: make a a function to add the directory
 type GitAdapter interface {
 	GetRemoteBranches(*string) ([]string, error)
 	GetLocalBranches(*string) ([]string, error)
@@ -122,23 +120,8 @@ func (g *RealGitAdapter) AddWorktree(params AddWorktreeConfig) error {
 	gitCommand := getBaseArguementsWithOrWithoutPath(&params.BareRepoPath)
 	gitCommand = append(gitCommand, "worktree", "add", params.WorktreeTargetDirectory+"/"+params.NewWorktreeName)
 
-	// Create a config object for determineBranchArguments
-	pullFlag := params.PullBeforeCuttingNewBranch
-	config := &common.AddConfig{
-		GitInfo: common.GitInfo{
-			NewBranchName:           params.NewBranchName,
-			BaseBranchName:          params.BaseBranch,
-			NewBranchExistsLocally:  params.NewBranchExistsLocally,
-			NewBranchExistsRemotely: params.NewBranchExistsRemotely,
-			BaseBranchExistsLocally: params.BaseBranchExistsLocally,
-		},
-		Flags: common.AddCmdFlags{
-			Pull: &pullFlag,
-		},
-	}
-
 	// Add branch-specific arguments
-	branchArgs := g.determineBranchArguments(config)
+	branchArgs := g.determineBranchArguments(params)
 	gitCommand = append(gitCommand, branchArgs...)
 
 	// Log the full command for debugging
@@ -153,32 +136,25 @@ func (g *RealGitAdapter) AddWorktree(params AddWorktreeConfig) error {
 	return nil
 }
 
-func (g *RealGitAdapter) determineBranchArguments(config *common.AddConfig) []string {
-	newBranchName := config.GitInfo.NewBranchName
-	baseBranch := config.GitInfo.BaseBranchName
-	NewBranchExistsLocally := config.GitInfo.NewBranchExistsLocally
-	NewBranchExistsRemotely := config.GitInfo.NewBranchExistsRemotely
-	BaseBranchExistsLocally := config.GitInfo.BaseBranchExistsLocally
-	pullBeforeCuttingNewBranch := config.ShouldPull()
-
+func (g *RealGitAdapter) determineBranchArguments(params AddWorktreeConfig) []string {
 	// Case 1: Branch already exists (locally or remotely) - just checkout
-	if NewBranchExistsLocally || NewBranchExistsRemotely {
-		return []string{newBranchName}
+	if params.NewBranchExistsLocally || params.NewBranchExistsRemotely {
+		return []string{params.NewBranchName}
 	}
 
 	// Case 2: Base branch exists locally
-	if BaseBranchExistsLocally {
-		if pullBeforeCuttingNewBranch {
+	if params.BaseBranchExistsLocally {
+		if params.PullBeforeCuttingNewBranch {
 			// Create new branch from remote version of base branch
-			return []string{"-b", newBranchName, "origin/" + baseBranch, "--no-track"}
+			return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
 		} else {
 			// Create new branch from local version of base branch
-			return []string{"-b", newBranchName, baseBranch}
+			return []string{"-b", params.NewBranchName, params.BaseBranch}
 		}
 	}
 
 	// Case 3: Base branch only exists remotely
-	return []string{"-b", newBranchName, "origin/" + baseBranch, "--no-track"}
+	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
 }
 
 // Note: path is figured out in add.go

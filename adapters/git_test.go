@@ -3,7 +3,6 @@ package adapters
 import (
 	"testing"
 
-	com "github.com/garrettkrohn/treekanga/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,14 +11,12 @@ func TestDetermineBranchArguments(t *testing.T) {
 	git := &RealGitAdapter{}
 
 	t.Run("Case 1a: New branch exists locally", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  true,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "feature-branch",
+			BaseBranch:              "main",
+			NewBranchExistsLocally:  true,
+			NewBranchExistsRemotely: false,
+			BaseBranchExistsLocally: true,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -29,14 +26,12 @@ func TestDetermineBranchArguments(t *testing.T) {
 	})
 
 	t.Run("Case 1b: New branch exists remotely", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: true,
-				BaseBranchExistsLocally: true,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "feature-branch",
+			BaseBranch:              "main",
+			NewBranchExistsLocally:  false,
+			NewBranchExistsRemotely: true,
+			BaseBranchExistsLocally: true,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -46,14 +41,12 @@ func TestDetermineBranchArguments(t *testing.T) {
 	})
 
 	t.Run("Case 1c: New branch exists both locally and remotely", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  true,
-				NewBranchExistsRemotely: true,
-				BaseBranchExistsLocally: true,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "feature-branch",
+			BaseBranch:              "main",
+			NewBranchExistsLocally:  true,
+			NewBranchExistsRemotely: true,
+			BaseBranchExistsLocally: true,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -63,18 +56,13 @@ func TestDetermineBranchArguments(t *testing.T) {
 	})
 
 	t.Run("Case 2a: Base branch exists locally and should pull", func(t *testing.T) {
-		pullFlag := true
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
-			Flags: com.AddCmdFlags{
-				Pull: &pullFlag,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:              "feature-branch",
+			BaseBranch:                 "main",
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			BaseBranchExistsLocally:    true,
+			PullBeforeCuttingNewBranch: true,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -84,18 +72,13 @@ func TestDetermineBranchArguments(t *testing.T) {
 	})
 
 	t.Run("Case 2b: Base branch exists locally and should not pull", func(t *testing.T) {
-		pullFlag := false
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
-			Flags: com.AddCmdFlags{
-				Pull: &pullFlag,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:              "feature-branch",
+			BaseBranch:                 "main",
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			BaseBranchExistsLocally:    true,
+			PullBeforeCuttingNewBranch: false,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -104,35 +87,29 @@ func TestDetermineBranchArguments(t *testing.T) {
 		assert.Equal(t, expected, result, "Should create new branch from local version when pull flag is false")
 	})
 
-	t.Run("Case 2c: Base branch exists locally with nil pull flag", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
-			Flags: com.AddCmdFlags{
-				Pull: nil, // ShouldPull() will return false
-			},
+	t.Run("Case 2c: Base branch exists locally with false pull flag", func(t *testing.T) {
+		config := AddWorktreeConfig{
+			NewBranchName:              "feature-branch",
+			BaseBranch:                 "main",
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			BaseBranchExistsLocally:    true,
+			PullBeforeCuttingNewBranch: false,
 		}
 
 		result := git.determineBranchArguments(config)
 		expected := []string{"-b", "feature-branch", "main"}
 
-		assert.Equal(t, expected, result, "Should create new branch from local version when pull flag is nil")
+		assert.Equal(t, expected, result, "Should create new branch from local version when pull flag is false")
 	})
 
 	t.Run("Case 3: Base branch only exists remotely", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature-branch",
-				BaseBranchName:          "develop",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: false,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "feature-branch",
+			BaseBranch:              "develop",
+			NewBranchExistsLocally:  false,
+			NewBranchExistsRemotely: false,
+			BaseBranchExistsLocally: false,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -142,14 +119,12 @@ func TestDetermineBranchArguments(t *testing.T) {
 	})
 
 	t.Run("Edge case: Empty branch names", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "",
-				BaseBranchName:          "",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: false,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "",
+			BaseBranch:              "",
+			NewBranchExistsLocally:  false,
+			NewBranchExistsRemotely: false,
+			BaseBranchExistsLocally: false,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -164,18 +139,13 @@ func TestDetermineBranchArgumentsIntegration(t *testing.T) {
 	git := &RealGitAdapter{}
 
 	t.Run("Typical new feature branch from main", func(t *testing.T) {
-		pullFlag := false
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature/user-authentication",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
-			Flags: com.AddCmdFlags{
-				Pull: &pullFlag,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:              "feature/user-authentication",
+			BaseBranch:                 "main",
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			BaseBranchExistsLocally:    true,
+			PullBeforeCuttingNewBranch: false,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -185,18 +155,13 @@ func TestDetermineBranchArgumentsIntegration(t *testing.T) {
 	})
 
 	t.Run("Hotfix branch with pull from remote", func(t *testing.T) {
-		pullFlag := true
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "hotfix/critical-bug",
-				BaseBranchName:          "production",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: false,
-				BaseBranchExistsLocally: true,
-			},
-			Flags: com.AddCmdFlags{
-				Pull: &pullFlag,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:              "hotfix/critical-bug",
+			BaseBranch:                 "production",
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			BaseBranchExistsLocally:    true,
+			PullBeforeCuttingNewBranch: true,
 		}
 
 		result := git.determineBranchArguments(config)
@@ -206,14 +171,12 @@ func TestDetermineBranchArgumentsIntegration(t *testing.T) {
 	})
 
 	t.Run("Checkout existing remote branch", func(t *testing.T) {
-		config := &com.AddConfig{
-			GitInfo: com.GitInfo{
-				NewBranchName:           "feature/existing-feature",
-				BaseBranchName:          "main",
-				NewBranchExistsLocally:  false,
-				NewBranchExistsRemotely: true,
-				BaseBranchExistsLocally: true,
-			},
+		config := AddWorktreeConfig{
+			NewBranchName:           "feature/existing-feature",
+			BaseBranch:              "main",
+			NewBranchExistsLocally:  false,
+			NewBranchExistsRemotely: true,
+			BaseBranchExistsLocally: true,
 		}
 
 		result := git.determineBranchArguments(config)
