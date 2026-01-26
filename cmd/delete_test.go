@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/git"
@@ -39,8 +40,14 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 
 	var branches []string
 
+	cfg := config.AppConfig{
+		FilterOnlyStaleBranches: false,
+		DeleteBranch:            false,
+		ForceDelete:             false,
+	}
+
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches, false, false, false)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockForm, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -80,8 +87,14 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	branches := []string{"development"}
 
+	cfg := config.AppConfig{
+		FilterOnlyStaleBranches: false,
+		DeleteBranch:            false,
+		ForceDelete:             false,
+	}
+
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false, false, false)
+	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, nil, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)

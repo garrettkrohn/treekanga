@@ -19,6 +19,12 @@ type AppConfig struct {
 	PostScriptPath             string   // path to the post script to be run
 	AutoRunPostScript          bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
+
+	// DELETE COMMAND
+	FilterOnlyStaleBranches bool // only show branches that don't exist on remote
+	DeleteBranch            bool // in addition to the worktree, delete the branch as well
+	ForceDelete             bool // use --force when deleting
+
 }
 
 type Config interface {
@@ -52,6 +58,9 @@ func (c *ConfigInstance) GetDefaultConfig() (AppConfig, error) {
 		PostScriptPath:             "",
 		AutoRunPostScript:          false,
 		PullBeforeCuttingNewBranch: false,
+		FilterOnlyStaleBranches:    false,
+		DeleteBranch:               false,
+		ForceDelete:                false,
 	}, nil
 }
 
@@ -133,11 +142,27 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 	if viper.IsSet(viperRepoPrefix + "autoRunPostScript") {
 		autoRunPostScript := viper.GetBool(viperRepoPrefix + "autoRunPostScript")
 		if autoRunPostScript {
-			log.Debug(fmt.Sprintf("setting autoRunPostScript: %s from config", autoRunPostScript))
+			log.Debug("setting autoRunPostScript: true from config")
 			cfg.AutoRunPostScript = autoRunPostScript
 		}
 	}
 
 	return cfg, nil
+}
 
+func (cfg *AppConfig) Print() {
+	log.Info("=== AppConfig ===")
+	log.Info(fmt.Sprintf("BareRepoPath: %s", cfg.BareRepoPath))
+	log.Info(fmt.Sprintf("RepoNameForConfig: %s", cfg.RepoNameForConfig))
+	log.Info(fmt.Sprintf("DefaultBaseBranch: %s", cfg.DefaultBaseBranch))
+	log.Info(fmt.Sprintf("WorktreeTargetDir: %s", cfg.WorktreeTargetDir))
+	log.Info(fmt.Sprintf("ListDisplayMode: %s", cfg.ListDisplayMode))
+	log.Info(fmt.Sprintf("ZoxideFolders: %v", cfg.ZoxideFolders))
+	log.Info(fmt.Sprintf("PostScriptPath: %s", cfg.PostScriptPath))
+	log.Info(fmt.Sprintf("AutoRunPostScript: %t", cfg.AutoRunPostScript))
+	log.Info(fmt.Sprintf("PullBeforeCuttingNewBranch: %t", cfg.PullBeforeCuttingNewBranch))
+	log.Info(fmt.Sprintf("FilterOnlyStaleBranches: %t", cfg.FilterOnlyStaleBranches))
+	log.Info(fmt.Sprintf("DeleteBranch: %t", cfg.DeleteBranch))
+	log.Info(fmt.Sprintf("ForceDelete: %t", cfg.ForceDelete))
+	log.Info("================")
 }

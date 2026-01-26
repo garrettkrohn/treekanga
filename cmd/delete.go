@@ -7,10 +7,10 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/git"
-	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
@@ -32,21 +32,34 @@ var deleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		stale, err := cmd.Flags().GetBool("stale")
 		util.CheckError(err)
+		if stale {
+			log.Debug("setting FilterOnlyStaleBranches = true from flags")
+			deps.AppConfig.FilterOnlyStaleBranches = true
+		}
+
 		deleteBranches, err := cmd.Flags().GetBool("delete")
 		util.CheckError(err)
+		if deleteBranches {
+			log.Debug("setting DeleteBranch = true from flags")
+			deps.AppConfig.DeleteBranch = true
+		}
+
 		forceDelete, err := cmd.Flags().GetBool("force")
 		util.CheckError(err)
+		if forceDelete {
+			log.Debug("setting ForceDelete = true from flags")
+			deps.AppConfig.ForceDelete = true
+		}
+
+		deps.AppConfig.Print()
 
 		numOfWorktreesRemoved, err := deleteWorktrees(deps.Git,
 			transformer.NewTransformer(),
 			filter.NewFilter(),
-			spinner.NewRealHuhSpinner(),
 			form.NewHuhForm(),
 			deps.Zoxide,
 			args,
-			stale,
-			deleteBranches,
-			forceDelete)
+			deps.AppConfig)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
@@ -58,20 +71,17 @@ var deleteCmd = &cobra.Command{
 func deleteWorktrees(git git.Git,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
-	spinner spinner.HuhSpinner,
 	form form.Form,
 	zoxide zoxide.Zoxide,
 	listOfBranchesToDelete []string,
-	applyStaleFilter bool,
-	deleteBranches bool,
-	forceDelete bool) (int, error) {
+	cfg config.AppConfig) (int, error) {
 
 	var selections []string
 	treesToDeleteAreValid := false
 
 	worktrees := getWorktrees(git, transformer)
 
-	if applyStaleFilter {
+	if cfg.FilterOnlyStaleBranches {
 		worktrees = filterLocalBranchesOnly(worktrees, transformer, filter)
 		if len(worktrees) == 0 {
 			log.Fatal("All local branches exist on remote")
@@ -106,12 +116,12 @@ func deleteWorktrees(git git.Git,
 	selectedWorktreeObj := filter.GetBranchMatchList(selections, worktrees)
 
 	// remove worktrees
-	removeWorktrees(selectedWorktreeObj, spinner, git, zoxide, forceDelete)
+	removeWorktrees(selectedWorktreeObj, git, zoxide, cfg.ForceDelete)
 
 	// delete branches
-	if deleteBranches {
+	if cfg.DeleteBranch {
 		log.Debug("delete branches flag true")
-		deleteLocalBranches(selectedWorktreeObj, forceDelete)
+		deleteLocalBranches(selectedWorktreeObj, cfg.ForceDelete)
 	}
 
 	return len(selectedWorktreeObj), nil
@@ -189,7 +199,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktrees []worktreeobj.WorktreeObj, spinner spinner.HuhSpinner, git git.Git, zoxide zoxide.Zoxide, forceDelete bool) {
+func removeWorktrees(worktrees []worktreeobj.WorktreeObj, git git.Git, zoxide zoxide.Zoxide, forceDelete bool) {
 	log.Debug("removeWorktrees called", "count", len(worktrees))
 
 	// Use the resolved bare repo path if available

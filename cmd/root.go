@@ -61,9 +61,10 @@ func NewRootCmd(git git.Git,
 			configuration := config.NewConfig(git)
 			cfg, err := configuration.GetDefaultConfig()
 			utility.CheckError(err)
-			deps.AppConfig = cfg
 
+			// import yaml config file
 			cfg, err = configuration.ImportYamlConfigFile(cfg)
+			deps.AppConfig = cfg
 
 		},
 	}
