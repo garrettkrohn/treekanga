@@ -35,7 +35,7 @@ var cloneCmd = &cobra.Command{
 	},
 }
 
-func CloneBareRepo(git git.Git, spinner spinner.HuhSpinner, args []string) {
+func CloneBareRepo(git git.GitAdapter, spinner spinner.HuhSpinner, args []string) {
 	if len(args) == 0 {
 		fmt.Print("must include url to clone, folder name can be included optionally")
 	}

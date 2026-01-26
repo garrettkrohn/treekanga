@@ -4,8 +4,11 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/log"
 	com "github.com/garrettkrohn/treekanga/common"
+	"github.com/garrettkrohn/treekanga/services"
 	util "github.com/garrettkrohn/treekanga/utility"
 
 	"github.com/spf13/cobra"
@@ -35,46 +38,68 @@ var addCmd = &cobra.Command{
     -d, --directory: Specify the directory to the bare repo`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		log.Info("Validating configuration")
-		c := com.AddConfig{}
-		getAddCmdConfig(cmd, args, &c)
-
-		validateConfig(&c)
-
-		log.Debug("Adding worktree with config:")
-		PrintConfig(c)
-		err := deps.Git.AddWorktree(&c)
+		directory, err := cmd.Flags().GetString("directory")
 		util.CheckError(err)
-
-		if c.GitInfo.NewBranchExistsLocally {
-			log.Info("worktree created with existing branch", "branch", c.GetNewBranchName())
-		} else {
-			log.Info("worktree created with new branch cut from branch",
-				"newBranch", c.GetNewBranchName(),
-				"baseBranch", c.GitInfo.BaseBranchName)
+		if directory == "" {
+			log.Debug(fmt.Sprintf("set Directory = %s by flags", directory))
+			deps.AppConfig.TargetDirectory = directory
 		}
 
-		log.Info("adding zoxide entries")
-		deps.Zoxide.AddZoxideEntries(&c)
-
-		if c.HasSeshTarget() {
-			deps.Connector.SeshConnect(&c)
+		baseBranch, err := cmd.Flags().GetString("base")
+		util.CheckError(err)
+		if baseBranch == "" {
+			log.Debug(fmt.Sprintf("set baseBranch = %s by flags", baseBranch))
+			deps.AppConfig.BaseBranch = baseBranch
 		}
 
-		if c.ShouldOpenCursor() {
-			deps.Connector.CursorConnect(&c)
+		sesh, err := cmd.Flags().GetString("sesh")
+		util.CheckError(err)
+		if sesh == "" {
+			log.Debug("set SeshConnect = true from flags")
+			deps.AppConfig.SeshConnect = true
 		}
 
-		if c.ShouldOpenVSCode() {
-			deps.Connector.VsCodeConnect(&c)
+		pull, err := cmd.Flags().GetBool("pull")
+		util.CheckError(err)
+		if pull {
+			log.Debug("set PullBeforeCuttingNewBranch = true from flags")
+			deps.AppConfig.PullBeforeCuttingNewBranch = true
 		}
 
-		if runPostScript(c) {
-			log.Info("Runnning post script")
-			script := c.GetPostScript()
-			deps.Shell.CmdWithDir(c.WorktreeTargetDir, "sh", "-c", script)
-			log.Info("post script run", "command", script)
+		cursor, err := cmd.Flags().GetBool("cursor")
+		util.CheckError(err)
+		if cursor {
+			log.Debug("set CursorConnect = true from flags")
+			deps.AppConfig.CursorConnect = true
 		}
+
+		vscode, err := cmd.Flags().GetBool("vscode")
+		util.CheckError(err)
+		if vscode {
+			log.Debug("set VsCodeConnect = true from flags")
+			deps.AppConfig.VsCodeConnect = true
+		}
+
+		specifiedWorktreeName, err := cmd.Flags().GetString("name")
+		util.CheckError(err)
+		if specifiedWorktreeName != "" {
+			deps.AppConfig.NewWorktreeName = specifiedWorktreeName
+		}
+
+		executeScript, err := cmd.Flags().GetBool("script")
+		util.CheckError(err)
+		if executeScript {
+			log.Debug("set RunPostScript = true from flags")
+			deps.AppConfig.RunPostScript = true
+		}
+
+		from, err := cmd.Flags().GetBool("from")
+		util.CheckError(err)
+		if from {
+			log.Debug("set UseFormToSetBaseBranch = true from flags")
+			deps.AppConfig.UseFormToSetBaseBranch = true
+		}
+		services.AddWorktree()
 	},
 }
 

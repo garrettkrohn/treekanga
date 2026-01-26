@@ -4,20 +4,18 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/git"
-	"github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/viper"
 )
 
 type AppConfig struct {
 	BareRepoPath               string   // path to the bare repo, this is where the git commnand will be run from
 	RepoNameForConfig          string   // this is the git project name, used to find the config
-	DefaultBaseBranch          string   // default base branch
+	BaseBranch                 string   // default base branch
 	WorktreeTargetDir          string   // this is where the added worktree will be
 	ListDisplayMode            string   // branch or directory
 	ZoxideFolders              []string // list of zoxide folders to be added
 	PostScriptPath             string   // path to the post script to be run
-	AutoRunPostScript          bool     // run the post script without the execute flag
+	RunPostScript              bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
 
 	// DELETE COMMAND
@@ -25,38 +23,42 @@ type AppConfig struct {
 	DeleteBranch            bool // in addition to the worktree, delete the branch as well
 	ForceDelete             bool // use --force when deleting
 
+	// ADD COMMAND
+	TargetDirectory         string
+	SeshConnect             bool
+	CursorConnect           bool
+	VsCodeConnect           bool
+	NewWorktreeName         string
+	NewBranchName           string
+	UseFormToSetBaseBranch  bool
+	NewBranchExistsLocally  bool
+	NewBranchExistsRemotely bool
+	BaseBranchExistsLocally bool
 }
 
 type Config interface {
-	GetDefaultConfig() (AppConfig, error)
+	GetDefaultConfig(bareRepoPath string, projectName string) (AppConfig, error)
 	ImportYamlConfigFile(cfg AppConfig) (AppConfig, error)
 }
 
 type ConfigInstance struct {
-	git git.Git
 }
 
-func NewConfig(git git.Git) Config {
-	return &ConfigInstance{git}
+func NewConfig() Config {
+	return &ConfigInstance{}
 }
 
-func (c *ConfigInstance) GetDefaultConfig() (AppConfig, error) {
-
-	bareRepoPath, err := c.git.GetBareRepoPath()
-	utility.CheckError(err)
-
-	projectName, err := c.git.GetProjectName()
-	utility.CheckError(err)
+func (c *ConfigInstance) GetDefaultConfig(bareRepoPath string, projectName string) (AppConfig, error) {
 
 	return AppConfig{
 		BareRepoPath:               bareRepoPath,
 		RepoNameForConfig:          projectName,
-		DefaultBaseBranch:          "development",
+		BaseBranch:                 "development",
 		WorktreeTargetDir:          "~",
 		ListDisplayMode:            "branch",
 		ZoxideFolders:              []string{},
 		PostScriptPath:             "",
-		AutoRunPostScript:          false,
+		RunPostScript:              false,
 		PullBeforeCuttingNewBranch: false,
 		FilterOnlyStaleBranches:    false,
 		DeleteBranch:               false,
@@ -103,7 +105,7 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 		defaultBranch := viper.GetString(viperRepoPrefix + "defaultBranch")
 		if defaultBranch != "" {
 			log.Debug(fmt.Sprintf("setting defaultBranch: %s from config", defaultBranch))
-			cfg.DefaultBaseBranch = defaultBranch
+			cfg.BaseBranch = defaultBranch
 		}
 	}
 
@@ -143,7 +145,7 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 		autoRunPostScript := viper.GetBool(viperRepoPrefix + "autoRunPostScript")
 		if autoRunPostScript {
 			log.Debug("setting autoRunPostScript: true from config")
-			cfg.AutoRunPostScript = autoRunPostScript
+			cfg.RunPostScript = autoRunPostScript
 		}
 	}
 
@@ -154,12 +156,12 @@ func (cfg *AppConfig) Print() {
 	log.Info("=== AppConfig ===")
 	log.Info(fmt.Sprintf("BareRepoPath: %s", cfg.BareRepoPath))
 	log.Info(fmt.Sprintf("RepoNameForConfig: %s", cfg.RepoNameForConfig))
-	log.Info(fmt.Sprintf("DefaultBaseBranch: %s", cfg.DefaultBaseBranch))
+	log.Info(fmt.Sprintf("DefaultBaseBranch: %s", cfg.BaseBranch))
 	log.Info(fmt.Sprintf("WorktreeTargetDir: %s", cfg.WorktreeTargetDir))
 	log.Info(fmt.Sprintf("ListDisplayMode: %s", cfg.ListDisplayMode))
 	log.Info(fmt.Sprintf("ZoxideFolders: %v", cfg.ZoxideFolders))
 	log.Info(fmt.Sprintf("PostScriptPath: %s", cfg.PostScriptPath))
-	log.Info(fmt.Sprintf("AutoRunPostScript: %t", cfg.AutoRunPostScript))
+	log.Info(fmt.Sprintf("AutoRunPostScript: %t", cfg.RunPostScript))
 	log.Info(fmt.Sprintf("PullBeforeCuttingNewBranch: %t", cfg.PullBeforeCuttingNewBranch))
 	log.Info(fmt.Sprintf("FilterOnlyStaleBranches: %t", cfg.FilterOnlyStaleBranches))
 	log.Info(fmt.Sprintf("DeleteBranch: %t", cfg.DeleteBranch))

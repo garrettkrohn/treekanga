@@ -18,7 +18,7 @@ import (
 )
 
 type Dependencies struct {
-	Git             git.Git
+	Git             git.GitAdapter
 	Zoxide          zoxide.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
@@ -31,7 +31,7 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git git.Git,
+func NewRootCmd(git git.GitAdapter,
 	zoxide zoxide.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
@@ -57,9 +57,15 @@ func NewRootCmd(git git.Git,
 				return
 			}
 
+			bareRepoPath, err := git.GetBareRepoPath()
+			utility.CheckError(err)
+
+			projectName, err := git.GetProjectName()
+			utility.CheckError(err)
+
 			// get app config
-			configuration := config.NewConfig(git)
-			cfg, err := configuration.GetDefaultConfig()
+			configuration := config.NewConfig()
+			cfg, err := configuration.GetDefaultConfig(bareRepoPath, projectName)
 			utility.CheckError(err)
 
 			// import yaml config file
@@ -81,7 +87,7 @@ func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
-	git := git.NewGit(shell)
+	git := git.NewGitAdapter(shell)
 	zoxide := zoxide.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()

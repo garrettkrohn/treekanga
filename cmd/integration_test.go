@@ -42,7 +42,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Set up real dependencies
 	realExec := execwrap.NewExec()
 	realShell := shell.NewShell(realExec)
-	realGit := git.NewGit(realShell)
+	realGit := git.NewGitAdapter(realShell)
 	mockSpinner := &mockSpinner{}
 
 	// Use a small public repository for testing

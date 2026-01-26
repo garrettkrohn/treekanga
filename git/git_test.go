@@ -8,8 +8,8 @@ import (
 )
 
 func TestDetermineBranchArguments(t *testing.T) {
-	// Create a RealGit instance for testing
-	git := &RealGit{}
+	// Create a RealGitAdapter instance for testing
+	git := &RealGitAdapter{}
 
 	t.Run("Case 1a: New branch exists locally", func(t *testing.T) {
 		config := &com.AddConfig{
@@ -161,7 +161,7 @@ func TestDetermineBranchArguments(t *testing.T) {
 
 // TestDetermineBranchArgumentsIntegration tests the function with more realistic scenarios
 func TestDetermineBranchArgumentsIntegration(t *testing.T) {
-	git := &RealGit{}
+	git := &RealGitAdapter{}
 
 	t.Run("Typical new feature branch from main", func(t *testing.T) {
 		pullFlag := false

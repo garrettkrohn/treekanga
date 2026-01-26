@@ -18,7 +18,7 @@ import (
 	"github.com/garrettkrohn/treekanga/zoxide"
 )
 
-func DeleteWorktrees(git git.Git,
+func DeleteWorktrees(git git.GitAdapter,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	form form.Form,
@@ -92,7 +92,7 @@ func getWorktreeFullPaths(worktrees []worktreeobj.WorktreeObj) []string {
 
 }
 
-func deleteLocalBranches(git git.Git, selectedWorktreeObj []worktreeobj.WorktreeObj, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
+func deleteLocalBranches(git git.GitAdapter, selectedWorktreeObj []worktreeobj.WorktreeObj, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
 	confirm := false
 
 	confirmationMessage := "Are you sure you want to delete these branches: "
@@ -139,7 +139,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktreePaths []string, git git.Git, zoxide zoxide.Zoxide, forceDelete bool, bareRepoPath string) {
+func removeWorktrees(worktreePaths []string, git git.GitAdapter, zoxide zoxide.Zoxide, forceDelete bool, bareRepoPath string) {
 	log.Debug("removeWorktrees called", "count", len(worktreePaths))
 
 	// Use the resolved bare repo path if available
@@ -158,7 +158,7 @@ func removeWorktrees(worktreePaths []string, git git.Git, zoxide zoxide.Zoxide, 
 	}
 }
 
-func filterLocalBranchesOnly(git git.Git, worktrees []worktreeobj.WorktreeObj,
+func filterLocalBranchesOnly(git git.GitAdapter, worktrees []worktreeobj.WorktreeObj,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	bareRepoPath string) []worktreeobj.WorktreeObj {

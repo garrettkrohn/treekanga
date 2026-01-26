@@ -7,7 +7,7 @@ import (
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
-func getWorktrees(git git.Git, transformer *transformer.RealTransformer, bareRepoPath string) []worktreeobj.WorktreeObj {
+func getWorktrees(git git.GitAdapter, transformer *transformer.RealTransformer, bareRepoPath string) []worktreeobj.WorktreeObj {
 	var worktreeStrings []string
 	var wError error
 
