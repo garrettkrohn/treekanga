@@ -2,7 +2,6 @@ package adapters
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,23 +85,6 @@ func (g *RealGitAdapter) RemoveWorktree(worktreeName string, path *string, force
 	return nil
 }
 
-// fixWorktreeGitFile fixes the .git file in a worktree to point to the correct bare repo location
-func (g *RealGitAdapter) fixWorktreeGitFile(worktreePath string, bareRepoPath string) error {
-	gitFilePath := filepath.Join(worktreePath, ".git")
-	worktreeName := filepath.Base(worktreePath)
-	expectedGitDir := filepath.Join(bareRepoPath, "worktrees", worktreeName)
-
-	// Write the corrected .git file using Go's file I/O
-	content := fmt.Sprintf("gitdir: %s\n", expectedGitDir)
-	err := os.WriteFile(gitFilePath, []byte(content), 0644)
-	if err != nil {
-		log.Debug("Failed to fix .git file", "error", err, "path", gitFilePath)
-		return err
-	}
-	log.Debug("Fixed .git file", "path", gitFilePath, "points to", expectedGitDir)
-	return nil
-}
-
 type AddWorktreeConfig struct {
 	BareRepoPath               string
 	WorktreeTargetDirectory    string
@@ -174,17 +156,6 @@ func (g *RealGitAdapter) CloneBare(url string, folderName string) error {
 	}
 	return nil
 }
-
-// NOTE: I this can be removed
-// func (g *RealGitAdapter) CreateTempBranch(path string) error {
-// 	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
-// 	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
-// 	_, err := g.shell.Cmd("git", gitCmd...)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
 
 func (g *RealGitAdapter) DeleteBranchRef(branch string, path string) error {
 	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)
