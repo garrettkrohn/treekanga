@@ -15,14 +15,13 @@ import (
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
-	"github.com/garrettkrohn/treekanga/zoxide"
 )
 
 func DeleteWorktrees(git adapters.GitAdapter,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	form form.Form,
-	zoxide zoxide.Zoxide,
+	zoxide adapters.Zoxide,
 	listOfBranchesToDeleteFromArgs []string,
 	cfg config.AppConfig) (int, error) {
 
@@ -139,7 +138,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, zoxide zoxide.Zoxide, forceDelete bool, bareRepoPath string) {
+func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, zoxide adapters.Zoxide, forceDelete bool, bareRepoPath string) {
 	log.Debug("removeWorktrees called", "count", len(worktreePaths))
 
 	// Use the resolved bare repo path if available

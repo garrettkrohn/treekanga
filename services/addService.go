@@ -12,7 +12,6 @@ import (
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
-	"github.com/garrettkrohn/treekanga/zoxide"
 )
 
 func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
@@ -57,7 +56,7 @@ func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig,
 	return cfg
 }
 
-func AddWorktree(gitClient adapters.GitAdapter, zoxide zoxide.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
 	err := gitClient.AddWorktree(adapters.AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,

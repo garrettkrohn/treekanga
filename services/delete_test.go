@@ -10,7 +10,6 @@ import (
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
-	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -35,7 +34,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 			CommitHash: "abcdef12345",
 		},
 	})
-	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide := adapters.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	var branches []string
@@ -82,7 +81,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	mockSpinner := getMockSpinner(t)
 
-	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide := adapters.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	branches := []string{"development"}

@@ -13,13 +13,12 @@ import (
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/utility"
-	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/spf13/cobra"
 )
 
 type Dependencies struct {
 	Git             adapters.GitAdapter
-	Zoxide          zoxide.Zoxide
+	Zoxide          adapters.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
@@ -32,7 +31,7 @@ var (
 )
 
 func NewRootCmd(git adapters.GitAdapter,
-	zoxide zoxide.Zoxide,
+	zoxide adapters.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
 	shell shell.Shell,
@@ -88,7 +87,7 @@ func Execute(version string) {
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
 	git := adapters.NewGitAdapter(shell)
-	zoxide := zoxide.NewZoxide(shell)
+	zoxide := adapters.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
