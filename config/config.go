@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/viper"
@@ -24,16 +27,16 @@ type AppConfig struct {
 	ForceDelete             bool // use --force when deleting
 
 	// ADD COMMAND
-	TargetDirectory         string
-	SeshConnect             bool
-	CursorConnect           bool
-	VsCodeConnect           bool
-	NewWorktreeName         string
-	NewBranchName           string
-	UseFormToSetBaseBranch  bool
-	NewBranchExistsLocally  bool
-	NewBranchExistsRemotely bool
-	BaseBranchExistsLocally bool
+	SeshConnect              string
+	CursorConnect            bool
+	VsCodeConnect            bool
+	NewWorktreeName          string
+	NewBranchName            string
+	UseFormToSetBaseBranch   bool
+	NewBranchExistsLocally   bool
+	NewBranchExistsRemotely  bool
+	BaseBranchExistsLocally  bool
+	BaseBranchExistsRemotely bool
 }
 
 type Config interface {
@@ -112,6 +115,11 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 	if viper.IsSet(viperRepoPrefix + "worktreeTargetDir") {
 		worktreeTargetDir := viper.GetString(viperRepoPrefix + "worktreeTargetDir")
 		if worktreeTargetDir != "" {
+			// Expand tilde to home directory
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				worktreeTargetDir = filepath.Join(homeDir, strings.TrimPrefix(worktreeTargetDir, "~/"))
+			}
 			log.Debug(fmt.Sprintf("setting worktreeTargetDir: %s from config", worktreeTargetDir))
 			cfg.WorktreeTargetDir = worktreeTargetDir
 		}

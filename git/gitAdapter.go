@@ -11,8 +11,6 @@ import (
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
-const tempZoxideName = "temp_treekanga_worktree"
-
 // TODO: make a a function to add the directory
 type GitAdapter interface {
 	GetRemoteBranches(*string) ([]string, error)
@@ -108,19 +106,20 @@ func (g *RealGitAdapter) fixWorktreeGitFile(worktreePath string, bareRepoPath st
 
 type AddWorktreeConfig struct {
 	BareRepoPath               string
-	TargetDirectory            string
+	WorktreeTargetDirectory    string
 	NewBranchExistsLocally     bool
 	NewBranchExistsRemotely    bool
 	BaseBranchExistsLocally    bool
 	NewBranchName              string
 	PullBeforeCuttingNewBranch bool
 	BaseBranch                 string
+	NewWorktreeName            string
 }
 
 func (g *RealGitAdapter) AddWorktree(params AddWorktreeConfig) error {
 	// Build base command
 	gitCommand := getBaseArguementsWithOrWithoutPath(&params.BareRepoPath)
-	gitCommand = append(gitCommand, "worktree", "add", params.TargetDirectory)
+	gitCommand = append(gitCommand, "worktree", "add", params.WorktreeTargetDirectory+"/"+params.NewWorktreeName)
 
 	// Add branch-specific arguments
 	branchArgs := g.determineBranchArguments(params.NewBranchExistsLocally,
@@ -188,15 +187,15 @@ func (g *RealGitAdapter) CloneBare(url string, folderName string) error {
 }
 
 // NOTE: I this can be removed
-func (g *RealGitAdapter) CreateTempBranch(path string) error {
-	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
-	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
-	_, err := g.shell.Cmd("git", gitCmd...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func (g *RealGitAdapter) CreateTempBranch(path string) error {
+// 	gitCmd := getBaseArguementsWithOrWithoutPath(&path)
+// 	gitCmd = append(gitCmd, "branch", tempZoxideName, "FETCH_HEAD")
+// 	_, err := g.shell.Cmd("git", gitCmd...)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 func (g *RealGitAdapter) DeleteBranchRef(branch string, path string) error {
 	gitCmd := fmt.Sprintf("%s/refs/heads/%s", path, branch)

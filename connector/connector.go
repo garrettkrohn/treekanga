@@ -10,9 +10,9 @@ import (
 )
 
 type Connector interface {
-	SeshConnect(c *com.AddConfig)
-	VsCodeConnect(c *com.AddConfig)
-	CursorConnect(c *com.AddConfig)
+	SeshConnect(seshPath string)
+	VsCodeConnect(newRootPath string)
+	CursorConnect(newRootPath string)
 	GetZoxidePath(c *com.AddConfig) string
 }
 
@@ -28,9 +28,9 @@ func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
 	if len(c.ZoxideFolders) == 0 {
 		return c.GetZoxideBasePath()
 	}
-	
+
 	seshTarget := c.GetSeshTarget()
-	
+
 	if seshTarget != "" && slices.Contains(c.ZoxideFolders, seshTarget) {
 		zoxidePath := c.GetZoxidePath(seshTarget)
 		log.Info("Sesh connect", "path", zoxidePath)
@@ -42,20 +42,17 @@ func (r *RealConnector) GetZoxidePath(c *com.AddConfig) string {
 	}
 }
 
-func (r *RealConnector) SeshConnect(c *com.AddConfig) {
-	zoxidePath := r.GetZoxidePath(c)
-	_, err := r.shell.Cmd("sesh", "connect", zoxidePath)
+func (r *RealConnector) SeshConnect(seshPath string) {
+	_, err := r.shell.Cmd("sesh", "connect", seshPath)
 	utility.CheckError(err)
 }
 
-func (r *RealConnector) VsCodeConnect(c *com.AddConfig) {
-	addPath := c.GetWorktreePath()
-	_, err := r.shell.Cmd("code", addPath)
+func (r *RealConnector) VsCodeConnect(newRootPath string) {
+	_, err := r.shell.Cmd("code", newRootPath)
 	utility.CheckError(err)
 }
 
-func (r *RealConnector) CursorConnect(c *com.AddConfig) {
-	addPath := c.GetWorktreePath()
-	_, err := r.shell.Cmd("cursor", addPath)
+func (r *RealConnector) CursorConnect(newRootPath string) {
+	_, err := r.shell.Cmd("cursor", newRootPath)
 	utility.CheckError(err)
 }

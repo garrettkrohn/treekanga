@@ -40,23 +40,23 @@ var addCmd = &cobra.Command{
 
 		directory, err := cmd.Flags().GetString("directory")
 		util.CheckError(err)
-		if directory == "" {
+		if directory != "" {
 			log.Debug(fmt.Sprintf("set Directory = %s by flags", directory))
-			deps.AppConfig.TargetDirectory = directory
+			deps.AppConfig.WorktreeTargetDir = directory
 		}
 
 		baseBranch, err := cmd.Flags().GetString("base")
 		util.CheckError(err)
-		if baseBranch == "" {
+		if baseBranch != "" {
 			log.Debug(fmt.Sprintf("set baseBranch = %s by flags", baseBranch))
 			deps.AppConfig.BaseBranch = baseBranch
 		}
 
 		sesh, err := cmd.Flags().GetString("sesh")
 		util.CheckError(err)
-		if sesh == "" {
+		if sesh != "" {
 			log.Debug("set SeshConnect = true from flags")
-			deps.AppConfig.SeshConnect = true
+			deps.AppConfig.SeshConnect = sesh
 		}
 
 		pull, err := cmd.Flags().GetBool("pull")
@@ -99,7 +99,10 @@ var addCmd = &cobra.Command{
 			log.Debug("set UseFormToSetBaseBranch = true from flags")
 			deps.AppConfig.UseFormToSetBaseBranch = true
 		}
-		services.AddWorktree()
+
+		cfg := services.SetConfigForAddService(deps.Git, deps.AppConfig, args)
+
+		services.AddWorktree(deps.Git, deps.Zoxide, deps.Connector, deps.Shell, cfg)
 	},
 }
 
