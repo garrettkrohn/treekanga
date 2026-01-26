@@ -17,17 +17,17 @@ func (_m *MockGitAdapter) EXPECT() *MockGitAdapter_Expecter {
 	return &MockGitAdapter_Expecter{mock: &_m.Mock}
 }
 
-// AddWorktree provides a mock function with given fields: params
-func (_m *MockGitAdapter) AddWorktree(params AddWorktreeConfig) error {
-	ret := _m.Called(params)
+// AddWorktree provides a mock function with given fields: path, worktreeTargetDir, newWorktreeName, worktreeArgs
+func (_m *MockGitAdapter) AddWorktree(path string, worktreeTargetDir string, newWorktreeName string, worktreeArgs []string) error {
+	ret := _m.Called(path, worktreeTargetDir, newWorktreeName, worktreeArgs)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddWorktree")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(AddWorktreeConfig) error); ok {
-		r0 = rf(params)
+	if rf, ok := ret.Get(0).(func(string, string, string, []string) error); ok {
+		r0 = rf(path, worktreeTargetDir, newWorktreeName, worktreeArgs)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -41,14 +41,17 @@ type MockGitAdapter_AddWorktree_Call struct {
 }
 
 // AddWorktree is a helper method to define mock.On call
-//   - params AddWorktreeConfig
-func (_e *MockGitAdapter_Expecter) AddWorktree(params interface{}) *MockGitAdapter_AddWorktree_Call {
-	return &MockGitAdapter_AddWorktree_Call{Call: _e.mock.On("AddWorktree", params)}
+//   - path string
+//   - worktreeTargetDir string
+//   - newWorktreeName string
+//   - worktreeArgs []string
+func (_e *MockGitAdapter_Expecter) AddWorktree(path interface{}, worktreeTargetDir interface{}, newWorktreeName interface{}, worktreeArgs interface{}) *MockGitAdapter_AddWorktree_Call {
+	return &MockGitAdapter_AddWorktree_Call{Call: _e.mock.On("AddWorktree", path, worktreeTargetDir, newWorktreeName, worktreeArgs)}
 }
 
-func (_c *MockGitAdapter_AddWorktree_Call) Run(run func(params AddWorktreeConfig)) *MockGitAdapter_AddWorktree_Call {
+func (_c *MockGitAdapter_AddWorktree_Call) Run(run func(path string, worktreeTargetDir string, newWorktreeName string, worktreeArgs []string)) *MockGitAdapter_AddWorktree_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(AddWorktreeConfig))
+		run(args[0].(string), args[1].(string), args[2].(string), args[3].([]string))
 	})
 	return _c
 }
@@ -58,7 +61,7 @@ func (_c *MockGitAdapter_AddWorktree_Call) Return(_a0 error) *MockGitAdapter_Add
 	return _c
 }
 
-func (_c *MockGitAdapter_AddWorktree_Call) RunAndReturn(run func(AddWorktreeConfig) error) *MockGitAdapter_AddWorktree_Call {
+func (_c *MockGitAdapter_AddWorktree_Call) RunAndReturn(run func(string, string, string, []string) error) *MockGitAdapter_AddWorktree_Call {
 	_c.Call.Return(run)
 	return _c
 }

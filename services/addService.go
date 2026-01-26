@@ -56,9 +56,42 @@ func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig,
 	return cfg
 }
 
+type AddWorktreeConfig struct {
+	BareRepoPath               string
+	WorktreeTargetDirectory    string
+	NewBranchExistsLocally     bool
+	NewBranchExistsRemotely    bool
+	BaseBranchExistsLocally    bool
+	NewBranchName              string
+	PullBeforeCuttingNewBranch bool
+	BaseBranch                 string
+	NewWorktreeName            string
+}
+
+func getAddWorktreeArguements(params AddWorktreeConfig) []string {
+	// Case 1: Branch already exists (locally or remotely) - just checkout
+	if params.NewBranchExistsLocally || params.NewBranchExistsRemotely {
+		return []string{params.NewBranchName}
+	}
+
+	// Case 2: Base branch exists locally
+	if params.BaseBranchExistsLocally {
+		if params.PullBeforeCuttingNewBranch {
+			// Create new branch from remote version of base branch
+			return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
+		} else {
+			// Create new branch from local version of base branch
+			return []string{"-b", params.NewBranchName, params.BaseBranch}
+		}
+	}
+
+	// Case 3: Base branch only exists remotely
+	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
+}
+
 func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
-	err := gitClient.AddWorktree(adapters.AddWorktreeConfig{
+	worktreeAddArgs := getAddWorktreeArguements(AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,
 		WorktreeTargetDirectory:    cfg.WorktreeTargetDir,
 		NewBranchExistsLocally:     cfg.NewBranchExistsLocally,
@@ -69,6 +102,8 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 		BaseBranch:                 cfg.BaseBranch,
 		NewWorktreeName:            cfg.NewWorktreeName,
 	})
+
+	err := gitClient.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
 	util.CheckError(err)
 
 	if cfg.NewBranchExistsLocally {
