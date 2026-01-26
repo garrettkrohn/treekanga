@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/utility"
@@ -18,7 +18,7 @@ import (
 )
 
 type Dependencies struct {
-	Git             git.GitAdapter
+	Git             adapters.GitAdapter
 	Zoxide          zoxide.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
@@ -31,7 +31,7 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git git.GitAdapter,
+func NewRootCmd(git adapters.GitAdapter,
 	zoxide zoxide.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
@@ -87,7 +87,7 @@ func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
-	git := git.NewGitAdapter(shell)
+	git := adapters.NewGitAdapter(shell)
 	zoxide := zoxide.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()

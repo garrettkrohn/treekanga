@@ -35,12 +35,12 @@ func (r *RealZoxide) RemovePath(path string) error {
 	return err
 }
 
-func (r *RealZoxide) AddZoxideEntries(worktreeTargetDir string, zoxideFolders []string) {
+func (r *RealZoxide) AddZoxideEntries(c *common.AddConfig) {
 
 	var foldersToAdd []string
-	foldersToAdd = append(foldersToAdd, worktreeTargetDir)
+	foldersToAdd = append(foldersToAdd, c.WorktreeTargetDir)
 
-	foldersToAdd = addConfigFolders(foldersToAdd, zoxideFolders, worktreeTargetDir, c.DirectoryReader)
+	foldersToAdd = addConfigFolders(foldersToAdd, c.ZoxideFolders, c.WorktreeTargetDir, c.DirectoryReader)
 
 	for _, folder := range foldersToAdd {
 		err := r.AddPath(folder)

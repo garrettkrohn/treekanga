@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	com "github.com/garrettkrohn/treekanga/common"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
@@ -42,7 +41,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Set up real dependencies
 	realExec := execwrap.NewExec()
 	realShell := shell.NewShell(realExec)
-	realGit := git.NewGitAdapter(realShell)
+	realGit := adapters.NewGitAdapter(realShell)
 	mockSpinner := &mockSpinner{}
 
 	// Use a small public repository for testing
@@ -107,27 +106,21 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	testBranchName := "test_branch"
 	worktreePath := filepath.Join(tempDir, testBranchName)
 
-	// Create AddConfig for the worktree
-	addConfig := &com.AddConfig{
-		WorkingDir:        bareRepoPath,
-		ParentDir:         tempDir,
-		WorktreeTargetDir: worktreePath,
-		GitInfo: com.GitInfo{
-			NewBranchName:            testBranchName,
-			BaseBranchName:           baseBranch,
-			RepoName:                 "Hello-World",
-			NewBranchExistsLocally:   false,
-			NewBranchExistsRemotely:  false,
-			BaseBranchExistsLocally:  false,
-			BaseBranchExistsRemotely: true, // The base branch exists remotely
-		},
-		Flags: com.AddCmdFlags{
-			Directory: &bareRepoPath,
-		},
+	// Create AddWorktreeConfig for the worktree
+	worktreeConfig := adapters.AddWorktreeConfig{
+		BareRepoPath:               bareRepoPath,
+		WorktreeTargetDirectory:    tempDir,
+		NewBranchExistsLocally:     false,
+		NewBranchExistsRemotely:    false,
+		BaseBranchExistsLocally:    false,
+		NewBranchName:              testBranchName,
+		PullBeforeCuttingNewBranch: false,
+		BaseBranch:                 baseBranch,
+		NewWorktreeName:            testBranchName,
 	}
 
 	// Add the worktree
-	err = realGit.AddWorktree(addConfig)
+	err = realGit.AddWorktree(worktreeConfig)
 	require.NoError(t, err, "Should successfully add worktree")
 
 	t.Logf("✓ Successfully created worktree at: %s", worktreePath)

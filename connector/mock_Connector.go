@@ -20,9 +20,9 @@ func (_m *MockConnector) EXPECT() *MockConnector_Expecter {
 	return &MockConnector_Expecter{mock: &_m.Mock}
 }
 
-// CursorConnect provides a mock function with given fields: c
-func (_m *MockConnector) CursorConnect(c *common.AddConfig) {
-	_m.Called(c)
+// CursorConnect provides a mock function with given fields: newRootPath
+func (_m *MockConnector) CursorConnect(newRootPath string) {
+	_m.Called(newRootPath)
 }
 
 // MockConnector_CursorConnect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CursorConnect'
@@ -31,14 +31,14 @@ type MockConnector_CursorConnect_Call struct {
 }
 
 // CursorConnect is a helper method to define mock.On call
-//   - c *common.AddConfig
-func (_e *MockConnector_Expecter) CursorConnect(c interface{}) *MockConnector_CursorConnect_Call {
-	return &MockConnector_CursorConnect_Call{Call: _e.mock.On("CursorConnect", c)}
+//   - newRootPath string
+func (_e *MockConnector_Expecter) CursorConnect(newRootPath interface{}) *MockConnector_CursorConnect_Call {
+	return &MockConnector_CursorConnect_Call{Call: _e.mock.On("CursorConnect", newRootPath)}
 }
 
-func (_c *MockConnector_CursorConnect_Call) Run(run func(c *common.AddConfig)) *MockConnector_CursorConnect_Call {
+func (_c *MockConnector_CursorConnect_Call) Run(run func(newRootPath string)) *MockConnector_CursorConnect_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*common.AddConfig))
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -48,7 +48,7 @@ func (_c *MockConnector_CursorConnect_Call) Return() *MockConnector_CursorConnec
 	return _c
 }
 
-func (_c *MockConnector_CursorConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_CursorConnect_Call {
+func (_c *MockConnector_CursorConnect_Call) RunAndReturn(run func(string)) *MockConnector_CursorConnect_Call {
 	_c.Run(run)
 	return _c
 }
@@ -99,9 +99,9 @@ func (_c *MockConnector_GetZoxidePath_Call) RunAndReturn(run func(*common.AddCon
 	return _c
 }
 
-// SeshConnect provides a mock function with given fields: c
-func (_m *MockConnector) SeshConnect(c *common.AddConfig) {
-	_m.Called(c)
+// SeshConnect provides a mock function with given fields: seshPath
+func (_m *MockConnector) SeshConnect(seshPath string) {
+	_m.Called(seshPath)
 }
 
 // MockConnector_SeshConnect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SeshConnect'
@@ -110,14 +110,14 @@ type MockConnector_SeshConnect_Call struct {
 }
 
 // SeshConnect is a helper method to define mock.On call
-//   - c *common.AddConfig
-func (_e *MockConnector_Expecter) SeshConnect(c interface{}) *MockConnector_SeshConnect_Call {
-	return &MockConnector_SeshConnect_Call{Call: _e.mock.On("SeshConnect", c)}
+//   - seshPath string
+func (_e *MockConnector_Expecter) SeshConnect(seshPath interface{}) *MockConnector_SeshConnect_Call {
+	return &MockConnector_SeshConnect_Call{Call: _e.mock.On("SeshConnect", seshPath)}
 }
 
-func (_c *MockConnector_SeshConnect_Call) Run(run func(c *common.AddConfig)) *MockConnector_SeshConnect_Call {
+func (_c *MockConnector_SeshConnect_Call) Run(run func(seshPath string)) *MockConnector_SeshConnect_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*common.AddConfig))
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -127,14 +127,14 @@ func (_c *MockConnector_SeshConnect_Call) Return() *MockConnector_SeshConnect_Ca
 	return _c
 }
 
-func (_c *MockConnector_SeshConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_SeshConnect_Call {
+func (_c *MockConnector_SeshConnect_Call) RunAndReturn(run func(string)) *MockConnector_SeshConnect_Call {
 	_c.Run(run)
 	return _c
 }
 
-// VsCodeConnect provides a mock function with given fields: c
-func (_m *MockConnector) VsCodeConnect(c *common.AddConfig) {
-	_m.Called(c)
+// VsCodeConnect provides a mock function with given fields: newRootPath
+func (_m *MockConnector) VsCodeConnect(newRootPath string) {
+	_m.Called(newRootPath)
 }
 
 // MockConnector_VsCodeConnect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VsCodeConnect'
@@ -143,14 +143,14 @@ type MockConnector_VsCodeConnect_Call struct {
 }
 
 // VsCodeConnect is a helper method to define mock.On call
-//   - c *common.AddConfig
-func (_e *MockConnector_Expecter) VsCodeConnect(c interface{}) *MockConnector_VsCodeConnect_Call {
-	return &MockConnector_VsCodeConnect_Call{Call: _e.mock.On("VsCodeConnect", c)}
+//   - newRootPath string
+func (_e *MockConnector_Expecter) VsCodeConnect(newRootPath interface{}) *MockConnector_VsCodeConnect_Call {
+	return &MockConnector_VsCodeConnect_Call{Call: _e.mock.On("VsCodeConnect", newRootPath)}
 }
 
-func (_c *MockConnector_VsCodeConnect_Call) Run(run func(c *common.AddConfig)) *MockConnector_VsCodeConnect_Call {
+func (_c *MockConnector_VsCodeConnect_Call) Run(run func(newRootPath string)) *MockConnector_VsCodeConnect_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(*common.AddConfig))
+		run(args[0].(string))
 	})
 	return _c
 }
@@ -160,7 +160,7 @@ func (_c *MockConnector_VsCodeConnect_Call) Return() *MockConnector_VsCodeConnec
 	return _c
 }
 
-func (_c *MockConnector_VsCodeConnect_Call) RunAndReturn(run func(*common.AddConfig)) *MockConnector_VsCodeConnect_Call {
+func (_c *MockConnector_VsCodeConnect_Call) RunAndReturn(run func(string)) *MockConnector_VsCodeConnect_Call {
 	_c.Run(run)
 	return _c
 }

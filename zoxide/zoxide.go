@@ -15,6 +15,8 @@ type Zoxide interface {
 	QueryScore(path string) (float64, error)
 }
 
+// Note: The real implementation is in adapters/zoxideAdapter.go which uses *common.AddConfig
+
 type RealZoxide struct {
 	shell shell.Shell
 }

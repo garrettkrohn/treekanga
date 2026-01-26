@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -11,7 +11,7 @@ import (
 
 func TestListCmd(t *testing.T) {
 	// Mock the GetWorktrees method
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -32,7 +32,7 @@ func TestListCmd(t *testing.T) {
 func TestListCmdWithBranchDisplayMode(t *testing.T) {
 	// Setup
 	viper.Reset()
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -56,7 +56,7 @@ func TestListCmdWithBranchDisplayMode(t *testing.T) {
 func TestListCmdWithDirectoryDisplayMode(t *testing.T) {
 	// Setup
 	viper.Reset()
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -80,7 +80,7 @@ func TestListCmdWithDirectoryDisplayMode(t *testing.T) {
 func TestListCmdWithFolderDisplayMode(t *testing.T) {
 	// Setup
 	viper.Reset()
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -104,7 +104,7 @@ func TestListCmdWithFolderDisplayMode(t *testing.T) {
 func TestListCmdWithDefaultDisplayMode(t *testing.T) {
 	// Setup
 	viper.Reset()
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -127,7 +127,7 @@ func TestListCmdWithDefaultDisplayMode(t *testing.T) {
 func TestListCmdVerboseOverridesDisplayMode(t *testing.T) {
 	// Setup
 	viper.Reset()
-	mockGit := git.NewMockGit(t)
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",

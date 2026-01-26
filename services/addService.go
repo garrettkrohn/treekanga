@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
-	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/garrettkrohn/treekanga/zoxide"
 )
 
-func SetConfigForAddService(gitClient git.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
+func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
 	log.Info("Running configuration for add command")
 
 	if len(args) == 1 {
@@ -57,9 +57,9 @@ func SetConfigForAddService(gitClient git.GitAdapter, cfg config.AppConfig, args
 	return cfg
 }
 
-func AddWorktree(gitClient git.GitAdapter, zoxide zoxide.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(gitClient adapters.GitAdapter, zoxide zoxide.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
-	err := gitClient.AddWorktree(git.AddWorktreeConfig{
+	err := gitClient.AddWorktree(adapters.AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,
 		WorktreeTargetDirectory:    cfg.WorktreeTargetDir,
 		NewBranchExistsLocally:     cfg.NewBranchExistsLocally,

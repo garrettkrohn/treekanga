@@ -3,10 +3,10 @@ package services
 import (
 	"testing"
 
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
-	"github.com/garrettkrohn/treekanga/git"
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
@@ -110,8 +110,8 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	mockZoxide.AssertExpectations(t)
 }
 
-func getMockGit(t *testing.T) *git.MockGit {
-	mockGit := git.NewMockGit(t)
+func getMockGit(t *testing.T) *adapters.MockGitAdapter {
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",

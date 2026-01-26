@@ -1,4 +1,4 @@
-package git
+package adapters
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/log"
 
+	"github.com/garrettkrohn/treekanga/common"
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
@@ -121,13 +122,23 @@ func (g *RealGitAdapter) AddWorktree(params AddWorktreeConfig) error {
 	gitCommand := getBaseArguementsWithOrWithoutPath(&params.BareRepoPath)
 	gitCommand = append(gitCommand, "worktree", "add", params.WorktreeTargetDirectory+"/"+params.NewWorktreeName)
 
+	// Create a config object for determineBranchArguments
+	pullFlag := params.PullBeforeCuttingNewBranch
+	config := &common.AddConfig{
+		GitInfo: common.GitInfo{
+			NewBranchName:           params.NewBranchName,
+			BaseBranchName:          params.BaseBranch,
+			NewBranchExistsLocally:  params.NewBranchExistsLocally,
+			NewBranchExistsRemotely: params.NewBranchExistsRemotely,
+			BaseBranchExistsLocally: params.BaseBranchExistsLocally,
+		},
+		Flags: common.AddCmdFlags{
+			Pull: &pullFlag,
+		},
+	}
+
 	// Add branch-specific arguments
-	branchArgs := g.determineBranchArguments(params.NewBranchExistsLocally,
-		params.NewBranchExistsRemotely,
-		params.BaseBranchExistsLocally,
-		params.NewBranchName,
-		params.PullBeforeCuttingNewBranch,
-		params.BaseBranch)
+	branchArgs := g.determineBranchArguments(config)
 	gitCommand = append(gitCommand, branchArgs...)
 
 	// Log the full command for debugging
@@ -142,12 +153,14 @@ func (g *RealGitAdapter) AddWorktree(params AddWorktreeConfig) error {
 	return nil
 }
 
-func (g *RealGitAdapter) determineBranchArguments(NewBranchExistsLocally bool,
-	NewBranchExistsRemotely bool,
-	BaseBranchExistsLocally bool,
-	newBranchName string,
-	pullBeforeCuttingNewBranch bool,
-	baseBranch string) []string {
+func (g *RealGitAdapter) determineBranchArguments(config *common.AddConfig) []string {
+	newBranchName := config.GitInfo.NewBranchName
+	baseBranch := config.GitInfo.BaseBranchName
+	NewBranchExistsLocally := config.GitInfo.NewBranchExistsLocally
+	NewBranchExistsRemotely := config.GitInfo.NewBranchExistsRemotely
+	BaseBranchExistsLocally := config.GitInfo.BaseBranchExistsLocally
+	pullBeforeCuttingNewBranch := config.ShouldPull()
+
 	// Case 1: Branch already exists (locally or remotely) - just checkout
 	if NewBranchExistsLocally || NewBranchExistsRemotely {
 		return []string{newBranchName}
