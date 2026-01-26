@@ -1,4 +1,4 @@
-package cmd
+package services
 
 import (
 	"testing"
@@ -47,7 +47,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 	}
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockForm, mockZoxide, branches, cfg)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, mockForm, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -94,7 +94,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	}
 
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, nil, mockZoxide, branches, cfg)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, nil, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
