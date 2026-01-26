@@ -68,7 +68,7 @@ type AddWorktreeConfig struct {
 	NewWorktreeName            string
 }
 
-func getAddWorktreeArguements(params AddWorktreeConfig) []string {
+func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	// Case 1: Branch already exists (locally or remotely) - just checkout
 	if params.NewBranchExistsLocally || params.NewBranchExistsRemotely {
 		return []string{params.NewBranchName}
@@ -91,7 +91,7 @@ func getAddWorktreeArguements(params AddWorktreeConfig) []string {
 
 func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
-	worktreeAddArgs := getAddWorktreeArguements(AddWorktreeConfig{
+	worktreeAddArgs := GetAddWorktreeArguements(AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,
 		WorktreeTargetDirectory:    cfg.WorktreeTargetDir,
 		NewBranchExistsLocally:     cfg.NewBranchExistsLocally,

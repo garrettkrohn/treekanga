@@ -9,6 +9,7 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/shell"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
@@ -107,7 +108,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	worktreePath := filepath.Join(tempDir, testBranchName)
 
 	// Create AddWorktreeConfig for the worktree
-	worktreeConfig := adapters.AddWorktreeConfig{
+	worktreeConfig := services.AddWorktreeConfig{
 		BareRepoPath:               bareRepoPath,
 		WorktreeTargetDirectory:    tempDir,
 		NewBranchExistsLocally:     false,
@@ -119,8 +120,11 @@ func TestCloneAndAddIntegration(t *testing.T) {
 		NewWorktreeName:            testBranchName,
 	}
 
-	// Add the worktree
-	err = realGit.AddWorktree(worktreeConfig)
+	// Get the branch arguments from the service function
+	branchArgs := services.GetAddWorktreeArguements(worktreeConfig)
+
+	// Add the worktree using the adapter
+	err = realGit.AddWorktree(bareRepoPath, tempDir, testBranchName, branchArgs)
 	require.NoError(t, err, "Should successfully add worktree")
 
 	t.Logf("✓ Successfully created worktree at: %s", worktreePath)
