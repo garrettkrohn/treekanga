@@ -13,6 +13,7 @@ import (
 type AppConfig struct {
 	BareRepoPath               string   // path to the bare repo, this is where the git commnand will be run from
 	RepoNameForConfig          string   // this is the git project name, used to find the config
+	ParentDirOfBareRepo        string   // this is an option for configuration to allow the user to have multiple configs for multiple instances of one project
 	BaseBranch                 string   // default base branch
 	WorktreeTargetDir          string   // this is where the added worktree will be
 	ListDisplayMode            string   // branch or directory
@@ -56,6 +57,7 @@ func (c *ConfigInstance) GetDefaultConfig(bareRepoPath string, projectName strin
 	return AppConfig{
 		BareRepoPath:               bareRepoPath,
 		RepoNameForConfig:          projectName,
+		ParentDirOfBareRepo:        filepath.Base(filepath.Dir(bareRepoPath)), // this produces just the base of the parent dir `/Users/gkrohn/code/treekanga_work/.bare` => `treekanga_work`
 		BaseBranch:                 "development",
 		WorktreeTargetDir:          "~",
 		ListDisplayMode:            "branch",
@@ -69,31 +71,40 @@ func (c *ConfigInstance) GetDefaultConfig(bareRepoPath string, projectName strin
 	}, nil
 }
 
-// TODO: somehow the log level is not set
-func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) {
+func getRepoConfigPrefix(repoNameForConfig string, parentDirOfBareRepo string) string {
+	//1. check for a config with the project name
+	repoConfig := viper.GetStringMap("repos." + repoNameForConfig)
 
-	var viperRepoPrefix string
+	if len(repoConfig) > 0 {
+		log.Info(fmt.Sprintf("configuration found under repo name: %s", repoNameForConfig))
+		return "repos." + repoNameForConfig + "."
+	}
+
+	//2. check for a config with parent of the bare repo
+	repoConfig = viper.GetStringMap("repos." + parentDirOfBareRepo)
+
+	if len(repoConfig) > 0 {
+		log.Info(fmt.Sprintf("configuration found under parent of bare directory name %s", parentDirOfBareRepo))
+
+		return "repos." + parentDirOfBareRepo + "."
+	}
+	log.Fatal(fmt.Sprintf("no configuration could be found by repo name: %s or parent of bare directory name: %s", repoNameForConfig, parentDirOfBareRepo))
+
+	return ""
+}
+
+func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) {
 
 	repoconfig := viper.GetStringMap("repos")
 
 	if repoconfig == nil {
-		// return error
+		log.Fatal("could not find configuration file")
 	}
 
-	repoConfig := viper.GetStringMap("repos." + cfg.RepoNameForConfig)
+	viperRepoPrefix := getRepoConfigPrefix(cfg.RepoNameForConfig, cfg.ParentDirOfBareRepo)
 
-	if len(repoConfig) == 0 {
-		log.Error("could not find repo config in configuration yaml")
-		//TODO: need to support parent directory name as the config
-		// try it here
-	} else {
-		log.Info(fmt.Sprintf("configuration found under repo name: %s", cfg.RepoNameForConfig))
-		viperRepoPrefix = "repos." + cfg.RepoNameForConfig + "."
-	}
-
-	log.Info(fmt.Sprintf("All keys in repoconfig: %v", repoConfig))
-	for key := range repoConfig {
-		log.Info(fmt.Sprintf("Key: '%s' (len: %d)", key, len(key)))
+	if viperRepoPrefix == "" {
+		log.Fatal("error loading config")
 	}
 
 	if viper.IsSet(viperRepoPrefix + "autoPull") {
