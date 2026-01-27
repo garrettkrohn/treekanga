@@ -76,7 +76,7 @@ func getRepoConfigPrefix(repoNameForConfig string, parentDirOfBareRepo string) s
 	repoConfig := viper.GetStringMap("repos." + repoNameForConfig)
 
 	if len(repoConfig) > 0 {
-		log.Info(fmt.Sprintf("configuration found under repo name: %s", repoNameForConfig))
+		log.Debug(fmt.Sprintf("configuration found under repo name: %s", repoNameForConfig))
 		return "repos." + repoNameForConfig + "."
 	}
 
@@ -84,7 +84,7 @@ func getRepoConfigPrefix(repoNameForConfig string, parentDirOfBareRepo string) s
 	repoConfig = viper.GetStringMap("repos." + parentDirOfBareRepo)
 
 	if len(repoConfig) > 0 {
-		log.Info(fmt.Sprintf("configuration found under parent of bare directory name %s", parentDirOfBareRepo))
+		log.Debug(fmt.Sprintf("configuration found under parent of bare directory name %s", parentDirOfBareRepo))
 
 		return "repos." + parentDirOfBareRepo + "."
 	}
