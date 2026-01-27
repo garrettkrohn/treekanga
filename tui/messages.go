@@ -17,6 +17,18 @@ type deleteErrorMsg struct {
 	branchName   string
 }
 
+// addCompleteMsg is sent when add worktree is complete
+type addCompleteMsg struct {
+	err        error
+	branchName string
+}
+
+// addErrorMsg is sent when add worktree fails
+type addErrorMsg struct {
+	err        error
+	branchName string
+}
+
 // popupItem represents an item in the popup list
 type popupItem struct {
 	title string

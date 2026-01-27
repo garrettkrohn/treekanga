@@ -25,6 +25,7 @@ var tuiCmd = &cobra.Command{
 
     The TUI provides:
     - Interactive table view of all worktrees
+    - Add worktrees with the 'a' key
     - Delete worktrees with the 'd' key
     - Connect to worktrees with the 'o' key
     - Navigate with arrow keys
@@ -67,7 +68,7 @@ var tuiCmd = &cobra.Command{
 		sp.Spinner = spinner.Dot
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
-		m := tui.NewModel(t, sp, deps.Git, deps.Zoxide, deps.Connector, deps.AppConfig)
+		m := tui.NewModel(t, sp, deps.Git, deps.Zoxide, deps.Connector, deps.Shell, deps.AppConfig)
 		p := tea.NewProgram(m, tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)

@@ -14,6 +14,16 @@ func (m Model) View() string {
 	// Render the base view (table + help text)
 	baseView := m.baseTableStyle().Render(m.table.View()) + "\n" + helpText(m) + "\n"
 
+	// Show spinner popup if adding
+	if m.isAdding {
+		return m.renderAddSpinnerPopup(baseView)
+	}
+
+	// Show add input prompt
+	if m.showAddInput {
+		return m.renderAddInputPopup(baseView)
+	}
+
 	// Show spinner popup if deleting
 	if m.isDeleting {
 		return m.renderSpinnerPopup(baseView)
@@ -159,6 +169,91 @@ func (m Model) renderModalPopup() string {
 	)
 }
 
+// renderAddInputPopup shows the add worktree input prompt as a popup
+func (m Model) renderAddInputPopup(background string) string {
+	titleStyle := lipgloss.NewStyle().
+		Foreground(m.theme.Accent).
+		Bold(true)
+
+	messageStyle := lipgloss.NewStyle().
+		Foreground(m.theme.TextFg)
+
+	title := titleStyle.Render("Add Worktree")
+	prompt := messageStyle.Render("Enter command (e.g., branch_name -p -s client-ui):")
+
+	// Show error if present
+	errorMsg := ""
+	if m.addError != "" {
+		errorStyle := lipgloss.NewStyle().
+			Foreground(m.theme.ErrorFg).
+			Bold(true)
+		errorMsg = "\n" + errorStyle.Render("⚠ Error: "+m.addError) + "\n"
+	}
+
+	content := fmt.Sprintf("\n%s\n\n%s\n\n%s\n%s",
+		title,
+		prompt,
+		m.addInput.View(),
+		errorMsg)
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(m.theme.MutedFg).
+		Italic(true).
+		Align(lipgloss.Center)
+
+	hint := hintStyle.Render("\nPress Enter to add • ESC to cancel")
+
+	fullContent := content + hint
+
+	popupWidth := m.termWidth * 2 / 3
+	if popupWidth > 80 {
+		popupWidth = 80
+	}
+
+	popupStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.theme.Accent).
+		Padding(1, 2).
+		Width(popupWidth).
+		Align(lipgloss.Left)
+
+	popup := popupStyle.Render(fullContent)
+
+	return lipgloss.Place(
+		m.termWidth,
+		m.termHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		popup,
+	)
+}
+
+// renderAddSpinnerPopup shows a spinner while adding worktree
+func (m Model) renderAddSpinnerPopup(background string) string {
+	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
+	messageStyle := lipgloss.NewStyle().Foreground(m.theme.TextFg)
+
+	content := fmt.Sprintf("\n  %s  %s\n",
+		spinnerStyle.Render(m.spinner.View()),
+		messageStyle.Render(fmt.Sprintf("Adding worktree: %s...", m.addingBranchName)))
+
+	popupStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.theme.Accent).
+		Padding(1, 3).
+		Align(lipgloss.Center)
+
+	popup := popupStyle.Render(content)
+
+	return lipgloss.Place(
+		m.termWidth,
+		m.termHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		popup,
+	)
+}
+
 // helpText renders the help text with keymaps using styled key hints
 func helpText(m Model) string {
 	footerStyle := lipgloss.NewStyle().
@@ -167,6 +262,7 @@ func helpText(m Model) string {
 
 	hints := []string{
 		m.renderKeyHint("↑/↓", "Navigate"),
+		m.renderKeyHint("a", "Add"),
 		m.renderKeyHint("o", "Open"),
 		m.renderKeyHint("d", "Delete"),
 		m.renderKeyHint("D", "Delete+Branch"),
