@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	com "github.com/garrettkrohn/treekanga/common"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/shell"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Set up real dependencies
 	realExec := execwrap.NewExec()
 	realShell := shell.NewShell(realExec)
-	realGit := git.NewGit(realShell)
+	realGit := adapters.NewGitAdapter(realShell)
 	mockSpinner := &mockSpinner{}
 
 	// Use a small public repository for testing
@@ -107,27 +107,24 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	testBranchName := "test_branch"
 	worktreePath := filepath.Join(tempDir, testBranchName)
 
-	// Create AddConfig for the worktree
-	addConfig := &com.AddConfig{
-		WorkingDir:        bareRepoPath,
-		ParentDir:         tempDir,
-		WorktreeTargetDir: worktreePath,
-		GitInfo: com.GitInfo{
-			NewBranchName:            testBranchName,
-			BaseBranchName:           baseBranch,
-			RepoName:                 "Hello-World",
-			NewBranchExistsLocally:   false,
-			NewBranchExistsRemotely:  false,
-			BaseBranchExistsLocally:  false,
-			BaseBranchExistsRemotely: true, // The base branch exists remotely
-		},
-		Flags: com.AddCmdFlags{
-			Directory: &bareRepoPath,
-		},
+	// Create AddWorktreeConfig for the worktree
+	worktreeConfig := services.AddWorktreeConfig{
+		BareRepoPath:               bareRepoPath,
+		WorktreeTargetDirectory:    tempDir,
+		NewBranchExistsLocally:     false,
+		NewBranchExistsRemotely:    false,
+		BaseBranchExistsLocally:    false,
+		NewBranchName:              testBranchName,
+		PullBeforeCuttingNewBranch: false,
+		BaseBranch:                 baseBranch,
+		NewWorktreeName:            testBranchName,
 	}
 
-	// Add the worktree
-	err = realGit.AddWorktree(addConfig)
+	// Get the branch arguments from the service function
+	branchArgs := services.GetAddWorktreeArguements(worktreeConfig)
+
+	// Add the worktree using the adapter
+	err = realGit.AddWorktree(bareRepoPath, tempDir, testBranchName, branchArgs)
 	require.NoError(t, err, "Should successfully add worktree")
 
 	t.Logf("✓ Successfully created worktree at: %s", worktreePath)
@@ -197,15 +194,15 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Use the buildWorktreeStrings function (or directly get worktrees and transform)
 	// We need to set up deps for the list command to work
 	// Save the original deps values
-	originalBareRepoPath := deps.BareRepoPath
+	originalBareRepoPath := deps.AppConfig.BareRepoPath
 	originalGit := deps.Git
 	defer func() {
-		deps.BareRepoPath = originalBareRepoPath
+		deps.AppConfig.BareRepoPath = originalBareRepoPath
 		deps.Git = originalGit
 	}()
 
 	// Set deps for the list command
-	deps.BareRepoPath = bareRepoPath
+	deps.AppConfig.BareRepoPath = bareRepoPath
 	deps.Git = realGit
 
 	// Get the list of worktrees
@@ -266,7 +263,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	worktreeObjects := realTransformer.TransformWorktrees(worktreeStrings)
 
 	// Find our test_branch worktree
-	var testWorktree *worktreeobj.WorktreeObj
+	var testWorktree *models.Worktree
 	for i, wt := range worktreeObjects {
 		if wt.BranchName == testBranchName {
 			testWorktree = &worktreeObjects[i]

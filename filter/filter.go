@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/models"
 )
 
 type Filter interface {
-	GetBranchNoMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
-	GetBranchMatchList([]string, []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj
+	GetBranchNoMatchList([]string, []models.Worktree) []models.Worktree
+	GetBranchMatchList([]string, []models.Worktree) []models.Worktree
 }
 
 type RealFilter struct{}
@@ -19,9 +19,9 @@ func NewFilter() *RealFilter {
 	return &RealFilter{}
 }
 
-func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranches []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
+func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranches []models.Worktree) []models.Worktree {
 	log.Debug(remoteBranches, worktreeBranches)
-	var nonMatchingWorktrees []worktreeobj.WorktreeObj
+	var nonMatchingWorktrees []models.Worktree
 
 	for _, worktree := range worktreeBranches {
 		trimmedBranchName := strings.TrimSpace(worktree.Folder)
@@ -41,11 +41,11 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 	return nonMatchingWorktrees
 }
 
-func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []worktreeobj.WorktreeObj) []worktreeobj.WorktreeObj {
-	var selectedWorktreeObj []worktreeobj.WorktreeObj
-	for _, worktreeobj := range allWorktrees {
-		if slices.Contains(selectedBranchNames, worktreeobj.Folder) {
-			selectedWorktreeObj = append(selectedWorktreeObj, worktreeobj)
+func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []models.Worktree) []models.Worktree {
+	var selectedWorktreeObj []models.Worktree
+	for _, worktree := range allWorktrees {
+		if slices.Contains(selectedBranchNames, worktree.Folder) {
+			selectedWorktreeObj = append(selectedWorktreeObj, worktree)
 		}
 	}
 	return selectedWorktreeObj

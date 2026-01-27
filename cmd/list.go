@@ -13,9 +13,9 @@ import (
 
 	"github.com/charmbracelet/log"
 
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
 )
 
 type Worktree struct {
@@ -60,9 +60,9 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 	var rawWorktrees []string
 	var err error
 
-	if deps.BareRepoPath != "" {
-		log.Debug("Using bare repo path for worktree list", "path", deps.BareRepoPath)
-		rawWorktrees, err = deps.Git.GetWorktrees(&deps.BareRepoPath)
+	if deps.AppConfig.BareRepoPath != "" {
+		log.Debug("Using bare repo path for worktree list", "path", deps.AppConfig.BareRepoPath)
+		rawWorktrees, err = deps.Git.GetWorktrees(&deps.AppConfig.BareRepoPath)
 	} else {
 		log.Debug("No bare repo path set, using current directory")
 		rawWorktrees, err = deps.Git.GetWorktrees(nil)
@@ -99,8 +99,8 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 // getListDisplayMode retrieves the configured display mode for list command
 // Returns "branch" or "directory" (default: "branch")
 func getListDisplayMode() string {
-	if deps.ResolvedRepo != "" {
-		displayMode := viper.GetString(deps.ResolvedRepo + ".listDisplayMode")
+	if deps.AppConfig.RepoNameForConfig != "" {
+		displayMode := viper.GetString("repos." + deps.AppConfig.RepoNameForConfig + ".listDisplayMode")
 		if displayMode == "directory" || displayMode == "folder" {
 			return "directory"
 		}
@@ -109,7 +109,7 @@ func getListDisplayMode() string {
 }
 
 // getDisplayString returns the appropriate display string based on the configured mode
-func getDisplayString(worktree worktreeobj.WorktreeObj, displayMode string) string {
+func getDisplayString(worktree models.Worktree, displayMode string) string {
 	if displayMode == "directory" {
 		return worktree.Folder
 	}
@@ -117,7 +117,7 @@ func getDisplayString(worktree worktreeobj.WorktreeObj, displayMode string) stri
 }
 
 // sortWorktreesByModTime sorts worktrees by modification time (most recent first)
-func sortWorktreesByModTime(worktrees []worktreeobj.WorktreeObj) {
+func sortWorktreesByModTime(worktrees []models.Worktree) {
 	sort.Slice(worktrees, func(i, j int) bool {
 		statI, errI := os.Stat(worktrees[i].FullPath)
 		statJ, errJ := os.Stat(worktrees[j].FullPath)

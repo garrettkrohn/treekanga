@@ -3,7 +3,7 @@
 package transformer
 
 import (
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	models "github.com/garrettkrohn/treekanga/models"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -117,19 +117,19 @@ func (_c *Mocktransformer_RemoveQuotes_Call) RunAndReturn(run func([]string) []s
 }
 
 // TransformWorktrees provides a mock function with given fields: _a0
-func (_m *Mocktransformer) TransformWorktrees(_a0 []string) []worktreeobj.WorktreeObj {
+func (_m *Mocktransformer) TransformWorktrees(_a0 []string) []models.Worktree {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TransformWorktrees")
 	}
 
-	var r0 []worktreeobj.WorktreeObj
-	if rf, ok := ret.Get(0).(func([]string) []worktreeobj.WorktreeObj); ok {
+	var r0 []models.Worktree
+	if rf, ok := ret.Get(0).(func([]string) []models.Worktree); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]worktreeobj.WorktreeObj)
+			r0 = ret.Get(0).([]models.Worktree)
 		}
 	}
 
@@ -154,18 +154,18 @@ func (_c *Mocktransformer_TransformWorktrees_Call) Run(run func(_a0 []string)) *
 	return _c
 }
 
-func (_c *Mocktransformer_TransformWorktrees_Call) Return(_a0 []worktreeobj.WorktreeObj) *Mocktransformer_TransformWorktrees_Call {
+func (_c *Mocktransformer_TransformWorktrees_Call) Return(_a0 []models.Worktree) *Mocktransformer_TransformWorktrees_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *Mocktransformer_TransformWorktrees_Call) RunAndReturn(run func([]string) []worktreeobj.WorktreeObj) *Mocktransformer_TransformWorktrees_Call {
+func (_c *Mocktransformer_TransformWorktrees_Call) RunAndReturn(run func([]string) []models.Worktree) *Mocktransformer_TransformWorktrees_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // TransformWorktreesToBranchNames provides a mock function with given fields: _a0
-func (_m *Mocktransformer) TransformWorktreesToBranchNames(_a0 []worktreeobj.WorktreeObj) []string {
+func (_m *Mocktransformer) TransformWorktreesToBranchNames(_a0 []models.Worktree) []string {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
@@ -173,7 +173,7 @@ func (_m *Mocktransformer) TransformWorktreesToBranchNames(_a0 []worktreeobj.Wor
 	}
 
 	var r0 []string
-	if rf, ok := ret.Get(0).(func([]worktreeobj.WorktreeObj) []string); ok {
+	if rf, ok := ret.Get(0).(func([]models.Worktree) []string); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
@@ -190,14 +190,14 @@ type Mocktransformer_TransformWorktreesToBranchNames_Call struct {
 }
 
 // TransformWorktreesToBranchNames is a helper method to define mock.On call
-//   - _a0 []worktreeobj.WorktreeObj
+//   - _a0 []models.Worktree
 func (_e *Mocktransformer_Expecter) TransformWorktreesToBranchNames(_a0 interface{}) *Mocktransformer_TransformWorktreesToBranchNames_Call {
 	return &Mocktransformer_TransformWorktreesToBranchNames_Call{Call: _e.mock.On("TransformWorktreesToBranchNames", _a0)}
 }
 
-func (_c *Mocktransformer_TransformWorktreesToBranchNames_Call) Run(run func(_a0 []worktreeobj.WorktreeObj)) *Mocktransformer_TransformWorktreesToBranchNames_Call {
+func (_c *Mocktransformer_TransformWorktreesToBranchNames_Call) Run(run func(_a0 []models.Worktree)) *Mocktransformer_TransformWorktreesToBranchNames_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]worktreeobj.WorktreeObj))
+		run(args[0].([]models.Worktree))
 	})
 	return _c
 }
@@ -207,7 +207,7 @@ func (_c *Mocktransformer_TransformWorktreesToBranchNames_Call) Return(_a0 []str
 	return _c
 }
 
-func (_c *Mocktransformer_TransformWorktreesToBranchNames_Call) RunAndReturn(run func([]worktreeobj.WorktreeObj) []string) *Mocktransformer_TransformWorktreesToBranchNames_Call {
+func (_c *Mocktransformer_TransformWorktreesToBranchNames_Call) RunAndReturn(run func([]models.Worktree) []string) *Mocktransformer_TransformWorktreesToBranchNames_Call {
 	_c.Call.Return(run)
 	return _c
 }

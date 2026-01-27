@@ -3,7 +3,7 @@ package transformer
 import (
 	"testing"
 
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +13,7 @@ func TestTransformer(t *testing.T) {
 		"/Users/gkrohn/code/platform_work/add_asset_regression                              94dbf65923 [add_asset_regression_fix]",
 	}
 
-	expectedWt := []worktreeobj.WorktreeObj{
+	expectedWt := []models.Worktree{
 		{
 			FullPath:   "/Users/gkrohn/code/platform_work/add_asset_regression",
 			Folder:     "add_asset_regression",

@@ -5,24 +5,24 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
+	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
-	"github.com/garrettkrohn/treekanga/zoxide"
+	"github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
 )
 
 type Dependencies struct {
-	Git             git.Git
-	Zoxide          zoxide.Zoxide
+	Git             adapters.GitAdapter
+	Zoxide          adapters.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
-	ResolvedRepo    string
-	BareRepoPath    string
+	AppConfig       config.AppConfig
 }
 
 var (
@@ -30,8 +30,8 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git git.Git,
-	zoxide zoxide.Zoxide,
+func NewRootCmd(git adapters.GitAdapter,
+	zoxide adapters.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
 	shell shell.Shell,
@@ -50,17 +50,26 @@ func NewRootCmd(git git.Git,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
-				ResolvedRepo:    "",
-				BareRepoPath:    "",
 			}
 
 			if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" || cmd.Name() == "clone" {
 				return
 			}
 
-			repoName, bareRepoPath := resolveRepoNameAndPath()
-			deps.ResolvedRepo = repoName
-			deps.BareRepoPath = bareRepoPath
+			bareRepoPath, err := git.GetBareRepoPath()
+			utility.CheckError(err)
+
+			projectName, err := git.GetProjectName()
+			utility.CheckError(err)
+
+			// get app config
+			configuration := config.NewConfig()
+			cfg, err := configuration.GetDefaultConfig(bareRepoPath, projectName)
+			utility.CheckError(err)
+
+			// import yaml config file
+			cfg, err = configuration.ImportYamlConfigFile(cfg)
+			deps.AppConfig = cfg
 
 		},
 	}
@@ -77,8 +86,8 @@ func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
-	git := git.NewGit(shell)
-	zoxide := zoxide.NewZoxide(shell)
+	git := adapters.NewGitAdapter(shell)
+	zoxide := adapters.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
@@ -95,6 +104,7 @@ func Execute(version string) {
 	if err := fang.Execute(context.Background(), rootCmd, options...); err != nil {
 		os.Exit(1)
 	}
+
 }
 
 func init() {

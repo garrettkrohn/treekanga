@@ -1,15 +1,15 @@
-package cmd
+package services
 
 import (
 	"testing"
 
+	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
-	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/models"
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
-	worktreeobj "github.com/garrettkrohn/treekanga/worktreeObj"
-	"github.com/garrettkrohn/treekanga/zoxide"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -26,7 +26,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 
 	mockForm := getMockForm(t)
 
-	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
+	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]models.Worktree{
 		{
 			FullPath:   "/Users/gkrohn/code/development",
 			Folder:     "development",
@@ -34,13 +34,19 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 			CommitHash: "abcdef12345",
 		},
 	})
-	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide := adapters.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	var branches []string
 
+	cfg := config.AppConfig{
+		FilterOnlyStaleBranches: false,
+		DeleteBranch:            false,
+		ForceDelete:             false,
+	}
+
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, mockForm, mockZoxide, branches, false, false, false)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, mockForm, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -64,7 +70,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	transformer := transformer.NewTransformer()
 	mockFilter := filter.NewMockFilter(t)
-	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]worktreeobj.WorktreeObj{
+	mockFilter.On("GetBranchMatchList", mock.Anything, mock.Anything).Return([]models.Worktree{
 		{
 			FullPath:   "/Users/gkrohn/code/development",
 			Folder:     "development",
@@ -75,13 +81,19 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	mockSpinner := getMockSpinner(t)
 
-	mockZoxide := zoxide.NewMockZoxide(t)
+	mockZoxide := adapters.NewMockZoxide(t)
 	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	branches := []string{"development"}
 
+	cfg := config.AppConfig{
+		FilterOnlyStaleBranches: false,
+		DeleteBranch:            false,
+		ForceDelete:             false,
+	}
+
 	// Act
-	numOfWorktreesRemoved, err := deleteWorktrees(mockGit, transformer, mockFilter, mockSpinner, nil, mockZoxide, branches, false, false, false)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, nil, mockZoxide, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -97,8 +109,8 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	mockZoxide.AssertExpectations(t)
 }
 
-func getMockGit(t *testing.T) *git.MockGit {
-	mockGit := git.NewMockGit(t)
+func getMockGit(t *testing.T) *adapters.MockGitAdapter {
+	mockGit := adapters.NewMockGitAdapter(t)
 	mockGit.On("GetWorktrees", mock.Anything).Return([]string{
 		"/Users/gkrohn/code/development       abcdef12345 [branch1]",
 		"/Users/gkrohn/code/featureBranch     abcdef12345 [branch2]",
@@ -113,8 +125,8 @@ func getMockSpinner(t *testing.T) *spinner.MockHuhSpinner {
 	return mockSpinner
 }
 
-func getMockForm(t *testing.T) *form.MockHuhForm {
-	mockForm := form.NewMockHuhForm(t)
+func getMockForm(t *testing.T) *form.MockForm {
+	mockForm := form.NewMockForm(t)
 	mockForm.On("SetSelections", mock.Anything).Run(func(args mock.Arguments) {
 		// Modify the selections variable
 		*args.Get(0).(*[]string) = append(*args.Get(0).(*[]string), "branch1")
