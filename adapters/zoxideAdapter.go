@@ -13,6 +13,7 @@ type Zoxide interface {
 	RemovePath(path string) error
 	AddZoxideEntries(zoxideFolders []string)
 	QueryScore(path string) (float64, error)
+	QueryList(path string) ([]string, error)
 }
 
 type RealZoxide struct {
@@ -58,4 +59,17 @@ func (r *RealZoxide) QueryScore(path string) (float64, error) {
 		return 0, nil
 	}
 	return score, nil
+}
+
+func (r *RealZoxide) QueryList(path string) ([]string, error) {
+	output, err := r.shell.Cmd("zoxide", "query", "--list")
+	if err != nil {
+		return []string{}, err
+	}
+	if output == "" {
+		return []string{}, nil
+	}
+	// Split output into lines
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	return lines, nil
 }
