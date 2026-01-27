@@ -9,8 +9,11 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/directoryReader"
+	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/utility"
 	util "github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -89,7 +92,42 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
 }
 
+func handleFromForm(form form.HuhForm, worktrees []string) {
+	// Present selection interface
+	var selectedBranch string
+	form.SetSingleSelection(&selectedBranch)
+	form.SetOptions(worktrees)
+	form.SetTitle("Select base branch for new worktree:")
+	err := form.Run()
+	util.CheckError(err)
+
+	if selectedBranch == "" {
+		log.Fatal("No branch selected")
+	}
+
+	log.Info("Selected base branch", "branch", selectedBranch)
+}
+
 func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+
+	if cfg.UseFormToSetBaseBranch {
+		worktrees, err := gitClient.GetWorktrees(&cfg.BareRepoPath)
+		utility.CheckError(err)
+
+		worktreeObjects := transformer.NewTransformer().TransformWorktrees(worktrees)
+
+		sortWorktreesByModTime(worktreeObjects)
+
+		var branchStrings []string
+
+		for _, wt := range worktreeObjects {
+			branchStrings = append(branchStrings, wt.BranchName)
+		}
+
+		form := form.NewHuhForm()
+
+		handleFromForm(*form, branchStrings)
+	}
 
 	worktreeAddArgs := GetAddWorktreeArguements(AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,
@@ -119,7 +157,8 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 
 	// always add the root, add folders if included
 	log.Info("adding zoxide entries")
-	zoxidePathsToAdd := CompileZoxidePathsToAdd(cfg.ZoxideFolders, newRootDirectory)
+	directoryReader := directoryReader.NewDirectoryReader()
+	zoxidePathsToAdd := CompileZoxidePathsToAdd(cfg.ZoxideFolders, newRootDirectory, directoryReader)
 	zoxide.AddZoxideEntries(zoxidePathsToAdd)
 
 	if cfg.SeshConnect != "" {

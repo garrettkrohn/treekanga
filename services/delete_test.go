@@ -125,8 +125,8 @@ func getMockSpinner(t *testing.T) *spinner.MockHuhSpinner {
 	return mockSpinner
 }
 
-func getMockForm(t *testing.T) *form.MockHuhForm {
-	mockForm := form.NewMockHuhForm(t)
+func getMockForm(t *testing.T) *form.MockForm {
+	mockForm := form.NewMockForm(t)
 	mockForm.On("SetSelections", mock.Anything).Run(func(args mock.Arguments) {
 		// Modify the selections variable
 		*args.Get(0).(*[]string) = append(*args.Get(0).(*[]string), "branch1")

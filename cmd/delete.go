@@ -43,8 +43,6 @@ var deleteCmd = &cobra.Command{
 			deps.AppConfig.ForceDelete = true
 		}
 
-		deps.AppConfig.Print()
-
 		numOfWorktreesRemoved, err := services.DeleteWorktrees(deps.Git,
 			transformer.NewTransformer(),
 			filter.NewFilter(),

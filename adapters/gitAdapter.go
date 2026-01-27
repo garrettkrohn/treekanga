@@ -88,7 +88,7 @@ func (g *RealGitAdapter) RemoveWorktree(worktreeName string, path *string, force
 func (g *RealGitAdapter) AddWorktree(path string, worktreeTargetDir string, newWorktreeName string, worktreeArgs []string) error {
 	// Build base command
 	gitCommand := getBaseArguementsWithOrWithoutPath(&path)
-	gitCommand = append(gitCommand, "worktree", "add", worktreeTargetDir+"/"+newWorktreeName)
+	gitCommand = append(gitCommand, "worktree", "add", filepath.Join(worktreeTargetDir, newWorktreeName))
 
 	gitCommand = append(gitCommand, worktreeArgs...)
 

@@ -62,6 +62,39 @@ func (_c *MockForm_Run_Call) RunAndReturn(run func() error) *MockForm_Run_Call {
 	return _c
 }
 
+// SetHeight provides a mock function with given fields: height
+func (_m *MockForm) SetHeight(height int) {
+	_m.Called(height)
+}
+
+// MockForm_SetHeight_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetHeight'
+type MockForm_SetHeight_Call struct {
+	*mock.Call
+}
+
+// SetHeight is a helper method to define mock.On call
+//   - height int
+func (_e *MockForm_Expecter) SetHeight(height interface{}) *MockForm_SetHeight_Call {
+	return &MockForm_SetHeight_Call{Call: _e.mock.On("SetHeight", height)}
+}
+
+func (_c *MockForm_SetHeight_Call) Run(run func(height int)) *MockForm_SetHeight_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(int))
+	})
+	return _c
+}
+
+func (_c *MockForm_SetHeight_Call) Return() *MockForm_SetHeight_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockForm_SetHeight_Call) RunAndReturn(run func(int)) *MockForm_SetHeight_Call {
+	_c.Run(run)
+	return _c
+}
+
 // SetOptions provides a mock function with given fields: stringOptions
 func (_m *MockForm) SetOptions(stringOptions []string) {
 	_m.Called(stringOptions)
@@ -95,6 +128,39 @@ func (_c *MockForm_SetOptions_Call) RunAndReturn(run func([]string)) *MockForm_S
 	return _c
 }
 
+// SetSelectType provides a mock function with given fields: selectType
+func (_m *MockForm) SetSelectType(selectType SelectType) {
+	_m.Called(selectType)
+}
+
+// MockForm_SetSelectType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetSelectType'
+type MockForm_SetSelectType_Call struct {
+	*mock.Call
+}
+
+// SetSelectType is a helper method to define mock.On call
+//   - selectType SelectType
+func (_e *MockForm_Expecter) SetSelectType(selectType interface{}) *MockForm_SetSelectType_Call {
+	return &MockForm_SetSelectType_Call{Call: _e.mock.On("SetSelectType", selectType)}
+}
+
+func (_c *MockForm_SetSelectType_Call) Run(run func(selectType SelectType)) *MockForm_SetSelectType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(SelectType))
+	})
+	return _c
+}
+
+func (_c *MockForm_SetSelectType_Call) Return() *MockForm_SetSelectType_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockForm_SetSelectType_Call) RunAndReturn(run func(SelectType)) *MockForm_SetSelectType_Call {
+	_c.Run(run)
+	return _c
+}
+
 // SetSelections provides a mock function with given fields: selections
 func (_m *MockForm) SetSelections(selections *[]string) {
 	_m.Called(selections)
@@ -124,6 +190,72 @@ func (_c *MockForm_SetSelections_Call) Return() *MockForm_SetSelections_Call {
 }
 
 func (_c *MockForm_SetSelections_Call) RunAndReturn(run func(*[]string)) *MockForm_SetSelections_Call {
+	_c.Run(run)
+	return _c
+}
+
+// SetSingleSelection provides a mock function with given fields: selection
+func (_m *MockForm) SetSingleSelection(selection *string) {
+	_m.Called(selection)
+}
+
+// MockForm_SetSingleSelection_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetSingleSelection'
+type MockForm_SetSingleSelection_Call struct {
+	*mock.Call
+}
+
+// SetSingleSelection is a helper method to define mock.On call
+//   - selection *string
+func (_e *MockForm_Expecter) SetSingleSelection(selection interface{}) *MockForm_SetSingleSelection_Call {
+	return &MockForm_SetSingleSelection_Call{Call: _e.mock.On("SetSingleSelection", selection)}
+}
+
+func (_c *MockForm_SetSingleSelection_Call) Run(run func(selection *string)) *MockForm_SetSingleSelection_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*string))
+	})
+	return _c
+}
+
+func (_c *MockForm_SetSingleSelection_Call) Return() *MockForm_SetSingleSelection_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockForm_SetSingleSelection_Call) RunAndReturn(run func(*string)) *MockForm_SetSingleSelection_Call {
+	_c.Run(run)
+	return _c
+}
+
+// SetTitle provides a mock function with given fields: title
+func (_m *MockForm) SetTitle(title string) {
+	_m.Called(title)
+}
+
+// MockForm_SetTitle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTitle'
+type MockForm_SetTitle_Call struct {
+	*mock.Call
+}
+
+// SetTitle is a helper method to define mock.On call
+//   - title string
+func (_e *MockForm_Expecter) SetTitle(title interface{}) *MockForm_SetTitle_Call {
+	return &MockForm_SetTitle_Call{Call: _e.mock.On("SetTitle", title)}
+}
+
+func (_c *MockForm_SetTitle_Call) Run(run func(title string)) *MockForm_SetTitle_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *MockForm_SetTitle_Call) Return() *MockForm_SetTitle_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockForm_SetTitle_Call) RunAndReturn(run func(string)) *MockForm_SetTitle_Call {
 	_c.Run(run)
 	return _c
 }

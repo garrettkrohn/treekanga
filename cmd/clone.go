@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/garrettkrohn/treekanga/adapters"
@@ -56,7 +57,7 @@ func CloneBareRepo(git adapters.GitAdapter, spinner spinner.HuhSpinner, args []s
 	workingDir, err := os.Getwd()
 	util.CheckError(err)
 
-	barePath := workingDir + "/" + folderName
+	barePath := filepath.Join(workingDir, folderName)
 
 	git.ConfigureGitBare(barePath)
 

@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -10,18 +11,15 @@ import (
 	util "github.com/garrettkrohn/treekanga/utility"
 )
 
-func CompileZoxidePathsToAdd(foldersToAddFromConfig []string, newRootDirectory string) []string {
-
-	directoryReader := directoryReader.NewDirectoryReader()
+func CompileZoxidePathsToAdd(foldersToAddFromConfig []string, newRootDirectory string, directoryReader directoryReader.DirectoryReader) []string {
 	var foldersToAdd []string
-
-	//add the root
+	// add the root
 	foldersToAdd = append(foldersToAdd, newRootDirectory)
 
 	for _, folder := range foldersToAddFromConfig {
 		if !isLastCharWildcard(folder) {
-			newFolderFromConfig := newRootDirectory + "/" + folder
-			//validate
+			newFolderFromConfig := filepath.Join(newRootDirectory, folder)
+			// validate
 			if checkPath(newFolderFromConfig) {
 				foldersToAdd = append(foldersToAdd, newFolderFromConfig)
 			} else {
@@ -29,12 +27,12 @@ func CompileZoxidePathsToAdd(foldersToAddFromConfig []string, newRootDirectory s
 			}
 		} else {
 			pathUpTillWildcard := getPathUntilLastSlash(folder)
-			baseFolderToSearch := newRootDirectory + "/" + pathUpTillWildcard
+			baseFolderToSearch := filepath.Join(newRootDirectory, pathUpTillWildcard)
 			configFolders, err := directoryReader.GetFoldersInDirectory(baseFolderToSearch)
 
 			for _, configFolder := range configFolders {
-				newConfigFolder := baseFolderToSearch + "/" + configFolder
-				//validate
+				newConfigFolder := filepath.Join(baseFolderToSearch, configFolder)
+				// validate
 				if checkPath(newConfigFolder) {
 					foldersToAdd = append(foldersToAdd, newConfigFolder)
 				} else {
@@ -44,7 +42,6 @@ func CompileZoxidePathsToAdd(foldersToAddFromConfig []string, newRootDirectory s
 			util.CheckError(err)
 		}
 	}
-
 	return foldersToAdd
 }
 

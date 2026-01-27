@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"github.com/charmbracelet/log"
@@ -13,7 +14,7 @@ func GetSeshPath(seshConnectTarget string, zoxideFolders []string, newRootDirect
 	}
 
 	if seshConnectTarget != "" && slices.Contains(zoxideFolders, seshConnectTarget) {
-		seshPath := newRootDirectory + "/" + seshConnectTarget
+		seshPath := filepath.Join(newRootDirectory, seshConnectTarget)
 		log.Debug(fmt.Sprintf("specified sesh sub directory exists: %s", seshConnectTarget))
 		return seshPath
 	} else {
