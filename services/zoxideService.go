@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	util "github.com/garrettkrohn/treekanga/utility"
 )
@@ -65,4 +66,23 @@ func getPathUntilLastSlash(input string) string {
 		return strings.Join(parts[:len(parts)-1], "/")
 	}
 	return ""
+}
+
+func GetQueryList(zoxideAdapter adapters.Zoxide, pathSearch string) ([]string, error) {
+	allEntries, err := zoxideAdapter.QueryList(pathSearch)
+	if err != nil {
+		log.Error(err)
+		return []string{}, err
+	}
+
+	// Filter for entries that start with pathSearch
+	var filteredEntries []string
+	for _, entry := range allEntries {
+		entry = strings.TrimSpace(entry)
+		if entry != "" && strings.HasPrefix(entry, pathSearch) {
+			filteredEntries = append(filteredEntries, entry)
+		}
+	}
+
+	return filteredEntries, nil
 }
