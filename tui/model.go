@@ -44,12 +44,16 @@ type Model struct {
 	pendingBranchName  string
 	theme              *Theme
 	// Add command state
-	showAddInput       bool
-	addInput           textinput.Model
-	isAdding           bool
-	addingBranchName   string
-	addingCommand      string
-	addError           string
+	showAddInput         bool
+	addInput             textinput.Model
+	isAdding             bool
+	addingBranchName     string
+	addingCommand        string
+	addError             string
+	showBranchSelection  bool
+	pendingAddInput      string
+	pendingAddArgs       []string
+	pendingAddConfig     config.AppConfig
 	// Log viewer state
 	logsFocused        bool
 	logsViewport       viewport.Model
@@ -84,21 +88,22 @@ func NewModel(
 	vp.SetContent("No operations logged yet.")
 
 	return Model{
-		table:         table,
-		showPopup:     false,
-		spinner:       spinner,
-		isDeleting:    false,
-		showAddInput:  false,
-		addInput:      ti,
-		isAdding:      false,
-		logsFocused:   false,
-		logsViewport:  vp,
-		operationLogs: []OperationLog{},
-		theme:         DefaultTheme(),
-		git:           git,
-		zoxide:        zoxide,
-		connector:     conn,
-		shell:         shell,
-		appConfig:     appConfig,
+		table:               table,
+		showPopup:           false,
+		spinner:             spinner,
+		isDeleting:          false,
+		showAddInput:        false,
+		addInput:            ti,
+		isAdding:            false,
+		showBranchSelection: false,
+		logsFocused:         false,
+		logsViewport:        vp,
+		operationLogs:       []OperationLog{},
+		theme:               DefaultTheme(),
+		git:                 git,
+		zoxide:              zoxide,
+		connector:           conn,
+		shell:               shell,
+		appConfig:           appConfig,
 	}
 }

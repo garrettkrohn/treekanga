@@ -179,8 +179,8 @@ func filterLocalBranchesOnly(git adapters.GitAdapter, worktrees []models.Worktre
 }
 
 // TODO: remove dupilcate code here
-// sortWorktreesByModTime sorts worktrees by modification time (most recent first)
-func sortWorktreesByModTime(worktrees []models.Worktree) {
+// SortWorktreesByModTime sorts worktrees by modification time (most recent first)
+func SortWorktreesByModTime(worktrees []models.Worktree) {
 	sort.Slice(worktrees, func(i, j int) bool {
 		statI, errI := os.Stat(worktrees[i].FullPath)
 		statJ, errJ := os.Stat(worktrees[j].FullPath)

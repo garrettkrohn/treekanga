@@ -92,7 +92,7 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
 }
 
-func handleFromForm(form form.HuhForm, worktrees []string) {
+func handleFromForm(form form.HuhForm, worktrees []string) string {
 	// Present selection interface
 	var selectedBranch string
 	form.SetSingleSelection(&selectedBranch)
@@ -106,6 +106,7 @@ func handleFromForm(form form.HuhForm, worktrees []string) {
 	}
 
 	log.Info("Selected base branch", "branch", selectedBranch)
+	return selectedBranch
 }
 
 func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
@@ -116,7 +117,7 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 
 		worktreeObjects := transformer.NewTransformer().TransformWorktrees(worktrees)
 
-		sortWorktreesByModTime(worktreeObjects)
+		SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
 
@@ -126,7 +127,17 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 
 		form := form.NewHuhForm()
 
-		handleFromForm(*form, branchStrings)
+		selectedBranch := handleFromForm(*form, branchStrings)
+		cfg.BaseBranch = selectedBranch
+		log.Debug(fmt.Sprintf("Set BaseBranch = %s from form selection", selectedBranch))
+		
+		// Update the BaseBranchExistsLocally flag after selection
+		t := transformer.NewTransformer()
+		localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
+		utility.CheckError(err)
+		cleanLocalBranches := t.RemoveQuotes(localBranches)
+		cfg.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.BaseBranch)
+		log.Debug(fmt.Sprintf("Updated BaseBranchExistsLocally = %t after form selection", cfg.BaseBranchExistsLocally))
 	}
 
 	worktreeAddArgs := GetAddWorktreeArguements(AddWorktreeConfig{

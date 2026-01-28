@@ -42,3 +42,8 @@ type popupItem struct {
 func (i popupItem) Title() string       { return i.title }
 func (i popupItem) Description() string { return i.desc }
 func (i popupItem) FilterValue() string { return i.title }
+
+// branchSelectionReadyMsg is sent when branch list is ready for selection
+type branchSelectionReadyMsg struct {
+	branches []string
+}

@@ -24,7 +24,7 @@ func getWorktrees(git adapters.GitAdapter, transformer *transformer.RealTransfor
 	worktrees := transformer.TransformWorktrees(worktreeStrings)
 
 	// Sort worktrees by most recently modified
-	sortWorktreesByModTime(worktrees)
+	SortWorktreesByModTime(worktrees)
 
 	return worktrees
 }

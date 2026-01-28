@@ -5,7 +5,9 @@ package tui
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/services"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -81,6 +84,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		return m, nil
+	case branchSelectionReadyMsg:
+		// Show the branch selection popup
+		items := make([]list.Item, len(msg.branches))
+		for i, branch := range msg.branches {
+			items[i] = popupItem{title: branch, desc: ""}
+		}
+		
+		delegate := list.NewDefaultDelegate()
+		delegate.SetSpacing(0)
+		delegate.ShowDescription = false
+		delegate.SetHeight(1)
+		
+		delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+			Foreground(m.theme.AccentFg).
+			Background(m.theme.Accent).
+			Bold(true)
+		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
+			Foreground(lipgloss.Color("#ffffff"))
+		
+		popupHeight := m.termHeight - 4
+		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
+		m.popupList.Title = "Select base branch for new worktree"
+		m.popupList.SetShowStatusBar(false)
+		m.popupList.SetFilteringEnabled(false)
+		
+		m.popupList.Styles.Title = m.popupList.Styles.Title.
+			Foreground(m.theme.Cyan).
+			Bold(true).
+			Padding(0, 1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(m.theme.BorderDim).
+			BorderBottom(true)
+		
+		m.showBranchSelection = true
+		return m, nil
 	case addCompleteMsg:
 		m.isAdding = false
 		if msg.err != nil {
@@ -129,6 +167,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// If branch selection popup is showing, handle it first
+	if m.showBranchSelection {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc", "q":
+				m.showBranchSelection = false
+				m.showAddInput = true
+				return m, nil
+			case "enter", "o":
+				// Handle selection from popup
+				selected := m.popupList.SelectedItem()
+				if item, ok := selected.(popupItem); ok {
+					m.showBranchSelection = false
+					// Set the selected branch in the config
+					m.pendingAddConfig.BaseBranch = item.title
+					log.Debug("Selected base branch from popup", "branch", item.title)
+					
+					// Update BaseBranchExistsLocally flag
+					localBranches, err := m.git.GetLocalBranches(&m.pendingAddConfig.BareRepoPath)
+					if err == nil {
+						t := transformer.NewTransformer()
+						cleanLocalBranches := t.RemoveQuotes(localBranches)
+						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, m.pendingAddConfig.BaseBranch)
+					}
+					
+					// Now continue with the add operation
+					m.isAdding = true
+					return m, tea.Batch(m.performAddWithConfig(m.pendingAddArgs, m.pendingAddConfig), m.spinner.Tick)
+				}
+				m.showBranchSelection = false
+				return m, nil
+			}
+		}
+		m.popupList, cmd = m.popupList.Update(msg)
+		return m, cmd
+	}
+
 	// If add input is showing, handle it first
 	if m.showAddInput {
 		switch msg := msg.(type) {
@@ -140,6 +216,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if input == "" {
 					return m, nil
 				}
+				
+				// Parse the command first
+				args, cfg, err := parseAddCommand(input, m.appConfig)
+				if err != nil {
+					m.addError = err.Error()
+					return m, nil
+				}
+				
+				// Check if -f flag was used
+				if cfg.UseFormToSetBaseBranch {
+					// Store the pending add operation
+					m.pendingAddInput = input
+					m.pendingAddArgs = args
+					m.pendingAddConfig = cfg
+					m.showAddInput = false
+					m.addingBranchName = parseFirstArg(input)
+					m.addingCommand = input
+					m.addError = ""
+					m.addInput.SetValue("")
+					// Fetch branches and show selection popup
+					return m, m.fetchBranchesForSelection()
+				}
+				
+				// No -f flag, proceed normally
 				m.showAddInput = false
 				m.isAdding = true
 				m.addingBranchName = parseFirstArg(input)
@@ -324,7 +424,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Background(m.theme.Accent).
 			Bold(true)
 		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
-			Foreground(m.theme.TextFg)
+			Foreground(lipgloss.Color("#ffffff"))
 
 		popupHeight := m.termHeight - 4 // Use most of the terminal height
 		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
@@ -456,17 +556,21 @@ func (m Model) performAdd(input string) tea.Cmd {
 		var logBuffer bytes.Buffer
 		log.SetOutput(&logBuffer)
 
-		// Call the add service with panic recovery
-		var addErr error
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Error("Panic during add worktree", "error", r)
+	// Call the add service with panic recovery
+	var addErr error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("Panic during add worktree", "error", r)
+				if err, ok := r.(error); ok {
 					addErr = err
+				} else {
+					addErr = fmt.Errorf("%v", r)
 				}
-			}()
-			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+			}
 		}()
+		services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+	}()
 
 		// Restore stderr as log output
 		log.SetOutput(os.Stderr)
@@ -632,4 +736,82 @@ func (m *Model) updateLogsViewport() {
 	}
 
 	m.logsViewport.SetContent(content.String())
+}
+
+// fetchBranchesForSelection fetches the list of branches for selection
+func (m Model) fetchBranchesForSelection() tea.Cmd {
+	return func() tea.Msg {
+		worktrees, err := m.git.GetWorktrees(&m.pendingAddConfig.BareRepoPath)
+		if err != nil {
+			log.Error("Failed to fetch worktrees", "error", err)
+			return addErrorMsg{err: err, branchName: m.addingBranchName}
+		}
+
+		t := transformer.NewTransformer()
+		worktreeObjects := t.TransformWorktrees(worktrees)
+		services.SortWorktreesByModTime(worktreeObjects)
+
+		var branchStrings []string
+		for _, wt := range worktreeObjects {
+			branchStrings = append(branchStrings, wt.BranchName)
+		}
+
+		return branchSelectionReadyMsg{branches: branchStrings}
+	}
+}
+
+// performAddWithConfig performs the add operation with a pre-configured config (bypassing the form)
+func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd {
+	return func() tea.Msg {
+		// Add a minimum display time for the spinner
+		startTime := time.Now()
+		minDisplayTime := 1 * time.Second
+
+		log.Debug("Adding worktree with selected base branch", "branch", args[0], "baseBranch", cfg.BaseBranch)
+
+		// Configure the add service
+		cfg = services.SetConfigForAddService(m.git, cfg, args)
+
+		// Capture log output - write ONLY to buffer, not to stderr
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+
+	// Call the add service with panic recovery, but skip the form part
+	var addErr error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Error("Panic during add worktree", "error", r)
+				if err, ok := r.(error); ok {
+					addErr = err
+				} else {
+					addErr = fmt.Errorf("%v", r)
+				}
+			}
+		}()
+		// Call AddWorktree but the form won't show since BaseBranch is already set
+		cfg.UseFormToSetBaseBranch = false
+		services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+	}()
+
+		// Restore stderr as log output
+		log.SetOutput(os.Stderr)
+
+		// Capture the output
+		output := logBuffer.String()
+
+		log.Debug("Worktree added successfully")
+
+		// Ensure spinner shows for at least minDisplayTime
+		elapsed := time.Since(startTime)
+		if elapsed < minDisplayTime {
+			time.Sleep(minDisplayTime - elapsed)
+		}
+
+		return addCompleteMsg{
+			err:        addErr,
+			branchName: cfg.NewBranchName,
+			output:     output,
+		}
+	}
 }
