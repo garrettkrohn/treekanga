@@ -4,15 +4,28 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package tui
 
 import (
+	"time"
+
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/shell"
 )
+
+// OperationLog represents a single operation in the history
+type OperationLog struct {
+	Timestamp time.Time
+	Operation string // "add", "delete", etc.
+	Target    string // branch name, worktree name, etc.
+	Command   string // full command or details
+	Status    string // "success", "error"
+	Message   string // result or error message
+}
 
 // Model represents the TUI model
 type Model struct {
@@ -35,7 +48,12 @@ type Model struct {
 	addInput           textinput.Model
 	isAdding           bool
 	addingBranchName   string
+	addingCommand      string
 	addError           string
+	// Log viewer state
+	logsFocused        bool
+	logsViewport       viewport.Model
+	operationLogs      []OperationLog
 	// Dependencies
 	git       adapters.GitAdapter
 	zoxide    adapters.Zoxide
@@ -61,19 +79,26 @@ func NewModel(
 	ti.CharLimit = 156
 	ti.Width = 80
 
+	// Initialize viewport for logs
+	vp := viewport.New(80, 10)
+	vp.SetContent("No operations logged yet.")
+
 	return Model{
-		table:        table,
-		showPopup:    false,
-		spinner:      spinner,
-		isDeleting:   false,
-		showAddInput: false,
-		addInput:     ti,
-		isAdding:     false,
-		theme:        DefaultTheme(),
-		git:          git,
-		zoxide:       zoxide,
-		connector:    conn,
-		shell:        shell,
-		appConfig:    appConfig,
+		table:         table,
+		showPopup:     false,
+		spinner:       spinner,
+		isDeleting:    false,
+		showAddInput:  false,
+		addInput:      ti,
+		isAdding:      false,
+		logsFocused:   false,
+		logsViewport:  vp,
+		operationLogs: []OperationLog{},
+		theme:         DefaultTheme(),
+		git:           git,
+		zoxide:        zoxide,
+		connector:     conn,
+		shell:         shell,
+		appConfig:     appConfig,
 	}
 }

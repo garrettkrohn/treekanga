@@ -11,26 +11,30 @@ import (
 
 // View renders the TUI based on the current model state
 func (m Model) View() string {
-	// Render the base view (table + help text)
-	baseView := m.baseTableStyle().Render(m.table.View()) + "\n" + helpText(m) + "\n"
+	// If terminal size not set yet, return empty
+	if m.termWidth == 0 || m.termHeight == 0 {
+		return ""
+	}
 
-	// Show spinner popup if adding
+	// Show spinner popup if adding (no logs in background)
 	if m.isAdding {
-		return m.renderAddSpinnerPopup(baseView)
+		return m.renderAddSpinnerPopup()
 	}
 
 	// Show add input prompt
 	if m.showAddInput {
+		baseView := m.renderSplitView()
 		return m.renderAddInputPopup(baseView)
 	}
 
-	// Show spinner popup if deleting
+	// Show spinner popup if deleting (no logs in background)
 	if m.isDeleting {
-		return m.renderSpinnerPopup(baseView)
+		return m.renderSpinnerPopup()
 	}
 
 	// Show delete confirmation dialog
 	if m.showDeleteConfirm {
+		baseView := m.renderSplitView()
 		return m.renderConfirmPopup(baseView)
 	}
 
@@ -39,11 +43,58 @@ func (m Model) View() string {
 		return m.renderModalPopup()
 	}
 
-	return baseView
+	// Render the split view with table and logs
+	return m.renderSplitView()
+}
+
+// renderSplitView renders the main view with table on top and logs on bottom
+func (m Model) renderSplitView() string {
+	// Render table
+	tableView := m.baseTableStyle().Render(m.table.View())
+
+	// Render logs pane
+	logsView := m.renderLogsPane()
+
+	// Combine vertically
+	splitView := lipgloss.JoinVertical(
+		lipgloss.Left,
+		tableView,
+		logsView,
+	)
+
+	// Add help text at the bottom
+	return splitView + "\n" + helpText(m) + "\n"
+}
+
+// renderLogsPane renders the logs section as a pane
+func (m Model) renderLogsPane() string {
+	// Style for the logs header
+	headerStyle := lipgloss.NewStyle().
+		Foreground(m.theme.Accent).
+		Bold(true).
+		Padding(0, 1)
+
+	// Different border color if focused
+	borderColor := m.theme.BorderDim
+	if m.logsFocused {
+		borderColor = m.theme.Accent
+	}
+
+	header := headerStyle.Render("Operation Logs")
+
+	// Style for the logs viewport container
+	logsStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Padding(0, 1).
+		Width(m.termWidth - 2).
+		Height(m.logsViewport.Height + 2)
+
+	return logsStyle.Render(header + "\n" + m.logsViewport.View())
 }
 
 // renderSpinnerPopup shows a small centered popup with spinner
-func (m Model) renderSpinnerPopup(background string) string {
+func (m Model) renderSpinnerPopup() string {
 	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
 	messageStyle := lipgloss.NewStyle().Foreground(m.theme.TextFg)
 
@@ -59,12 +110,15 @@ func (m Model) renderSpinnerPopup(background string) string {
 
 	popup := popupStyle.Render(content)
 
+	// Place popup and fill whitespace with spaces
 	return lipgloss.Place(
 		m.termWidth,
 		m.termHeight,
 		lipgloss.Center,
 		lipgloss.Center,
 		popup,
+		lipgloss.WithWhitespaceChars(" "),
+		lipgloss.WithWhitespaceForeground(lipgloss.NoColor{}),
 	)
 }
 
@@ -229,7 +283,7 @@ func (m Model) renderAddInputPopup(background string) string {
 }
 
 // renderAddSpinnerPopup shows a spinner while adding worktree
-func (m Model) renderAddSpinnerPopup(background string) string {
+func (m Model) renderAddSpinnerPopup() string {
 	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
 	messageStyle := lipgloss.NewStyle().Foreground(m.theme.TextFg)
 
@@ -245,12 +299,15 @@ func (m Model) renderAddSpinnerPopup(background string) string {
 
 	popup := popupStyle.Render(content)
 
+	// Place popup and fill whitespace with spaces
 	return lipgloss.Place(
 		m.termWidth,
 		m.termHeight,
 		lipgloss.Center,
 		lipgloss.Center,
 		popup,
+		lipgloss.WithWhitespaceChars(" "),
+		lipgloss.WithWhitespaceForeground(lipgloss.NoColor{}),
 	)
 }
 
@@ -260,14 +317,27 @@ func helpText(m Model) string {
 		Foreground(m.theme.TextFg).
 		Padding(0, 1)
 
-	hints := []string{
-		m.renderKeyHint("↑/↓", "Navigate"),
-		m.renderKeyHint("a", "Add"),
-		m.renderKeyHint("o", "Open"),
-		m.renderKeyHint("d", "Delete"),
-		m.renderKeyHint("D", "Delete+Branch"),
-		m.renderKeyHint("enter", "Select"),
-		m.renderKeyHint("q", "Quit"),
+	var hints []string
+	if m.logsFocused {
+		// Show log navigation hints when logs are focused
+		hints = []string{
+			m.renderKeyHint("j/k", "Scroll"),
+			m.renderKeyHint("d/u", "Half page"),
+			m.renderKeyHint("g/G", "Top/Bottom"),
+			m.renderKeyHint("h", "Focus table"),
+			m.renderKeyHint("q", "Quit"),
+		}
+	} else {
+		// Show table navigation hints when table is focused
+		hints = []string{
+			m.renderKeyHint("↑/↓", "Navigate"),
+			m.renderKeyHint("a", "Add"),
+			m.renderKeyHint("o", "Open"),
+			m.renderKeyHint("d", "Delete"),
+			m.renderKeyHint("D", "Delete+Branch"),
+			m.renderKeyHint("l", "Focus logs"),
+			m.renderKeyHint("q", "Quit"),
+		}
 	}
 
 	footerContent := "  " + lipgloss.JoinHorizontal(lipgloss.Left, hints...)

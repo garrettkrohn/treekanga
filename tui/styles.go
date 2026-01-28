@@ -7,8 +7,15 @@ import "github.com/charmbracelet/lipgloss"
 
 // baseTableStyle returns the base style for the table
 func (m Model) baseTableStyle() lipgloss.Style {
+	// Change border color based on focus
+	borderColor := m.theme.BorderDim
+	if !m.logsFocused {
+		borderColor = m.theme.Accent
+	}
+	
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
-		Padding(0, 1)
+		BorderForeground(borderColor).
+		Padding(0, 1).
+		Width(m.termWidth - 2)
 }

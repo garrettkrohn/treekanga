@@ -4,6 +4,8 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 package tui
 
 import (
+	"bytes"
+	"os"
 	"strings"
 	"time"
 
@@ -29,10 +31,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.termWidth = msg.Width
 		m.termHeight = msg.Height
-		m.table.SetHeight(msg.Height - 4) // Leave room for borders/padding
+
+		// Split the screen: 60% for table, 40% for logs
+		tableHeight := (msg.Height * 6) / 10
+		logsHeight := msg.Height - tableHeight - 8 // Account for borders and help text
+
+		if logsHeight < 5 {
+			logsHeight = 5
+		}
+
+		m.table.SetHeight(tableHeight)
+		m.logsViewport.Width = msg.Width - 6 // Account for borders and padding
+		m.logsViewport.Height = logsHeight
+
 		return m, nil
 	case deleteCompleteMsg:
 		m.isDeleting = false
+		// Log the success
+		m.addOperationLog(OperationLog{
+			Timestamp: time.Now(),
+			Operation: "delete",
+			Target:    msg.worktreeName,
+			Command:   msg.worktreeName,
+			Status:    "success",
+			Message:   msg.output,
+		})
 		// Rebuild the table with updated data
 		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
 		if err != nil {
@@ -47,14 +70,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pendingDeletePath = msg.worktreePath
 		m.pendingDeleteName = msg.worktreeName
 		m.pendingBranchName = msg.branchName
+		// Log the error (will be updated if force delete succeeds)
+		m.addOperationLog(OperationLog{
+			Timestamp: time.Now(),
+			Operation: "delete",
+			Target:    msg.worktreeName,
+			Command:   msg.worktreeName,
+			Status:    "error",
+			Message:   msg.output,
+		})
 		return m, nil
 	case addCompleteMsg:
 		m.isAdding = false
 		if msg.err != nil {
 			m.addError = msg.err.Error()
 			m.showAddInput = true
+			// Log the error
+			m.addOperationLog(OperationLog{
+				Timestamp: time.Now(),
+				Operation: "add",
+				Target:    msg.branchName,
+				Command:   m.addingCommand,
+				Status:    "error",
+				Message:   msg.output,
+			})
 			return m, nil
 		}
+		// Log the success
+		m.addOperationLog(OperationLog{
+			Timestamp: time.Now(),
+			Operation: "add",
+			Target:    msg.branchName,
+			Command:   m.addingCommand,
+			Status:    "success",
+			Message:   msg.output,
+		})
 		// Rebuild the table with updated data
 		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
 		if err != nil {
@@ -66,6 +116,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.isAdding = false
 		m.addError = msg.err.Error()
 		m.showAddInput = true
+		// Log the error
+		m.addOperationLog(OperationLog{
+			Timestamp: time.Now(),
+			Operation: "add",
+			Target:    msg.branchName,
+			Command:   m.addingCommand,
+			Status:    "error",
+			Message:   msg.output,
+		})
 		return m, nil
 	}
 
@@ -83,6 +142,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.showAddInput = false
 				m.isAdding = true
 				m.addingBranchName = parseFirstArg(input)
+				m.addingCommand = input
 				m.addError = ""
 				m.addInput.SetValue("") // Clear input for next time
 				return m, tea.Batch(m.performAdd(input), m.spinner.Tick)
@@ -147,9 +207,54 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	// Normal table handling
+	// Handle focus switching and navigation
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		switch msg.String() {
+		case "h":
+			// Focus table (up/left)
+			if m.logsFocused {
+				m.logsFocused = false
+				m.table.Focus()
+				return m, nil
+			}
+		case "l":
+			// Focus logs (down/right)
+			if !m.logsFocused {
+				m.logsFocused = true
+				m.table.Blur()
+				return m, nil
+			}
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		}
+
+		// If logs are focused, handle log navigation
+		if m.logsFocused {
+			switch msg.String() {
+			case "j", "down":
+				m.logsViewport.LineDown(1)
+				return m, nil
+			case "k", "up":
+				m.logsViewport.LineUp(1)
+				return m, nil
+			case "d", "ctrl+d":
+				m.logsViewport.HalfViewDown()
+				return m, nil
+			case "u", "ctrl+u":
+				m.logsViewport.HalfViewUp()
+				return m, nil
+			case "g":
+				m.logsViewport.GotoTop()
+				return m, nil
+			case "G":
+				m.logsViewport.GotoBottom()
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// Table is focused - handle table operations
 		switch msg.String() {
 		case "esc":
 			if m.table.Focused() {
@@ -157,8 +262,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.table.Focus()
 			}
-		case "q", "ctrl+c":
-			return m, tea.Quit
 		case "a":
 			// Show add input prompt
 			m.showAddInput = true
@@ -235,6 +338,10 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 		startTime := time.Now()
 		minDisplayTime := 1 * time.Second
 
+		// Capture log output - write ONLY to buffer, not to stderr
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+
 		log.Debug("Removing worktree", "fullPath", worktreePath, "force", force)
 
 		var err error
@@ -245,12 +352,20 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 		}
 
 		if err != nil {
+			log.SetOutput(os.Stderr)
+			output := logBuffer.String()
 			// Ensure spinner shows for at least minDisplayTime before showing error
 			elapsed := time.Since(startTime)
 			if elapsed < minDisplayTime {
 				time.Sleep(minDisplayTime - elapsed)
 			}
-			return deleteErrorMsg{err: err, worktreePath: worktreePath, worktreeName: worktreeName, branchName: branchName}
+			return deleteErrorMsg{
+				err:          err,
+				worktreePath: worktreePath,
+				worktreeName: worktreeName,
+				branchName:   branchName,
+				output:       output,
+			}
 		}
 
 		_ = m.zoxide.RemovePath(worktreePath)
@@ -269,13 +384,21 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 			}
 		}
 
+		// Restore stderr as log output
+		log.SetOutput(os.Stderr)
+		output := logBuffer.String()
+
 		// Ensure spinner shows for at least minDisplayTime
 		elapsed := time.Since(startTime)
 		if elapsed < minDisplayTime {
 			time.Sleep(minDisplayTime - elapsed)
 		}
 
-		return deleteCompleteMsg{err: nil, worktreeName: worktreeName}
+		return deleteCompleteMsg{
+			err:          nil,
+			worktreeName: worktreeName,
+			output:       output,
+		}
 	}
 }
 
@@ -289,11 +412,11 @@ func (m Model) performAdd(input string) tea.Cmd {
 		// Parse the input string into args and flags
 		args, cfg, err := parseAddCommand(input, m.appConfig)
 		if err != nil {
-			return addErrorMsg{err: err, branchName: parseFirstArg(input)}
+			return addCompleteMsg{err: err, branchName: parseFirstArg(input)}
 		}
 
 		if len(args) == 0 {
-			return addErrorMsg{err: nil, branchName: ""}
+			return addCompleteMsg{err: nil, branchName: ""}
 		}
 
 		log.Debug("Adding worktree", "input", input, "branch", args[0])
@@ -301,15 +424,27 @@ func (m Model) performAdd(input string) tea.Cmd {
 		// Configure the add service
 		cfg = services.SetConfigForAddService(m.git, cfg, args)
 
+		// Capture log output - write ONLY to buffer, not to stderr
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+
 		// Call the add service with panic recovery
+		var addErr error
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
 					log.Error("Panic during add worktree", "error", r)
+					addErr = err
 				}
 			}()
 			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
 		}()
+
+		// Restore stderr as log output
+		log.SetOutput(os.Stderr)
+
+		// Capture the output
+		output := logBuffer.String()
 
 		log.Debug("Worktree added successfully")
 
@@ -319,7 +454,11 @@ func (m Model) performAdd(input string) tea.Cmd {
 			time.Sleep(minDisplayTime - elapsed)
 		}
 
-		return addCompleteMsg{err: nil, branchName: cfg.NewBranchName}
+		return addCompleteMsg{
+			err:        addErr,
+			branchName: cfg.NewBranchName,
+			output:     output,
+		}
 	}
 }
 
@@ -403,4 +542,66 @@ func parseAddCommand(input string, baseConfig config.AppConfig) ([]string, confi
 
 	args = []string{branchName}
 	return args, cfg, nil
+}
+
+// addOperationLog adds a log entry to the operation history (max 100 entries)
+func (m *Model) addOperationLog(log OperationLog) {
+	m.operationLogs = append(m.operationLogs, log)
+	// Keep only the last 100 logs
+	if len(m.operationLogs) > 100 {
+		m.operationLogs = m.operationLogs[1:]
+	}
+	// Update the viewport content
+	m.updateLogsViewport()
+}
+
+// updateLogsViewport updates the viewport content with current logs
+func (m *Model) updateLogsViewport() {
+	if len(m.operationLogs) == 0 {
+		m.logsViewport.SetContent("No operations logged yet.")
+		return
+	}
+
+	var content strings.Builder
+
+	// Show logs in reverse order (most recent first)
+	for i := len(m.operationLogs) - 1; i >= 0; i-- {
+		log := m.operationLogs[i]
+
+		// Status indicator
+		statusIcon := "✓"
+		if log.Status == "error" {
+			statusIcon = "✗"
+		}
+
+		// Format timestamp
+		timestamp := log.Timestamp.Format("15:04:05")
+
+		// Build command line: timestamp + status + treekanga operation [command or target]
+		commandLine := timestamp + " " + statusIcon + " treekanga " + log.Operation
+
+		// Use command if available (includes flags), otherwise use target
+		if log.Command != "" {
+			commandLine += " " + log.Command
+		} else if log.Target != "" {
+			commandLine += " " + log.Target
+		}
+
+		content.WriteString(commandLine)
+		content.WriteString("\n")
+
+		// Output section
+		if log.Message != "" {
+			cleanMsg := strings.TrimSpace(log.Message)
+			if cleanMsg != "" {
+				content.WriteString(cleanMsg)
+				content.WriteString("\n")
+			}
+		}
+
+		// Separator between entries
+		content.WriteString("\n")
+	}
+
+	m.logsViewport.SetContent(content.String())
 }

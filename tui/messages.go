@@ -7,6 +7,7 @@ package tui
 type deleteCompleteMsg struct {
 	err          error
 	worktreeName string
+	output       string
 }
 
 // deleteErrorMsg is sent when deletion fails
@@ -15,18 +16,21 @@ type deleteErrorMsg struct {
 	worktreePath string
 	worktreeName string
 	branchName   string
+	output       string
 }
 
 // addCompleteMsg is sent when add worktree is complete
 type addCompleteMsg struct {
 	err        error
 	branchName string
+	output     string
 }
 
 // addErrorMsg is sent when add worktree fails
 type addErrorMsg struct {
 	err        error
 	branchName string
+	output     string
 }
 
 // popupItem represents an item in the popup list

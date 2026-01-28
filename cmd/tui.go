@@ -25,10 +25,12 @@ var tuiCmd = &cobra.Command{
 
     The TUI provides:
     - Interactive table view of all worktrees
+    - Real-time operation logs in the bottom pane
     - Add worktrees with the 'a' key
     - Delete worktrees with the 'd' key
     - Connect to worktrees with the 'o' key
-    - Navigate with arrow keys
+    - Switch focus between panes with 'h' (table) and 'l' (logs)
+    - Navigate with arrow keys or j/k (vim-style)
     - Press 'q' to quit`,
 	Run: func(cmd *cobra.Command, args []string) {
 		columns := []table.Column{
@@ -69,7 +71,7 @@ var tuiCmd = &cobra.Command{
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
 		m := tui.NewModel(t, sp, deps.Git, deps.Zoxide, deps.Connector, deps.Shell, deps.AppConfig)
-		p := tea.NewProgram(m, tea.WithAltScreen())
+		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)
 			os.Exit(1)
