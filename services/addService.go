@@ -18,7 +18,7 @@ import (
 )
 
 func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
-	log.Info("Running configuration for add command")
+	log.Debug("Running configuration for add command")
 
 	if len(args) == 1 {
 		cfg.NewBranchName = strings.TrimSpace(args[0])

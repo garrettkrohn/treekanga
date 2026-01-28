@@ -96,7 +96,7 @@ func (m Model) renderLogsPane() string {
 // renderSpinnerPopup shows a small centered popup with spinner
 func (m Model) renderSpinnerPopup() string {
 	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
-	messageStyle := lipgloss.NewStyle().Foreground(m.theme.TextFg)
+	messageStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff"))
 
 	content := fmt.Sprintf("\n  %s  %s\n",
 		spinnerStyle.Render(m.spinner.View()),
@@ -188,9 +188,9 @@ func (m Model) renderModalPopup() string {
 
 	// Create the popup content area
 	popupStyle := lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder()).
+		Border(lipgloss.RoundedBorder()).
 		BorderForeground(m.theme.Accent).
-		Padding(1, 2).
+		Padding(0, 1).
 		Width(popupWidth - (marginSize * 2)).
 		Height(popupHeight - (marginSize * 2))
 

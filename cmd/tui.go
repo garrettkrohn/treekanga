@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	charmbraceletLog "github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/tui"
 	"github.com/garrettkrohn/treekanga/utility"
 )
@@ -40,8 +41,15 @@ var tuiCmd = &cobra.Command{
 			{Title: "CommitHash", Width: 25},
 		}
 
+		// Temporarily suppress logs during initial load to keep display clean
+		originalLevel := charmbraceletLog.GetLevel()
+		charmbraceletLog.SetLevel(charmbraceletLog.FatalLevel)
+		
 		rows, err := tui.BuildWorktreeTableRows(deps.Git, deps.AppConfig)
 		utility.CheckError(err)
+		
+		// Restore log level for operation logging
+		charmbraceletLog.SetLevel(originalLevel)
 
 		t := table.New(
 			table.WithColumns(columns),
