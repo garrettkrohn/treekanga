@@ -149,6 +149,12 @@ Clone a repository as a bare worktree:
 treekanga clone https://www.github.com/example/example
 ```
 
+### TUI (In Beta)
+
+```bash
+treekanga tui
+```
+
 ## Logging
 
 Control log verbosity:
