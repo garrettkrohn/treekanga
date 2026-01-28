@@ -130,7 +130,7 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 		selectedBranch := handleFromForm(*form, branchStrings)
 		cfg.BaseBranch = selectedBranch
 		log.Debug(fmt.Sprintf("Set BaseBranch = %s from form selection", selectedBranch))
-		
+
 		// Update the BaseBranchExistsLocally flag after selection
 		t := transformer.NewTransformer()
 		localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
@@ -189,7 +189,7 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 	if cfg.RunPostScript {
 		log.Info("Runnning post script")
 		script := cfg.PostScriptPath
-		shell.CmdWithDir(cfg.WorktreeTargetDir, "sh", "-c", script)
+		shell.CmdWithDir(newRootDirectory, "sh", "-c", script)
 		log.Info("post script run", "command", script)
 	}
 }
