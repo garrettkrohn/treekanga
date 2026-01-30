@@ -44,10 +44,10 @@ var tuiCmd = &cobra.Command{
 		// Temporarily suppress logs during initial load to keep display clean
 		originalLevel := charmbraceletLog.GetLevel()
 		charmbraceletLog.SetLevel(charmbraceletLog.FatalLevel)
-		
+
 		rows, err := tui.BuildWorktreeTableRows(deps.Git, deps.AppConfig)
 		utility.CheckError(err)
-		
+
 		// Restore log level for operation logging
 		charmbraceletLog.SetLevel(originalLevel)
 
@@ -58,8 +58,8 @@ var tuiCmd = &cobra.Command{
 			table.WithHeight(25),
 		)
 
-		// Apply Catppuccin theme colours to table
-		theme := tui.Catppuccin()
+		// Apply theme colours to table
+		theme := deps.AppConfig.Theme
 		s := table.DefaultStyles()
 		s.Header = s.Header.
 			BorderStyle(lipgloss.RoundedBorder()).
