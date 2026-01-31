@@ -46,6 +46,7 @@ repos:
       - backEnd/application/src/main/resources/db/migration
     postScript: ~/dotfiles/scripts/test_script.sh
     autoRunPostScript: false
+    tuiTheme: catppuccin-mocha
   
   treekanga:
     bareRepoName: treekanga_bare
@@ -153,6 +154,32 @@ treekanga clone https://www.github.com/example/example
 
 ```bash
 treekanga tui
+```
+
+### TUI Available Themes
+```bash
+"dracula"
+"dracula-light"
+"narna"
+"clean-light"
+"solarized-dark"
+"solarized-light"
+"gruvbox-dark"
+"gruvbox-light"
+"nord"
+"monokai"
+"catppuccin-mocha"
+"catppuccin-latte"
+"rose-pine-dawn"
+"one-light"
+"everforest-light"
+"everforest-dark"
+"modern"
+"tokyo-night"
+"one-dark"
+"rose-pine"
+"ayu-mirage"
+"kanagawa"         
 ```
 
 ## Logging
