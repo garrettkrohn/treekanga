@@ -14,6 +14,7 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 )
 
@@ -42,28 +43,32 @@ type Model struct {
 	pendingDeletePath  string
 	pendingDeleteName  string
 	pendingBranchName  string
-	theme              *Theme
 	// Add command state
-	showAddInput         bool
-	addInput             textinput.Model
-	isAdding             bool
-	addingBranchName     string
-	addingCommand        string
-	addError             string
-	showBranchSelection  bool
-	pendingAddInput      string
-	pendingAddArgs       []string
-	pendingAddConfig     config.AppConfig
+	showAddInput        bool
+	addInput            textinput.Model
+	isAdding            bool
+	addingBranchName    string
+	addingCommand       string
+	addError            string
+	showBranchSelection bool
+	pendingAddInput     string
+	pendingAddArgs      []string
+	pendingAddConfig    config.AppConfig
 	// Log viewer state
-	logsFocused        bool
-	logsViewport       viewport.Model
-	operationLogs      []OperationLog
+	logsFocused   bool
+	logsViewport  viewport.Model
+	operationLogs []OperationLog
 	// Dependencies
 	git       adapters.GitAdapter
 	zoxide    adapters.Zoxide
 	connector connector.Connector
 	shell     shell.Shell
 	appConfig config.AppConfig
+}
+
+// theme returns the theme from the app config
+func (m Model) theme() *models.Theme {
+	return m.appConfig.Theme
 }
 
 // NewModel creates a new TUI model with the given dependencies
@@ -99,7 +104,6 @@ func NewModel(
 		logsFocused:         false,
 		logsViewport:        vp,
 		operationLogs:       []OperationLog{},
-		theme:               DefaultTheme(),
 		git:                 git,
 		zoxide:              zoxide,
 		connector:           conn,

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/spf13/viper"
 )
 
@@ -21,6 +22,7 @@ type AppConfig struct {
 	PostScriptPath             string   // path to the post script to be run
 	RunPostScript              bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
+	Theme                      *models.Theme
 
 	// DELETE COMMAND
 	FilterOnlyStaleBranches bool // only show branches that don't exist on remote
@@ -68,6 +70,7 @@ func (c *ConfigInstance) GetDefaultConfig(bareRepoPath string, projectName strin
 		FilterOnlyStaleBranches:    false,
 		DeleteBranch:               false,
 		ForceDelete:                false,
+		Theme:                      GetTheme("default"),
 	}, nil
 }
 
@@ -165,6 +168,14 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 		if autoRunPostScript {
 			log.Debug("setting autoRunPostScript: true from config")
 			cfg.RunPostScript = autoRunPostScript
+		}
+	}
+
+	if viper.IsSet(viperRepoPrefix + "tuiTheme") {
+		tuiTheme := viper.GetString(viperRepoPrefix + "tuiTheme")
+		if tuiTheme != "" {
+			log.Debug(fmt.Sprintf("setting theme to %s from config", tuiTheme))
+			cfg.Theme = GetTheme(tuiTheme)
 		}
 	}
 

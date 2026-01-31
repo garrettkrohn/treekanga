@@ -90,33 +90,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for i, branch := range msg.branches {
 			items[i] = popupItem{title: branch, desc: ""}
 		}
-		
+
 		delegate := list.NewDefaultDelegate()
 		delegate.SetSpacing(0)
 		delegate.ShowDescription = false
 		delegate.SetHeight(1)
-		
+
 		delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-			Foreground(m.theme.AccentFg).
-			Background(m.theme.Accent).
+			Foreground(m.theme().AccentFg).
+			Background(m.theme().Accent).
 			Bold(true)
 		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
 			Foreground(lipgloss.Color("#ffffff"))
-		
+
 		popupHeight := m.termHeight - 4
 		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
 		m.popupList.Title = "Select base branch for new worktree"
 		m.popupList.SetShowStatusBar(false)
 		m.popupList.SetFilteringEnabled(false)
-		
+
 		m.popupList.Styles.Title = m.popupList.Styles.Title.
-			Foreground(m.theme.Cyan).
+			Foreground(m.theme().Cyan).
 			Bold(true).
 			Padding(0, 1).
 			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(m.theme.BorderDim).
+			BorderForeground(m.theme().BorderDim).
 			BorderBottom(true)
-		
+
 		m.showBranchSelection = true
 		return m, nil
 	case addCompleteMsg:
@@ -184,7 +184,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Set the selected branch in the config
 					m.pendingAddConfig.BaseBranch = item.title
 					log.Debug("Selected base branch from popup", "branch", item.title)
-					
+
 					// Update BaseBranchExistsLocally flag
 					localBranches, err := m.git.GetLocalBranches(&m.pendingAddConfig.BareRepoPath)
 					if err == nil {
@@ -192,7 +192,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						cleanLocalBranches := t.RemoveQuotes(localBranches)
 						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, m.pendingAddConfig.BaseBranch)
 					}
-					
+
 					// Now continue with the add operation
 					m.isAdding = true
 					return m, tea.Batch(m.performAddWithConfig(m.pendingAddArgs, m.pendingAddConfig), m.spinner.Tick)
@@ -216,14 +216,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if input == "" {
 					return m, nil
 				}
-				
+
 				// Parse the command first
 				args, cfg, err := parseAddCommand(input, m.appConfig)
 				if err != nil {
 					m.addError = err.Error()
 					return m, nil
 				}
-				
+
 				// Check if -f flag was used
 				if cfg.UseFormToSetBaseBranch {
 					// Store the pending add operation
@@ -238,7 +238,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Fetch branches and show selection popup
 					return m, m.fetchBranchesForSelection()
 				}
-				
+
 				// No -f flag, proceed normally
 				m.showAddInput = false
 				m.isAdding = true
@@ -394,54 +394,54 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.isDeleting = true
 			m.deletingName = worktreeName
 			return m, tea.Batch(m.performDelete(worktreePath, worktreeName, branchName, false, true), m.spinner.Tick)
-	case "o":
-		selectedRow := m.table.SelectedRow()
-		if len(selectedRow) < 3 {
-			return m, tea.Printf("No worktree selected")
-		}
+		case "o":
+			selectedRow := m.table.SelectedRow()
+			if len(selectedRow) < 3 {
+				return m, tea.Printf("No worktree selected")
+			}
 
-		zoxideEntries, err := services.GetQueryList(m.zoxide, selectedRow[2])
-		utility.CheckError(err)
+			zoxideEntries, err := services.GetQueryList(m.zoxide, selectedRow[2])
+			utility.CheckError(err)
 
-		log.Info(zoxideEntries)
+			log.Info(zoxideEntries)
 
-		// If only one option, connect directly without showing popup
-		if len(zoxideEntries) == 1 {
-			m.connector.SeshConnect(zoxideEntries[0])
-			return m, tea.Quit
-		}
+			// If only one option, connect directly without showing popup
+			if len(zoxideEntries) == 1 {
+				m.connector.SeshConnect(zoxideEntries[0])
+				return m, tea.Quit
+			}
 
-		// Multiple options - show popup for selection
-		items := getPopupItems(zoxideEntries)
-		delegate := list.NewDefaultDelegate()
-		delegate.SetSpacing(0)          // Remove spacing between items
-		delegate.ShowDescription = false // Single line items like table
-		delegate.SetHeight(1)            // Single line height
-		
-		// Apply theme styling to match table
-		delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-			Foreground(m.theme.AccentFg).
-			Background(m.theme.Accent).
-			Bold(true)
-		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
-			Foreground(lipgloss.Color("#ffffff"))
+			// Multiple options - show popup for selection
+			items := getPopupItems(zoxideEntries)
+			delegate := list.NewDefaultDelegate()
+			delegate.SetSpacing(0)           // Remove spacing between items
+			delegate.ShowDescription = false // Single line items like table
+			delegate.SetHeight(1)            // Single line height
 
-		popupHeight := m.termHeight - 4 // Use most of the terminal height
-		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
-		m.popupList.Title = "Select a sesh to connect to"
-		m.popupList.SetShowStatusBar(false) // Hide status bar to match table
-		m.popupList.SetFilteringEnabled(false)
+			// Apply theme styling to match table
+			delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+				Foreground(m.theme().AccentFg).
+				Background(m.theme().Accent).
+				Bold(true)
+			delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
+				Foreground(lipgloss.Color("#ffffff"))
 
-		// Style the list title to match table header
-		m.popupList.Styles.Title = m.popupList.Styles.Title.
-			Foreground(m.theme.Cyan).
-			Bold(true).
-			Padding(0, 1).
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(m.theme.BorderDim).
-			BorderBottom(true)
-		m.showPopup = true
-		return m, nil
+			popupHeight := m.termHeight - 4 // Use most of the terminal height
+			m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
+			m.popupList.Title = "Select a sesh to connect to"
+			m.popupList.SetShowStatusBar(false) // Hide status bar to match table
+			m.popupList.SetFilteringEnabled(false)
+
+			// Style the list title to match table header
+			m.popupList.Styles.Title = m.popupList.Styles.Title.
+				Foreground(m.theme().Cyan).
+				Bold(true).
+				Padding(0, 1).
+				BorderStyle(lipgloss.RoundedBorder()).
+				BorderForeground(m.theme().BorderDim).
+				BorderBottom(true)
+			m.showPopup = true
+			return m, nil
 		case "enter":
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
@@ -556,21 +556,21 @@ func (m Model) performAdd(input string) tea.Cmd {
 		var logBuffer bytes.Buffer
 		log.SetOutput(&logBuffer)
 
-	// Call the add service with panic recovery
-	var addErr error
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Error("Panic during add worktree", "error", r)
-				if err, ok := r.(error); ok {
-					addErr = err
-				} else {
-					addErr = fmt.Errorf("%v", r)
+		// Call the add service with panic recovery
+		var addErr error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("Panic during add worktree", "error", r)
+					if err, ok := r.(error); ok {
+						addErr = err
+					} else {
+						addErr = fmt.Errorf("%v", r)
+					}
 				}
-			}
+			}()
+			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
 		}()
-		services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
-	}()
 
 		// Restore stderr as log output
 		log.SetOutput(os.Stderr)
@@ -776,23 +776,23 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 		var logBuffer bytes.Buffer
 		log.SetOutput(&logBuffer)
 
-	// Call the add service with panic recovery, but skip the form part
-	var addErr error
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Error("Panic during add worktree", "error", r)
-				if err, ok := r.(error); ok {
-					addErr = err
-				} else {
-					addErr = fmt.Errorf("%v", r)
+		// Call the add service with panic recovery, but skip the form part
+		var addErr error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Error("Panic during add worktree", "error", r)
+					if err, ok := r.(error); ok {
+						addErr = err
+					} else {
+						addErr = fmt.Errorf("%v", r)
+					}
 				}
-			}
+			}()
+			// Call AddWorktree but the form won't show since BaseBranch is already set
+			cfg.UseFormToSetBaseBranch = false
+			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
 		}()
-		// Call AddWorktree but the form won't show since BaseBranch is already set
-		cfg.UseFormToSetBaseBranch = false
-		services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
-	}()
 
 		// Restore stderr as log output
 		log.SetOutput(os.Stderr)

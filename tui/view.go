@@ -75,14 +75,14 @@ func (m Model) renderSplitView() string {
 func (m Model) renderLogsPane() string {
 	// Style for the logs header
 	headerStyle := lipgloss.NewStyle().
-		Foreground(m.theme.Accent).
+		Foreground(m.theme().Cyan).
 		Bold(true).
 		Padding(0, 1)
 
 	// Different border color if focused
-	borderColor := m.theme.BorderDim
+	borderColor := m.theme().BorderDim
 	if m.logsFocused {
-		borderColor = m.theme.Accent
+		borderColor = m.theme().Accent
 	}
 
 	header := headerStyle.Render("Operation Logs")
@@ -100,7 +100,7 @@ func (m Model) renderLogsPane() string {
 
 // renderSpinnerPopup shows a small centered popup with spinner
 func (m Model) renderSpinnerPopup() string {
-	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
+	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme().Accent).Bold(true)
 	messageStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff"))
 
 	content := fmt.Sprintf("\n  %s  %s\n",
@@ -109,7 +109,7 @@ func (m Model) renderSpinnerPopup() string {
 
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
+		BorderForeground(m.theme().Accent).
 		Padding(1, 3).
 		Align(lipgloss.Center)
 
@@ -143,7 +143,7 @@ func (m Model) renderConfirmPopup(background string) string {
 		messageStyle.Bold(true).Render(m.pendingDeleteName))
 
 	hintStyle := lipgloss.NewStyle().
-		Foreground(m.theme.MutedFg).
+		Foreground(m.theme().MutedFg).
 		Italic(true).
 		Align(lipgloss.Center)
 
@@ -158,7 +158,7 @@ func (m Model) renderConfirmPopup(background string) string {
 
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.ErrorFg).
+		BorderForeground(m.theme().ErrorFg).
 		Padding(1, 2).
 		Width(popupWidth).
 		Align(lipgloss.Left)
@@ -194,7 +194,7 @@ func (m Model) renderModalPopup() string {
 	// Create the popup content area
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
+		BorderForeground(m.theme().Accent).
 		Padding(0, 1).
 		Width(popupWidth - (marginSize * 2)).
 		Height(popupHeight - (marginSize * 2))
@@ -203,7 +203,7 @@ func (m Model) renderModalPopup() string {
 
 	// Add hint text above popup
 	hintStyle := lipgloss.NewStyle().
-		Foreground(m.theme.MutedFg).
+		Foreground(m.theme().MutedFg).
 		Italic(true).
 		Align(lipgloss.Center)
 
@@ -231,11 +231,11 @@ func (m Model) renderModalPopup() string {
 // renderAddInputPopup shows the add worktree input prompt as a popup
 func (m Model) renderAddInputPopup(background string) string {
 	titleStyle := lipgloss.NewStyle().
-		Foreground(m.theme.Accent).
+		Foreground(m.theme().Accent).
 		Bold(true)
 
 	messageStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextFg)
+		Foreground(m.theme().TextFg)
 
 	title := titleStyle.Render("Add Worktree")
 	prompt := messageStyle.Render("Enter command (e.g., branch_name -p -s client-ui):")
@@ -244,7 +244,7 @@ func (m Model) renderAddInputPopup(background string) string {
 	errorMsg := ""
 	if m.addError != "" {
 		errorStyle := lipgloss.NewStyle().
-			Foreground(m.theme.ErrorFg).
+			Foreground(m.theme().ErrorFg).
 			Bold(true)
 		errorMsg = "\n" + errorStyle.Render("⚠ Error: "+m.addError) + "\n"
 	}
@@ -256,7 +256,7 @@ func (m Model) renderAddInputPopup(background string) string {
 		errorMsg)
 
 	hintStyle := lipgloss.NewStyle().
-		Foreground(m.theme.MutedFg).
+		Foreground(m.theme().MutedFg).
 		Italic(true).
 		Align(lipgloss.Center)
 
@@ -271,7 +271,7 @@ func (m Model) renderAddInputPopup(background string) string {
 
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
+		BorderForeground(m.theme().Accent).
 		Padding(1, 2).
 		Width(popupWidth).
 		Align(lipgloss.Left)
@@ -289,7 +289,7 @@ func (m Model) renderAddInputPopup(background string) string {
 
 // renderAddSpinnerPopup shows a spinner while adding worktree
 func (m Model) renderAddSpinnerPopup() string {
-	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme.Accent).Bold(true)
+	spinnerStyle := lipgloss.NewStyle().Foreground(m.theme().Accent).Bold(true)
 	messageStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#ffffff"))
 
 	content := fmt.Sprintf("\n  %s  %s\n",
@@ -298,7 +298,7 @@ func (m Model) renderAddSpinnerPopup() string {
 
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
+		BorderForeground(m.theme().Accent).
 		Padding(1, 3).
 		Align(lipgloss.Center)
 
@@ -319,7 +319,7 @@ func (m Model) renderAddSpinnerPopup() string {
 // helpText renders the help text with keymaps using styled key hints
 func helpText(m Model) string {
 	footerStyle := lipgloss.NewStyle().
-		Foreground(m.theme.TextFg).
+		Foreground(m.theme().TextFg).
 		Padding(0, 1)
 
 	var hints []string
@@ -352,11 +352,11 @@ func helpText(m Model) string {
 // renderKeyHint renders a single key hint with pill/badge styling
 func (m Model) renderKeyHint(key, label string) string {
 	keyStyle := lipgloss.NewStyle().
-		Foreground(m.theme.AccentFg).
-		Background(m.theme.Accent).
+		Foreground(m.theme().AccentFg).
+		Background(m.theme().Accent).
 		Bold(true).
 		Padding(0, 1)
-	labelStyle := lipgloss.NewStyle().Foreground(m.theme.Accent)
+	labelStyle := lipgloss.NewStyle().Foreground(m.theme().Accent)
 	return fmt.Sprintf("%s %s  ", keyStyle.Render(key), labelStyle.Render(label))
 }
 
@@ -380,7 +380,7 @@ func (m Model) renderBranchSelectionPopup() string {
 	// Create the popup content area
 	popupStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(m.theme.Accent).
+		BorderForeground(m.theme().Accent).
 		Padding(0, 1).
 		Width(popupWidth - (marginSize * 2)).
 		Height(popupHeight - (marginSize * 2))
@@ -389,7 +389,7 @@ func (m Model) renderBranchSelectionPopup() string {
 
 	// Add hint text above popup
 	hintStyle := lipgloss.NewStyle().
-		Foreground(m.theme.MutedFg).
+		Foreground(m.theme().MutedFg).
 		Italic(true).
 		Align(lipgloss.Center)
 
