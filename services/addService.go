@@ -9,8 +9,8 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
-	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/utility"
@@ -109,7 +109,7 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	return selectedBranch
 }
 
-func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
 	if cfg.UseFormToSetBaseBranch {
 		worktrees, err := gitClient.GetWorktrees(&cfg.BareRepoPath)
@@ -166,15 +166,12 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 	//TODO: different place for this?
 	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
 
-	// always add the root, add folders if included
-	log.Info("adding zoxide entries")
-	directoryReader := directoryReader.NewDirectoryReader()
-	zoxidePathsToAdd := CompileZoxidePathsToAdd(cfg.ZoxideFolders, newRootDirectory, directoryReader)
-	zoxide.AddZoxideEntries(zoxidePathsToAdd)
-
 	if cfg.SeshConnect != "" {
-		seshConnectPath := GetSeshPath(cfg.SeshConnect, cfg.ZoxideFolders, newRootDirectory)
-		connector.SeshConnect(seshConnectPath)
+		// Connect to the new worktree using the new Connect method
+		opts := models.ConnectOpts{Switch: false}
+		if err := connector.Connect(newRootDirectory, opts); err != nil {
+			log.Error("Failed to connect to session", "error", err)
+		}
 	}
 
 	if cfg.CursorConnect {

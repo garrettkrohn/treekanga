@@ -21,7 +21,6 @@ func DeleteWorktrees(git adapters.GitAdapter,
 	transformer *transformer.RealTransformer,
 	filter filter.Filter,
 	form form.Form,
-	zoxide adapters.Zoxide,
 	listOfBranchesToDeleteFromArgs []string,
 	cfg config.AppConfig) (int, error) {
 
@@ -70,7 +69,7 @@ func DeleteWorktrees(git adapters.GitAdapter,
 	worktreeFullPaths := getWorktreeFullPaths(selectedWorktreeObj)
 
 	// remove worktrees
-	removeWorktrees(worktreeFullPaths, git, zoxide, cfg.ForceDelete, cfg.BareRepoPath)
+	removeWorktrees(worktreeFullPaths, git, cfg.ForceDelete, cfg.BareRepoPath)
 
 	// delete branches
 	if cfg.DeleteBranch {
@@ -138,7 +137,7 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, zoxide adapters.Zoxide, forceDelete bool, bareRepoPath string) {
+func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, forceDelete bool, bareRepoPath string) {
 	log.Debug("removeWorktrees called", "count", len(worktreePaths))
 
 	// Use the resolved bare repo path if available
@@ -151,7 +150,6 @@ func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, zoxide ada
 	for _, worktreePath := range worktreePaths {
 		log.Debug("Removing worktree", "fullPath", worktreePath)
 		err := git.RemoveWorktree(worktreePath, path, forceDelete)
-		_ = zoxide.RemovePath(worktreePath)
 		util.CheckError(err)
 		log.Debug("Worktree removed successfully")
 	}

@@ -18,7 +18,7 @@ type AppConfig struct {
 	BaseBranch                 string   // default base branch
 	WorktreeTargetDir          string   // this is where the added worktree will be
 	ListDisplayMode            string   // branch or directory
-	ZoxideFolders              []string // list of zoxide folders to be added
+	ZoxideFolders              []string // list of folders to show with --all flag (subdirectories within worktrees)
 	PostScriptPath             string   // path to the post script to be run
 	RunPostScript              bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch

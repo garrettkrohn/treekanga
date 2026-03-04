@@ -206,7 +206,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	deps.Git = realGit
 
 	// Get the list of worktrees
-	worktreeList, err := buildWorktreeStrings(false)
+	worktreeList, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings")
 	assert.Greater(t, len(worktreeList), 0, "Should have at least one worktree in the list")
 
@@ -222,7 +222,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.True(t, foundInList, "Should find test_branch in the worktree list output")
 
 	// Also test verbose mode
-	verboseList, err := buildWorktreeStrings(true)
+	verboseList, err := buildWorktreeStrings(true, false)
 	assert.NoError(t, err, "Should be able to build verbose worktree strings")
 	assert.Greater(t, len(verboseList), 0, "Should have at least one worktree in verbose list")
 
@@ -309,7 +309,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.False(t, foundAfterDelete, "Worktree should not appear in git worktree list after deletion")
 
 	// Verify the list command no longer shows it
-	worktreeListAfterDelete, err := buildWorktreeStrings(false)
+	worktreeListAfterDelete, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings after deletion")
 
 	foundInListAfterDelete := false

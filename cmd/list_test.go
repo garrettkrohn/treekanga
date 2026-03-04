@@ -21,7 +21,7 @@ func TestListCmd(t *testing.T) {
 	deps.Git = mockGit
 
 	// Execute the function
-	worktrees, err := buildWorktreeStrings(false)
+	worktrees, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err)
 
 	// Verify the output
@@ -45,7 +45,7 @@ func TestListCmdWithBranchDisplayMode(t *testing.T) {
 	viper.Set("repos.testRepo.listDisplayMode", "branch")
 
 	// Execute
-	worktrees, err := buildWorktreeStrings(false)
+	worktrees, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err)
 
 	// Verify - should display branch names
@@ -69,7 +69,7 @@ func TestListCmdWithDirectoryDisplayMode(t *testing.T) {
 	viper.Set("repos.testRepo.listDisplayMode", "directory")
 
 	// Execute
-	worktrees, err := buildWorktreeStrings(false)
+	worktrees, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err)
 
 	// Verify - should display directory names
@@ -93,7 +93,7 @@ func TestListCmdWithFolderDisplayMode(t *testing.T) {
 	viper.Set("repos.testRepo.listDisplayMode", "folder")
 
 	// Execute
-	worktrees, err := buildWorktreeStrings(false)
+	worktrees, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err)
 
 	// Verify - should display directory names
@@ -116,7 +116,7 @@ func TestListCmdWithDefaultDisplayMode(t *testing.T) {
 	// Don't set any display mode - should default to branch
 
 	// Execute
-	worktrees, err := buildWorktreeStrings(false)
+	worktrees, err := buildWorktreeStrings(false, false)
 	assert.NoError(t, err)
 
 	// Verify - should default to branch names
@@ -140,7 +140,7 @@ func TestListCmdVerboseOverridesDisplayMode(t *testing.T) {
 	viper.Set("repos.testRepo.listDisplayMode", "directory")
 
 	// Execute with verbose=true
-	worktrees, err := buildWorktreeStrings(true)
+	worktrees, err := buildWorktreeStrings(true, false)
 	assert.NoError(t, err)
 
 	// Verify - verbose should show all details regardless of display mode

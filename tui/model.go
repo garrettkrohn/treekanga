@@ -60,7 +60,6 @@ type Model struct {
 	operationLogs []OperationLog
 	// Dependencies
 	git       adapters.GitAdapter
-	zoxide    adapters.Zoxide
 	connector connector.Connector
 	shell     shell.Shell
 	appConfig config.AppConfig
@@ -76,7 +75,6 @@ func NewModel(
 	table table.Model,
 	spinner spinner.Model,
 	git adapters.GitAdapter,
-	zoxide adapters.Zoxide,
 	conn connector.Connector,
 	shell shell.Shell,
 	appConfig config.AppConfig,
@@ -105,7 +103,6 @@ func NewModel(
 		logsViewport:        vp,
 		operationLogs:       []OperationLog{},
 		git:                 git,
-		zoxide:              zoxide,
 		connector:           conn,
 		shell:               shell,
 		appConfig:           appConfig,

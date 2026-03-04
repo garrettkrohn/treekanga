@@ -18,7 +18,6 @@ import (
 
 type Dependencies struct {
 	Git             adapters.GitAdapter
-	Zoxide          adapters.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
@@ -31,7 +30,6 @@ var (
 )
 
 func NewRootCmd(git adapters.GitAdapter,
-	zoxide adapters.Zoxide,
 	directoryReader directoryReader.DirectoryReader,
 	sesh connector.Connector,
 	shell shell.Shell,
@@ -46,7 +44,6 @@ func NewRootCmd(git adapters.GitAdapter,
 
 			deps = Dependencies{
 				Git:             git,
-				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
 				Connector:       sesh,
 				Shell:           shell,
@@ -87,16 +84,16 @@ func Execute(version string) {
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
 	git := adapters.NewGitAdapter(shell)
-	zoxide := adapters.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader, connector, shell, version)
+	rootCmd := NewRootCmd(git, directoryReader, connector, shell, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(cloneCmd)
 	rootCmd.AddCommand(tuiCmd)
+	rootCmd.AddCommand(connectCmd)
 
 	options := []fang.Option{
 		fang.WithVersion(version),

@@ -16,9 +16,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/transformer"
-	"github.com/garrettkrohn/treekanga/utility"
 )
 
 // Init initializes the model
@@ -400,48 +400,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Printf("No worktree selected")
 			}
 
-			zoxideEntries, err := services.GetQueryList(m.zoxide, selectedRow[2])
-			utility.CheckError(err)
-
-			log.Info(zoxideEntries)
-
-			// If only one option, connect directly without showing popup
-			if len(zoxideEntries) == 1 {
-				m.connector.SeshConnect(zoxideEntries[0])
-				return m, tea.Quit
+			// Connect directly to the worktree path
+			opts := models.ConnectOpts{Switch: false}
+			if err := m.connector.Connect(selectedRow[2], opts); err != nil {
+				log.Error("Failed to connect", "error", err)
+				return m, tea.Printf("Failed to connect: %v", err)
 			}
-
-			// Multiple options - show popup for selection
-			items := getPopupItems(zoxideEntries)
-			delegate := list.NewDefaultDelegate()
-			delegate.SetSpacing(0)           // Remove spacing between items
-			delegate.ShowDescription = false // Single line items like table
-			delegate.SetHeight(1)            // Single line height
-
-			// Apply theme styling to match table
-			delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-				Foreground(m.theme().AccentFg).
-				Background(m.theme().Accent).
-				Bold(true)
-			delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
-				Foreground(lipgloss.Color("#ffffff"))
-
-			popupHeight := m.termHeight - 4 // Use most of the terminal height
-			m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
-			m.popupList.Title = "Select a sesh to connect to"
-			m.popupList.SetShowStatusBar(false) // Hide status bar to match table
-			m.popupList.SetFilteringEnabled(false)
-
-			// Style the list title to match table header
-			m.popupList.Styles.Title = m.popupList.Styles.Title.
-				Foreground(m.theme().Cyan).
-				Bold(true).
-				Padding(0, 1).
-				BorderStyle(lipgloss.RoundedBorder()).
-				BorderForeground(m.theme().BorderDim).
-				BorderBottom(true)
-			m.showPopup = true
-			return m, nil
+			return m, tea.Quit
 		case "enter":
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
@@ -496,7 +461,6 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 			}
 		}
 
-		_ = m.zoxide.RemovePath(worktreePath)
 		log.Debug("Worktree removed successfully")
 
 		if deleteBranch {
@@ -569,7 +533,7 @@ func (m Model) performAdd(input string) tea.Cmd {
 					}
 				}
 			}()
-			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+			services.AddWorktree(m.git, m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output
@@ -791,7 +755,7 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 			}()
 			// Call AddWorktree but the form won't show since BaseBranch is already set
 			cfg.UseFormToSetBaseBranch = false
-			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+			services.AddWorktree(m.git, m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output

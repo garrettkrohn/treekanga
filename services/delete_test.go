@@ -34,8 +34,6 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 			CommitHash: "abcdef12345",
 		},
 	})
-	mockZoxide := adapters.NewMockZoxide(t)
-	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
 
 	var branches []string
 
@@ -46,7 +44,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 	}
 
 	// Act
-	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, mockForm, mockZoxide, branches, cfg)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, mockForm, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -59,8 +57,7 @@ func TestDeleteWorktreesWithoutArgs(t *testing.T) {
 	mockGit.AssertExpectations(t)
 	mockFilter.AssertExpectations(t)
 	mockForm.AssertExpectations(t)
-	mockSpinner.AssertExpectations(t) // Added to ensure spinner expectations are also checked
-	mockZoxide.AssertExpectations(t)
+	mockSpinner.AssertExpectations(t)
 }
 
 func TestDeleteWorktreesWithArgs(t *testing.T) {
@@ -81,9 +78,6 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 
 	mockSpinner := getMockSpinner(t)
 
-	mockZoxide := adapters.NewMockZoxide(t)
-	mockZoxide.On("RemovePath", mock.Anything).Return(nil)
-
 	branches := []string{"development"}
 
 	cfg := config.AppConfig{
@@ -93,7 +87,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	}
 
 	// Act
-	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, nil, mockZoxide, branches, cfg)
+	numOfWorktreesRemoved, err := DeleteWorktrees(mockGit, transformer, mockFilter, nil, branches, cfg)
 
 	// Assert
 	assert.NoError(t, err)
@@ -105,8 +99,7 @@ func TestDeleteWorktreesWithArgs(t *testing.T) {
 	// Ensure all expectations are met
 	mockGit.AssertExpectations(t)
 	mockFilter.AssertExpectations(t)
-	mockSpinner.AssertExpectations(t) // Added to ensure spinner expectations are also checked
-	mockZoxide.AssertExpectations(t)
+	mockSpinner.AssertExpectations(t)
 }
 
 func getMockGit(t *testing.T) *adapters.MockGitAdapter {

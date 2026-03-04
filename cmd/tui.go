@@ -78,7 +78,7 @@ var tuiCmd = &cobra.Command{
 		sp.Spinner = spinner.Dot
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
-		m := tui.NewModel(t, sp, deps.Git, deps.Zoxide, deps.Connector, deps.Shell, deps.AppConfig)
+		m := tui.NewModel(t, sp, deps.Git, deps.Connector, deps.Shell, deps.AppConfig)
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)

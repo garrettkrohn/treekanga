@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 )
@@ -41,12 +42,18 @@ var listCmd = &cobra.Command{
           listDisplayMode: directory
     
     Use the -v/--verbose flag to show all details including both
-    branch names and directory names.`,
+    branch names and directory names.
+    
+    Use the -a/--all flag to show all worktrees plus subdirectories
+    defined in the zoxideFolders configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		verbose, err := cmd.Flags().GetBool("verbose")
 		util.CheckError(err)
 
-		worktrees, err := buildWorktreeStrings(verbose)
+		all, err := cmd.Flags().GetBool("all")
+		util.CheckError(err)
+
+		worktrees, err := buildWorktreeStrings(verbose, all)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -56,7 +63,7 @@ var listCmd = &cobra.Command{
 	},
 }
 
-func buildWorktreeStrings(verbose bool) ([]string, error) {
+func buildWorktreeStrings(verbose bool, all bool) ([]string, error) {
 	var rawWorktrees []string
 	var err error
 
@@ -77,6 +84,13 @@ func buildWorktreeStrings(verbose bool) ([]string, error) {
 
 	// Sort worktrees by most recently modified
 	sortWorktreesByModTime(worktreeObjects)
+
+	// If --all flag is set, expand with zoxide folders
+	if all {
+		log.Debug("Expanding worktrees with zoxide folders", "zoxideFolders", deps.AppConfig.ZoxideFolders)
+		allPaths := services.ExpandWorktreesWithZoxideFolders(worktreeObjects, deps.AppConfig.ZoxideFolders, deps.DirectoryReader)
+		return allPaths, nil
+	}
 
 	// Get the display mode from config (default to "branch" for backward compatibility)
 	displayMode := getListDisplayMode()
@@ -139,4 +153,5 @@ func sortWorktreesByModTime(worktrees []models.Worktree) {
 
 func init() {
 	listCmd.Flags().BoolP("verbose", "v", false, "Verbose display of worktrees")
+	listCmd.Flags().BoolP("all", "a", false, "Show all worktrees plus subdirectories from zoxideFolders config")
 }

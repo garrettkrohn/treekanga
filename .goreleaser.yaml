@@ -61,4 +61,3 @@ brews:
       email: bot@goreleaser.com
     dependencies:
       - tmux
-      - zoxide
