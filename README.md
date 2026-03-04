@@ -11,7 +11,6 @@ Treekanga is a powerful CLI tool for managing Git worktrees with ease. It simpli
 - List all worktrees in a repository
 - Delete worktrees with stale branch filtering and interactive selector
 - Clone repositories as bare worktrees
-- Zoxide integration for quick navigation
 - Simple YAML configuration
 
 ## Installation
@@ -38,12 +37,6 @@ repos:
     # Display mode for the list command: "branch" (default) or "directory"/"folder"
     # "branch" shows branch names, "directory" shows directory names
     listDisplayMode: branch
-    # Folders to register with zoxide for quick navigation
-    zoxideFolders:
-      - frontEnd
-      - frontEnd/* # adds all folders immediately within frontEnd
-      - backEnd
-      - backEnd/application/src/main/resources/db/migration
     postScript: ~/dotfiles/scripts/test_script.sh
     autoRunPostScript: false
     tuiTheme: catppuccin-mocha
@@ -52,9 +45,6 @@ repos:
     bareRepoName: treekanga_bare
     defaultBranch: main
     listDisplayMode: directory
-    zoxideFolders:
-      - cmd
-      - git
 ```
 
 ## Deprecated config options

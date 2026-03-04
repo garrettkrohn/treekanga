@@ -101,7 +101,7 @@ var addCmd = &cobra.Command{
 
 		cfg := services.SetConfigForAddService(deps.Git, deps.AppConfig, args)
 
-		services.AddWorktree(deps.Git, deps.Zoxide, deps.Connector, deps.Shell, cfg)
+		services.AddWorktree(deps.Git, deps.Connector, deps.Shell, cfg)
 	},
 }
 

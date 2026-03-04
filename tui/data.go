@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/adapters"
@@ -45,18 +44,6 @@ func BuildWorktreeTableRows(git adapters.GitAdapter, appConfig config.AppConfig)
 	}
 
 	return worktreeBranches, nil
-}
-
-// getPopupItems returns the list of items to display in the popup
-func getPopupItems(zoxideEntries []string) []list.Item {
-	var returnItems []list.Item
-	for _, item := range zoxideEntries {
-		returnItems = append(returnItems, popupItem{
-			title: item,
-			desc:  "", // add description if needed
-		})
-	}
-	return returnItems
 }
 
 // sortWorktreesByModTime sorts worktrees by modification time (most recent first)

@@ -9,7 +9,6 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
-	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
@@ -109,7 +108,7 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	return selectedBranch
 }
 
-func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
 	if cfg.UseFormToSetBaseBranch {
 		worktrees, err := gitClient.GetWorktrees(&cfg.BareRepoPath)
@@ -163,18 +162,10 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 			"baseBranch", cfg.BaseBranch)
 	}
 
-	//TODO: different place for this?
 	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
 
-	// always add the root, add folders if included
-	log.Info("adding zoxide entries")
-	directoryReader := directoryReader.NewDirectoryReader()
-	zoxidePathsToAdd := CompileZoxidePathsToAdd(cfg.ZoxideFolders, newRootDirectory, directoryReader)
-	zoxide.AddZoxideEntries(zoxidePathsToAdd)
-
 	if cfg.SeshConnect != "" {
-		seshConnectPath := GetSeshPath(cfg.SeshConnect, cfg.ZoxideFolders, newRootDirectory)
-		connector.SeshConnect(seshConnectPath)
+		connector.SeshConnect(newRootDirectory)
 	}
 
 	if cfg.CursorConnect {
@@ -185,7 +176,6 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 		connector.VsCodeConnect(newRootDirectory)
 	}
 
-	//TODO: allow the user to set where this is run?
 	if cfg.RunPostScript {
 		log.Info("Runnning post script")
 		script := cfg.PostScriptPath

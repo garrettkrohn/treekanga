@@ -47,7 +47,6 @@ var deleteCmd = &cobra.Command{
 			transformer.NewTransformer(),
 			filter.NewFilter(),
 			form.NewHuhForm(),
-			deps.Zoxide,
 			args,
 			deps.AppConfig)
 		if err != nil {

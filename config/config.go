@@ -12,16 +12,15 @@ import (
 )
 
 type AppConfig struct {
-	BareRepoPath               string   // path to the bare repo, this is where the git commnand will be run from
-	RepoNameForConfig          string   // this is the git project name, used to find the config
-	ParentDirOfBareRepo        string   // this is an option for configuration to allow the user to have multiple configs for multiple instances of one project
-	BaseBranch                 string   // default base branch
-	WorktreeTargetDir          string   // this is where the added worktree will be
-	ListDisplayMode            string   // branch or directory
-	ZoxideFolders              []string // list of zoxide folders to be added
-	PostScriptPath             string   // path to the post script to be run
-	RunPostScript              bool     // run the post script without the execute flag
-	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
+	BareRepoPath               string // path to the bare repo, this is where the git commnand will be run from
+	RepoNameForConfig          string // this is the git project name, used to find the config
+	ParentDirOfBareRepo        string // this is an option for configuration to allow the user to have multiple configs for multiple instances of one project
+	BaseBranch                 string // default base branch
+	WorktreeTargetDir          string // this is where the added worktree will be
+	ListDisplayMode            string // branch or directory
+	PostScriptPath             string // path to the post script to be run
+	RunPostScript              bool   // run the post script without the execute flag
+	PullBeforeCuttingNewBranch bool   // pull before cutting new branch
 	Theme                      *models.Theme
 
 	// DELETE COMMAND
@@ -63,7 +62,6 @@ func (c *ConfigInstance) GetDefaultConfig(bareRepoPath string, projectName strin
 		BaseBranch:                 "development",
 		WorktreeTargetDir:          "~",
 		ListDisplayMode:            "branch",
-		ZoxideFolders:              []string{},
 		PostScriptPath:             "",
 		RunPostScript:              false,
 		PullBeforeCuttingNewBranch: false,
@@ -147,14 +145,6 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 		}
 	}
 
-	if viper.IsSet(viperRepoPrefix + "zoxideFolders") {
-		zoxideFolders := viper.GetStringSlice(viperRepoPrefix + "zoxideFolders")
-		if len(zoxideFolders) > 0 {
-			log.Debug(fmt.Sprintf("setting zoxideFolders: %s from config", zoxideFolders))
-			cfg.ZoxideFolders = zoxideFolders
-		}
-	}
-
 	if viper.IsSet(viperRepoPrefix + "postScript") {
 		postScript := viper.GetString(viperRepoPrefix + "postScript")
 		if postScript != "" {
@@ -189,7 +179,6 @@ func (cfg *AppConfig) Print() {
 	log.Info(fmt.Sprintf("DefaultBaseBranch: %s", cfg.BaseBranch))
 	log.Info(fmt.Sprintf("WorktreeTargetDir: %s", cfg.WorktreeTargetDir))
 	log.Info(fmt.Sprintf("ListDisplayMode: %s", cfg.ListDisplayMode))
-	log.Info(fmt.Sprintf("ZoxideFolders: %v", cfg.ZoxideFolders))
 	log.Info(fmt.Sprintf("PostScriptPath: %s", cfg.PostScriptPath))
 	log.Info(fmt.Sprintf("AutoRunPostScript: %t", cfg.RunPostScript))
 	log.Info(fmt.Sprintf("PullBeforeCuttingNewBranch: %t", cfg.PullBeforeCuttingNewBranch))
