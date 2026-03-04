@@ -30,7 +30,7 @@ type AppConfig struct {
 	ForceDelete             bool // use --force when deleting
 
 	// ADD COMMAND
-	SeshConnect              string
+	TmuxConnect              string
 	CursorConnect            bool
 	VsCodeConnect            bool
 	NewWorktreeName          string

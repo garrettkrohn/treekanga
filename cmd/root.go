@@ -31,7 +31,7 @@ var (
 
 func NewRootCmd(git adapters.GitAdapter,
 	directoryReader directoryReader.DirectoryReader,
-	sesh connector.Connector,
+	conn connector.Connector,
 	shell shell.Shell,
 	version string) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -45,7 +45,7 @@ func NewRootCmd(git adapters.GitAdapter,
 			deps = Dependencies{
 				Git:             git,
 				DirectoryReader: directoryReader,
-				Connector:       sesh,
+				Connector:       conn,
 				Shell:           shell,
 			}
 

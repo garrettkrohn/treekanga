@@ -85,8 +85,9 @@ treekanga add example_branch -c
 # Open in VS Code after creation
 treekanga add example_branch -v
 
-# Connect to a sesh session after creation
-treekanga add example_branch -s session_name
+# Connect to tmux session at subdirectory (or use '.' for root)
+treekanga add example_branch -t frontend
+treekanga add example_branch -t .
 
 # Specify custom directory for bare repo
 treekanga add example_branch -d /path/to/bare/repo

@@ -33,7 +33,7 @@ var addCmd = &cobra.Command{
     -p, --pull: Pull the base branch before creating new branch
     -c, --cursor: Open the new worktree in Cursor
     -v, --vscode: Open the new worktree in VS Code
-    -s, --sesh: Connect to a sesh session after creation
+    -t, --tmux: Connect to tmux session at subdirectory (or root if '.')
     -d, --directory: Specify the directory to the bare repo`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -51,11 +51,11 @@ var addCmd = &cobra.Command{
 			deps.AppConfig.BaseBranch = baseBranch
 		}
 
-		sesh, err := cmd.Flags().GetString("sesh")
+		tmux, err := cmd.Flags().GetString("tmux")
 		util.CheckError(err)
-		if sesh != "" {
-			log.Debug("set SeshConnect = true from flags")
-			deps.AppConfig.SeshConnect = sesh
+		if tmux != "" {
+			log.Debug(fmt.Sprintf("set TmuxConnect = %s from flags", tmux))
+			deps.AppConfig.TmuxConnect = tmux
 		}
 
 		pull, err := cmd.Flags().GetBool("pull")
@@ -112,7 +112,7 @@ func init() {
 	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
 	addCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
 	addCmd.Flags().BoolP("from", "f", false, "Select base branch from list of branches")
-	addCmd.Flags().StringP("sesh", "s", "", "Automatically connect to a sesh upon creation")
+	addCmd.Flags().StringP("tmux", "t", "", "Connect to tmux session at subdirectory (use '.' for root)")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")
 	addCmd.Flags().StringP("name", "n", "", "Specify a worktree name")

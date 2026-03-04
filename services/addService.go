@@ -166,11 +166,17 @@ func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, s
 	//TODO: different place for this?
 	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
 
-	if cfg.SeshConnect != "" {
-		// Connect to the new worktree using the new Connect method
+	if cfg.TmuxConnect != "" {
+		connectPath := newRootDirectory
+		if cfg.TmuxConnect != "." {
+			connectPath = newRootDirectory + "/" + cfg.TmuxConnect
+		}
 		opts := models.ConnectOpts{Switch: false}
-		if err := connector.Connect(newRootDirectory, opts); err != nil {
-			log.Error("Failed to connect to session", "error", err)
+		if err := connector.Connect(connectPath, opts); err != nil {
+			log.Warn("Subdirectory not found, connecting to root instead", "subdirectory", cfg.TmuxConnect)
+			if err := connector.Connect(newRootDirectory, opts); err != nil {
+				log.Error("Failed to connect to tmux session", "error", err)
+			}
 		}
 	}
 

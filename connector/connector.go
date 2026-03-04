@@ -14,7 +14,6 @@ import (
 
 type Connector interface {
 	Connect(name string, opts models.ConnectOpts) error
-	SeshConnect(seshPath string)
 	VsCodeConnect(newRootPath string)
 	CursorConnect(newRootPath string)
 }
@@ -168,11 +167,6 @@ func (r *RealConnector) connectToTmux(connection models.Connection, opts models.
 	
 	// Switch or attach to the session
 	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
-}
-
-func (r *RealConnector) SeshConnect(seshPath string) {
-	_, err := r.shell.Cmd("sesh", "connect", seshPath)
-	utility.CheckError(err)
 }
 
 func (r *RealConnector) VsCodeConnect(newRootPath string) {

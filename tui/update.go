@@ -296,8 +296,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selected := m.popupList.SelectedItem()
 				if item, ok := selected.(popupItem); ok {
 					m.showPopup = false
-					// Connect to the selected path using sesh
-					m.connector.SeshConnect(item.title)
+					opts := models.ConnectOpts{Switch: false}
+					if err := m.connector.Connect(item.title, opts); err != nil {
+						log.Error("Failed to connect", "error", err)
+						return m, tea.Printf("Failed to connect: %v", err)
+					}
 					return m, tea.Quit
 				}
 				m.showPopup = false
@@ -600,10 +603,9 @@ func parseAddCommand(input string, baseConfig config.AppConfig) ([]string, confi
 				cfg.RunPostScript = true
 			case "-f", "--from":
 				cfg.UseFormToSetBaseBranch = true
-			case "-s", "--sesh":
-				// Next part should be the sesh value
+			case "-t", "--tmux":
 				if i+1 < len(parts) && !strings.HasPrefix(parts[i+1], "-") {
-					cfg.SeshConnect = parts[i+1]
+					cfg.TmuxConnect = parts[i+1]
 					i++
 				}
 			case "-b", "--base":
