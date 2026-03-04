@@ -14,6 +14,7 @@ import (
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 )
@@ -54,6 +55,9 @@ type Model struct {
 	pendingAddInput     string
 	pendingAddArgs      []string
 	pendingAddConfig    config.AppConfig
+	// Folder selection state
+	showFolderSelection bool
+	pendingConnectPath  string
 	// Log viewer state
 	logsFocused   bool
 	logsViewport  viewport.Model
@@ -63,6 +67,7 @@ type Model struct {
 	connector connector.Connector
 	shell     shell.Shell
 	appConfig config.AppConfig
+	dirReader directoryReader.DirectoryReader
 }
 
 // theme returns the theme from the app config
@@ -78,6 +83,7 @@ func NewModel(
 	conn connector.Connector,
 	shell shell.Shell,
 	appConfig config.AppConfig,
+	dirReader directoryReader.DirectoryReader,
 ) Model {
 	// Initialize text input for add command
 	ti := textinput.New()
@@ -99,6 +105,7 @@ func NewModel(
 		addInput:            ti,
 		isAdding:            false,
 		showBranchSelection: false,
+		showFolderSelection: false,
 		logsFocused:         false,
 		logsViewport:        vp,
 		operationLogs:       []OperationLog{},
@@ -106,5 +113,6 @@ func NewModel(
 		connector:           conn,
 		shell:               shell,
 		appConfig:           appConfig,
+		dirReader:           dirReader,
 	}
 }

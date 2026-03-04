@@ -29,7 +29,8 @@ var tuiCmd = &cobra.Command{
     - Real-time operation logs in the bottom pane
     - Add worktrees with the 'a' key
     - Delete worktrees with the 'd' key
-    - Connect to worktrees with the 'o' key
+    - Connect to worktree root with the 'o' key
+    - Connect to worktree folders with the 'O' key (shows zoxideFolders options)
     - Switch focus between panes with 'h' (table) and 'l' (logs)
     - Navigate with arrow keys or j/k (vim-style)
     - Press 'q' to quit`,
@@ -78,7 +79,7 @@ var tuiCmd = &cobra.Command{
 		sp.Spinner = spinner.Dot
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
-		m := tui.NewModel(t, sp, deps.Git, deps.Connector, deps.Shell, deps.AppConfig)
+		m := tui.NewModel(t, sp, deps.Git, deps.Connector, deps.Shell, deps.AppConfig, deps.DirectoryReader)
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)

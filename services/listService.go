@@ -21,7 +21,7 @@ func ExpandWorktreesWithZoxideFolders(worktrees []models.Worktree, zoxideFolders
 
 		// Add subdirectories based on zoxideFolders config
 		for _, folder := range zoxideFolders {
-			expandedPaths := expandZoxideFolder(worktree.FullPath, folder, dirReader)
+			expandedPaths := ExpandZoxideFolder(worktree.FullPath, folder, dirReader)
 			allPaths = append(allPaths, expandedPaths...)
 		}
 	}
@@ -29,8 +29,8 @@ func ExpandWorktreesWithZoxideFolders(worktrees []models.Worktree, zoxideFolders
 	return allPaths
 }
 
-// expandZoxideFolder expands a zoxide folder pattern for a given worktree root
-func expandZoxideFolder(worktreeRoot string, folder string, dirReader directoryReader.DirectoryReader) []string {
+// ExpandZoxideFolder expands a zoxide folder pattern for a given worktree root
+func ExpandZoxideFolder(worktreeRoot string, folder string, dirReader directoryReader.DirectoryReader) []string {
 	var paths []string
 
 	// Check if folder has wildcard

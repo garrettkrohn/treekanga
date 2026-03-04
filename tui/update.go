@@ -119,6 +119,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.showBranchSelection = true
 		return m, nil
+	case folderSelectionReadyMsg:
+		// Show the folder selection popup
+		items := make([]list.Item, len(msg.folders))
+		for i, folder := range msg.folders {
+			items[i] = popupItem{title: folder, desc: ""}
+		}
+
+		delegate := list.NewDefaultDelegate()
+		delegate.SetSpacing(0)
+		delegate.ShowDescription = false
+		delegate.SetHeight(1)
+
+		delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+			Foreground(m.theme().AccentFg).
+			Background(m.theme().Accent).
+			Bold(true)
+		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
+			Foreground(lipgloss.Color("#ffffff"))
+
+		popupHeight := m.termHeight - 4
+		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
+		m.popupList.Title = "Select folder to connect to"
+		m.popupList.SetShowStatusBar(false)
+		m.popupList.SetFilteringEnabled(false)
+
+		m.popupList.Styles.Title = m.popupList.Styles.Title.
+			Foreground(m.theme().Cyan).
+			Bold(true).
+			Padding(0, 1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(m.theme().BorderDim).
+			BorderBottom(true)
+
+		m.showFolderSelection = true
+		return m, nil
 	case addCompleteMsg:
 		m.isAdding = false
 		if msg.err != nil {
@@ -165,6 +200,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		return m, nil
+	}
+
+	// If folder selection popup is showing, handle it first
+	if m.showFolderSelection {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc", "q":
+				m.showFolderSelection = false
+				return m, nil
+			case "enter", "o":
+				// Handle selection from popup
+				selected := m.popupList.SelectedItem()
+				if item, ok := selected.(popupItem); ok {
+					m.showFolderSelection = false
+					opts := models.ConnectOpts{Switch: false}
+					if err := m.connector.Connect(item.title, opts); err != nil {
+						log.Error("Failed to connect", "error", err)
+						return m, tea.Printf("Failed to connect: %v", err)
+					}
+					return m, tea.Quit
+				}
+				m.showFolderSelection = false
+				return m, nil
+			}
+		}
+		m.popupList, cmd = m.popupList.Update(msg)
+		return m, cmd
 	}
 
 	// If branch selection popup is showing, handle it first
@@ -403,13 +466,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Printf("No worktree selected")
 			}
 
-			// Connect directly to the worktree path
+			// Connect directly to the worktree root path
 			opts := models.ConnectOpts{Switch: false}
 			if err := m.connector.Connect(selectedRow[2], opts); err != nil {
 				log.Error("Failed to connect", "error", err)
 				return m, tea.Printf("Failed to connect: %v", err)
 			}
 			return m, tea.Quit
+		case "O":
+			selectedRow := m.table.SelectedRow()
+			if len(selectedRow) < 3 {
+				return m, tea.Printf("No worktree selected")
+			}
+
+			// Store the selected worktree path
+			m.pendingConnectPath = selectedRow[2]
+			
+			// Fetch folder options and show selection popup
+			return m, m.fetchFoldersForSelection()
 		case "enter":
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
@@ -779,5 +853,21 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 			branchName: cfg.NewBranchName,
 			output:     output,
 		}
+	}
+}
+
+// fetchFoldersForSelection builds the list of folder options for the selected worktree
+func (m Model) fetchFoldersForSelection() tea.Cmd {
+	return func() tea.Msg {
+		// Start with the root worktree path
+		folders := []string{m.pendingConnectPath}
+		
+		// Add subdirectories based on zoxideFolders config
+		for _, folder := range m.appConfig.ZoxideFolders {
+			expandedPaths := services.ExpandZoxideFolder(m.pendingConnectPath, folder, m.dirReader)
+			folders = append(folders, expandedPaths...)
+		}
+		
+		return folderSelectionReadyMsg{folders: folders}
 	}
 }
