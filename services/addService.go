@@ -6,18 +6,17 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
-	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
-	util "github.com/garrettkrohn/treekanga/utility"
 )
 
-func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
+func SetConfigForAddService(cfg config.AppConfig, args []string) config.AppConfig {
 	log.Debug("Running configuration for add command")
 
 	if len(args) == 1 {
@@ -32,28 +31,24 @@ func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig,
 		log.Debug(fmt.Sprintf("No worktree name specified in flags, so defaults to new branch name: %s", cfg.NewWorktreeName))
 	}
 
-	t := transformer.NewTransformer()
+	remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
+	utility.CheckError(err)
+	log.Debug("Remote branches", "branches", remoteBranches)
 
-	remoteBranches, err := gitClient.GetRemoteBranches(&cfg.BareRepoPath)
-	util.CheckError(err)
-	cleanRemoteBranches := t.RemoveOriginPrefix(remoteBranches)
-	log.Debug(cleanRemoteBranches)
+	localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
+	utility.CheckError(err)
+	log.Debug("Local branches", "branches", localBranches)
 
-	localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
-	util.CheckError(err)
-	cleanLocalBranches := t.RemoveQuotes(localBranches)
-	log.Debug(cleanLocalBranches)
-
-	cfg.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.NewBranchName)
+	cfg.NewBranchExistsLocally = slices.Contains(localBranches, cfg.NewBranchName)
 	log.Debug(fmt.Sprintf("Setting NewBranchExistsLocally = %t from addService", cfg.NewBranchExistsLocally))
 
-	cfg.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, cfg.NewBranchName)
+	cfg.NewBranchExistsRemotely = slices.Contains(remoteBranches, cfg.NewBranchName)
 	log.Debug(fmt.Sprintf("Setting NewBranchExistsRemotely = %t from addService", cfg.NewBranchExistsRemotely))
 
-	cfg.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.BaseBranch)
+	cfg.BaseBranchExistsLocally = slices.Contains(localBranches, cfg.BaseBranch)
 	log.Debug(fmt.Sprintf("Setting BaseBranchExistsLocally = %t from addService", cfg.BaseBranchExistsLocally))
 
-	cfg.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, cfg.BaseBranch)
+	cfg.BaseBranchExistsRemotely = slices.Contains(remoteBranches, cfg.BaseBranch)
 	log.Debug(fmt.Sprintf("Setting BaseBranchExistsRemotely = %t from addService", cfg.BaseBranchExistsRemotely))
 
 	return cfg
@@ -99,7 +94,7 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	form.SetOptions(worktrees)
 	form.SetTitle("Select base branch for new worktree:")
 	err := form.Run()
-	util.CheckError(err)
+	utility.CheckError(err)
 
 	if selectedBranch == "" {
 		log.Fatal("No branch selected")
@@ -109,15 +104,15 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	return selectedBranch
 }
 
-func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
 	if cfg.UseFormToSetBaseBranch {
-		worktrees, err := gitClient.GetWorktrees(&cfg.BareRepoPath)
+		worktrees, err := git.ListWorktrees(cfg.BareRepoPath)
 		utility.CheckError(err)
 
-		worktreeObjects := transformer.NewTransformer().TransformWorktrees(worktrees)
+		worktreeObjects := util.ParseWorktrees(worktrees)
 
-		SortWorktreesByModTime(worktreeObjects)
+		util.SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
 
@@ -132,11 +127,9 @@ func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, s
 		log.Debug(fmt.Sprintf("Set BaseBranch = %s from form selection", selectedBranch))
 
 		// Update the BaseBranchExistsLocally flag after selection
-		t := transformer.NewTransformer()
-		localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
+		localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
 		utility.CheckError(err)
-		cleanLocalBranches := t.RemoveQuotes(localBranches)
-		cfg.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.BaseBranch)
+		cfg.BaseBranchExistsLocally = slices.Contains(localBranches, cfg.BaseBranch)
 		log.Debug(fmt.Sprintf("Updated BaseBranchExistsLocally = %t after form selection", cfg.BaseBranchExistsLocally))
 	}
 
@@ -152,8 +145,8 @@ func AddWorktree(gitClient adapters.GitAdapter, connector connector.Connector, s
 		NewWorktreeName:            cfg.NewWorktreeName,
 	})
 
-	err := gitClient.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
-	util.CheckError(err)
+	err := git.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
+	utility.CheckError(err)
 
 	if cfg.NewBranchExistsLocally {
 		log.Info("worktree created with existing branch", "branch", cfg.NewBranchName)

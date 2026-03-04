@@ -46,7 +46,7 @@ var tuiCmd = &cobra.Command{
 		originalLevel := charmbraceletLog.GetLevel()
 		charmbraceletLog.SetLevel(charmbraceletLog.FatalLevel)
 
-		rows, err := tui.BuildWorktreeTableRows(deps.Git, deps.AppConfig)
+		rows, err := tui.BuildWorktreeTableRows(deps.AppConfig)
 		utility.CheckError(err)
 
 		// Restore log level for operation logging
@@ -79,7 +79,7 @@ var tuiCmd = &cobra.Command{
 		sp.Spinner = spinner.Dot
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
-		m := tui.NewModel(t, sp, deps.Git, deps.Connector, deps.Shell, deps.AppConfig, deps.DirectoryReader)
+		m := tui.NewModel(t, sp, deps.Connector, deps.Shell, deps.AppConfig, deps.DirectoryReader)
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)

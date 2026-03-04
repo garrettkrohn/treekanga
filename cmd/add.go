@@ -99,9 +99,9 @@ var addCmd = &cobra.Command{
 			deps.AppConfig.UseFormToSetBaseBranch = true
 		}
 
-		cfg := services.SetConfigForAddService(deps.Git, deps.AppConfig, args)
+		cfg := services.SetConfigForAddService(deps.AppConfig, args)
 
-		services.AddWorktree(deps.Git, deps.Connector, deps.Shell, cfg)
+		services.AddWorktree(deps.Connector, deps.Shell, cfg)
 	},
 }
 

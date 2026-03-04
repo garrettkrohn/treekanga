@@ -5,7 +5,6 @@ import (
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
 	"github.com/garrettkrohn/treekanga/services"
-	"github.com/garrettkrohn/treekanga/transformer"
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
 )
@@ -43,8 +42,7 @@ var deleteCmd = &cobra.Command{
 			deps.AppConfig.ForceDelete = true
 		}
 
-		numOfWorktreesRemoved, err := services.DeleteWorktrees(deps.Git,
-			transformer.NewTransformer(),
+		numOfWorktreesRemoved, err := services.DeleteWorktrees(
 			filter.NewFilter(),
 			form.NewHuhForm(),
 			args,

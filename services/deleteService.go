@@ -7,18 +7,16 @@ import (
 	"sort"
 
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/confirmer"
 	"github.com/garrettkrohn/treekanga/filter"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
-	"github.com/garrettkrohn/treekanga/transformer"
-	util "github.com/garrettkrohn/treekanga/utility"
+	"github.com/garrettkrohn/treekanga/utility"
 )
 
-func DeleteWorktrees(git adapters.GitAdapter,
-	transformer *transformer.RealTransformer,
+func DeleteWorktrees(
 	filter filter.Filter,
 	form form.Form,
 	listOfBranchesToDeleteFromArgs []string,
@@ -28,18 +26,21 @@ func DeleteWorktrees(git adapters.GitAdapter,
 	treesToDeleteAreValid := false
 
 	//1. get all worktrees
-	worktrees := getWorktrees(git, transformer, cfg.BareRepoPath)
+	worktrees := getWorktrees(cfg.BareRepoPath)
 
 	//2. filter for only worktrees that don't exist on remote
 	if cfg.FilterOnlyStaleBranches {
-		worktrees = filterLocalBranchesOnly(git, worktrees, transformer, filter, cfg.BareRepoPath)
+		worktrees = filterLocalBranchesOnly(worktrees, filter, cfg.BareRepoPath)
 		if len(worktrees) == 0 {
 			log.Fatal("All local branches exist on remote")
 		}
 	}
 
 	// get names to display
-	stringWorktrees := transformer.TransformWorktreesToBranchNames(worktrees)
+	stringWorktrees := make([]string, len(worktrees))
+	for i, wt := range worktrees {
+		stringWorktrees[i] = wt.BranchName
+	}
 
 	// branches can be provided via args or the form
 	if len(listOfBranchesToDeleteFromArgs) > 0 {
@@ -59,7 +60,7 @@ func DeleteWorktrees(git adapters.GitAdapter,
 		form.SetSelections(&selections)
 		form.SetOptions(stringWorktrees)
 		err := form.Run()
-		util.CheckError(err)
+		utility.CheckError(err)
 	}
 
 	// transform selection back into worktreeObj
@@ -69,12 +70,12 @@ func DeleteWorktrees(git adapters.GitAdapter,
 	worktreeFullPaths := getWorktreeFullPaths(selectedWorktreeObj)
 
 	// remove worktrees
-	removeWorktrees(worktreeFullPaths, git, cfg.ForceDelete, cfg.BareRepoPath)
+	removeWorktrees(worktreeFullPaths, cfg.ForceDelete, cfg.BareRepoPath)
 
 	// delete branches
 	if cfg.DeleteBranch {
 		log.Debug("delete branches flag true")
-		deleteLocalBranches(git, selectedWorktreeObj, cfg.ForceDelete, cfg.BareRepoPath, confirmer.NewConfirmer())
+		deleteLocalBranches(selectedWorktreeObj, cfg.ForceDelete, cfg.BareRepoPath, confirmer.NewConfirmer())
 	}
 
 	return len(selectedWorktreeObj), nil
@@ -90,7 +91,7 @@ func getWorktreeFullPaths(worktrees []models.Worktree) []string {
 
 }
 
-func deleteLocalBranches(git adapters.GitAdapter, selectedWorktreeObj []models.Worktree, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
+func deleteLocalBranches(selectedWorktreeObj []models.Worktree, forceDelete bool, bareRepoPath string, confirmer confirmer.Confirmer) {
 	confirm := false
 
 	confirmationMessage := "Are you sure you want to delete these branches: "
@@ -116,11 +117,8 @@ func deleteLocalBranches(git adapters.GitAdapter, selectedWorktreeObj []models.W
 					return
 				}
 			}
-			log.Debug("Deleting branch ref", "branch", worktreeObj.BranchName, "path", dir)
-			git.DeleteBranchRef(worktreeObj.BranchName, dir)
-
 			log.Debug("Deleting branch", "branch", worktreeObj.BranchName, "path", dir)
-			git.DeleteBranch(worktreeObj.BranchName, dir, forceDelete)
+			git.DeleteBranch(dir, worktreeObj.BranchName, forceDelete)
 		}
 	} else {
 		log.Info("No local branches were deleted")
@@ -137,42 +135,26 @@ func validateAllBranchesToDelete(stringWorktrees []string, listOfBranchesToDelet
 	return true
 }
 
-func removeWorktrees(worktreePaths []string, git adapters.GitAdapter, forceDelete bool, bareRepoPath string) {
+func removeWorktrees(worktreePaths []string, forceDelete bool, bareRepoPath string) {
 	log.Debug("removeWorktrees called", "count", len(worktreePaths))
-
-	// Use the resolved bare repo path if available
-	var path *string
-	if bareRepoPath != "" {
-		path = &bareRepoPath
-		log.Debug("Using bare repo path for removing worktrees", "path", bareRepoPath)
-	}
 
 	for _, worktreePath := range worktreePaths {
 		log.Debug("Removing worktree", "fullPath", worktreePath)
-		err := git.RemoveWorktree(worktreePath, path, forceDelete)
-		util.CheckError(err)
+		err := git.RemoveWorktree(bareRepoPath, worktreePath, forceDelete)
+		utility.CheckError(err)
 		log.Debug("Worktree removed successfully")
 	}
 }
 
-func filterLocalBranchesOnly(git adapters.GitAdapter, worktrees []models.Worktree,
-	transformer *transformer.RealTransformer,
+func filterLocalBranchesOnly(worktrees []models.Worktree,
 	filter filter.Filter,
 	bareRepoPath string) []models.Worktree {
 
 	log.Info("filtering local branches only")
 
-	// Use the resolved bare repo path if available
-	var path *string
-	if bareRepoPath != "" {
-		path = &bareRepoPath
-		log.Debug("Using bare repo path for remote branches", "path", bareRepoPath)
-	}
-
-	branches, err := git.GetRemoteBranches(path)
-	util.CheckError(err)
-	cleanedBranches := transformer.RemoveOriginPrefix(branches)
-	worktrees = filter.GetBranchNoMatchList(cleanedBranches, worktrees)
+	branches, err := git.GetRemoteBranches(bareRepoPath)
+	utility.CheckError(err)
+	worktrees = filter.GetBranchNoMatchList(branches, worktrees)
 	return worktrees
 }
 

@@ -13,10 +13,11 @@ import (
 
 	"github.com/charmbracelet/log"
 
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/services"
-	"github.com/garrettkrohn/treekanga/transformer"
-	util "github.com/garrettkrohn/treekanga/utility"
+	"github.com/garrettkrohn/treekanga/util"
+	utilpkg "github.com/garrettkrohn/treekanga/utility"
 )
 
 type Worktree struct {
@@ -48,10 +49,10 @@ var listCmd = &cobra.Command{
     defined in the zoxideFolders configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		verbose, err := cmd.Flags().GetBool("verbose")
-		util.CheckError(err)
+		utilpkg.CheckError(err)
 
 		all, err := cmd.Flags().GetBool("all")
-		util.CheckError(err)
+		utilpkg.CheckError(err)
 
 		worktrees, err := buildWorktreeStrings(verbose, all)
 		if err != nil {
@@ -64,23 +65,12 @@ var listCmd = &cobra.Command{
 }
 
 func buildWorktreeStrings(verbose bool, all bool) ([]string, error) {
-	var rawWorktrees []string
-	var err error
-
-	if deps.AppConfig.BareRepoPath != "" {
-		log.Debug("Using bare repo path for worktree list", "path", deps.AppConfig.BareRepoPath)
-		rawWorktrees, err = deps.Git.GetWorktrees(&deps.AppConfig.BareRepoPath)
-	} else {
-		log.Debug("No bare repo path set, using current directory")
-		rawWorktrees, err = deps.Git.GetWorktrees(nil)
-	}
-
+	rawWorktrees, err := git.ListWorktrees(deps.AppConfig.BareRepoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	worktreetransformer := transformer.NewTransformer()
-	worktreeObjects := worktreetransformer.TransformWorktrees(rawWorktrees)
+	worktreeObjects := util.ParseWorktrees(rawWorktrees)
 
 	// Sort worktrees by most recently modified
 	sortWorktreesByModTime(worktreeObjects)

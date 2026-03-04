@@ -16,9 +16,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/services"
-	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/util"
 )
 
 // Init initializes the model
@@ -61,7 +62,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
+		rows, err := BuildWorktreeTableRows(m.appConfig)
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
@@ -180,7 +181,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
+		rows, err := BuildWorktreeTableRows(m.appConfig)
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
@@ -249,11 +250,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					log.Debug("Selected base branch from popup", "branch", item.title)
 
 					// Update BaseBranchExistsLocally flag
-					localBranches, err := m.git.GetLocalBranches(&m.pendingAddConfig.BareRepoPath)
+					localBranches, err := git.GetLocalBranches(m.pendingAddConfig.BareRepoPath)
 					if err == nil {
-						t := transformer.NewTransformer()
-						cleanLocalBranches := t.RemoveQuotes(localBranches)
-						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, m.pendingAddConfig.BaseBranch)
+						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(localBranches, m.pendingAddConfig.BaseBranch)
 					}
 
 					// Now continue with the add operation
@@ -514,12 +513,7 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 
 		log.Debug("Removing worktree", "fullPath", worktreePath, "force", force)
 
-		var err error
-		if force {
-			err = m.git.RemoveWorktree(worktreeName, &worktreePath, true)
-		} else {
-			err = m.git.RemoveWorktree(worktreeName, &worktreePath, false)
-		}
+		err := git.RemoveWorktree(m.appConfig.BareRepoPath, worktreePath, force)
 
 		if err != nil {
 			log.SetOutput(os.Stderr)
@@ -542,12 +536,7 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 
 		if deleteBranch {
 			log.Debug("Deleting branch", "branchName", branchName)
-			err = m.git.DeleteBranchRef(branchName, m.appConfig.BareRepoPath)
-			if force {
-				err = m.git.DeleteBranch(branchName, m.appConfig.BareRepoPath, true)
-			} else {
-				err = m.git.DeleteBranch(branchName, m.appConfig.BareRepoPath, false)
-			}
+			err = git.DeleteBranch(m.appConfig.BareRepoPath, branchName, force)
 			if err != nil {
 				log.Warn("Failed to delete branch", "branchName", branchName, "error", err)
 			}
@@ -591,7 +580,7 @@ func (m Model) performAdd(input string) tea.Cmd {
 		log.Debug("Adding worktree", "input", input, "branch", args[0])
 
 		// Configure the add service
-		cfg = services.SetConfigForAddService(m.git, cfg, args)
+		cfg = services.SetConfigForAddService(cfg, args)
 
 		// Capture log output - write ONLY to buffer, not to stderr
 		var logBuffer bytes.Buffer
@@ -610,7 +599,7 @@ func (m Model) performAdd(input string) tea.Cmd {
 					}
 				}
 			}()
-			services.AddWorktree(m.git, m.connector, m.shell, cfg)
+			services.AddWorktree(m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output
@@ -781,15 +770,14 @@ func (m *Model) updateLogsViewport() {
 // fetchBranchesForSelection fetches the list of branches for selection
 func (m Model) fetchBranchesForSelection() tea.Cmd {
 	return func() tea.Msg {
-		worktrees, err := m.git.GetWorktrees(&m.pendingAddConfig.BareRepoPath)
+		worktrees, err := git.ListWorktrees(m.pendingAddConfig.BareRepoPath)
 		if err != nil {
 			log.Error("Failed to fetch worktrees", "error", err)
 			return addErrorMsg{err: err, branchName: m.addingBranchName}
 		}
 
-		t := transformer.NewTransformer()
-		worktreeObjects := t.TransformWorktrees(worktrees)
-		services.SortWorktreesByModTime(worktreeObjects)
+		worktreeObjects := util.ParseWorktrees(worktrees)
+		util.SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
 		for _, wt := range worktreeObjects {
@@ -810,7 +798,7 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 		log.Debug("Adding worktree with selected base branch", "branch", args[0], "baseBranch", cfg.BaseBranch)
 
 		// Configure the add service
-		cfg = services.SetConfigForAddService(m.git, cfg, args)
+		cfg = services.SetConfigForAddService(cfg, args)
 
 		// Capture log output - write ONLY to buffer, not to stderr
 		var logBuffer bytes.Buffer
@@ -831,7 +819,7 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 			}()
 			// Call AddWorktree but the form won't show since BaseBranch is already set
 			cfg.UseFormToSetBaseBranch = false
-			services.AddWorktree(m.git, m.connector, m.shell, cfg)
+			services.AddWorktree(m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output

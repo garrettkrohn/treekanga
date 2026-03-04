@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -21,14 +23,12 @@ type Connector interface {
 type RealConnector struct {
 	shell shell.Shell
 	tmux  adapters.Tmux
-	git   adapters.GitAdapter
 }
 
 func NewConnector(shell shell.Shell) Connector {
 	return &RealConnector{
 		shell: shell,
 		tmux:  adapters.NewTmux(shell),
-		git:   adapters.NewGitAdapter(shell),
 	}
 }
 
@@ -69,34 +69,29 @@ func (r *RealConnector) tmuxStrategy(name string) (models.Connection, error) {
 // worktreeStrategy checks if the name matches a worktree path
 func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error) {
 	// Try to get bare repo path
-	bareRepoPath, err := r.git.GetBareRepoPath()
+	bareRepoPath, err := git.GetBareRepoPath()
 	if err != nil {
 		// Not in a git repo, skip this strategy
 		return models.Connection{Found: false}, nil
 	}
 
-	worktrees, err := r.git.GetWorktrees(&bareRepoPath)
+	worktrees, err := git.ListWorktrees(bareRepoPath)
 	if err != nil {
 		return models.Connection{Found: false}, nil
 	}
 
 	// Parse worktrees and check if name matches any worktree path or name
-	for _, wt := range worktrees {
-		parts := strings.Fields(wt)
-		if len(parts) < 3 {
-			continue
-		}
-		worktreePath := parts[0]
-		
+	worktreeObjects := util.ParseWorktrees(worktrees)
+	for _, wt := range worktreeObjects {
 		// Check if name matches the full path or the directory name
-		if worktreePath == name || filepath.Base(worktreePath) == name {
-			sessionName := r.generateSessionName(worktreePath)
+		if wt.FullPath == name || wt.Folder == name {
+			sessionName := r.generateSessionName(wt.FullPath)
 			return models.Connection{
 				Found: true,
 				New:   true,
 				Session: models.Session{
 					Name: sessionName,
-					Path: worktreePath,
+					Path: wt.FullPath,
 					Src:  "worktree",
 				},
 			}, nil

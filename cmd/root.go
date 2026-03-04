@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/utility"
@@ -17,7 +17,6 @@ import (
 )
 
 type Dependencies struct {
-	Git             adapters.GitAdapter
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
@@ -29,7 +28,7 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git adapters.GitAdapter,
+func NewRootCmd(
 	directoryReader directoryReader.DirectoryReader,
 	conn connector.Connector,
 	shell shell.Shell,
@@ -43,7 +42,6 @@ func NewRootCmd(git adapters.GitAdapter,
 			logger.LoggerInit(logLevel)
 
 			deps = Dependencies{
-				Git:             git,
 				DirectoryReader: directoryReader,
 				Connector:       conn,
 				Shell:           shell,
@@ -83,11 +81,10 @@ func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
-	git := adapters.NewGitAdapter(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, directoryReader, connector, shell, version)
+	rootCmd := NewRootCmd(directoryReader, connector, shell, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)

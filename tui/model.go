@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
@@ -63,7 +62,6 @@ type Model struct {
 	logsViewport  viewport.Model
 	operationLogs []OperationLog
 	// Dependencies
-	git       adapters.GitAdapter
 	connector connector.Connector
 	shell     shell.Shell
 	appConfig config.AppConfig
@@ -79,7 +77,6 @@ func (m Model) theme() *models.Theme {
 func NewModel(
 	table table.Model,
 	spinner spinner.Model,
-	git adapters.GitAdapter,
 	conn connector.Connector,
 	shell shell.Shell,
 	appConfig config.AppConfig,
@@ -109,7 +106,6 @@ func NewModel(
 		logsFocused:         false,
 		logsViewport:        vp,
 		operationLogs:       []OperationLog{},
-		git:                 git,
 		connector:           conn,
 		shell:               shell,
 		appConfig:           appConfig,
