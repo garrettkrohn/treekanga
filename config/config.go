@@ -12,7 +12,8 @@ import (
 )
 
 type AppConfig struct {
-	BareRepoPath               string   // path to the bare repo, this is where the git commnand will be run from
+	BareRepoPath               string // path to the bare repo, this is where the git commnand will be run from
+	AllBareRepoPaths           []string
 	RepoNameForConfig          string   // this is the git project name, used to find the config
 	ParentDirOfBareRepo        string   // this is an option for configuration to allow the user to have multiple configs for multiple instances of one project
 	BaseBranch                 string   // default base branch
@@ -99,10 +100,24 @@ func getRepoConfigPrefix(repoNameForConfig string, parentDirOfBareRepo string) s
 func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) {
 
 	repoconfig := viper.GetStringMap("repos")
+	// log.Debug(repoconfig)
 
 	if repoconfig == nil {
 		log.Fatal("could not find configuration file")
 	}
+
+	for repoName := range repoconfig {
+		log.Debug(repoName)
+		worktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
+		if worktreeTargetDir != "" {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				worktreeTargetDir = filepath.Join(homeDir, strings.TrimPrefix(worktreeTargetDir, "~/"))
+			}
+			cfg.AllBareRepoPaths = append(cfg.AllBareRepoPaths, worktreeTargetDir)
+		}
+	}
+	log.Debug(cfg.AllBareRepoPaths)
 
 	viperRepoPrefix := getRepoConfigPrefix(cfg.RepoNameForConfig, cfg.ParentDirOfBareRepo)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
-	"github.com/garrettkrohn/treekanga/util"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -69,7 +69,7 @@ func (r *RealConnector) tmuxStrategy(name string) (models.Connection, error) {
 // worktreeStrategy checks if the name matches a worktree path
 func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error) {
 	// Try to get bare repo path
-	bareRepoPath, err := git.GetBareRepoPath()
+	bareRepoPath, err := git.GetBareRepoPath("")
 	if err != nil {
 		// Not in a git repo, skip this strategy
 		return models.Connection{Found: false}, nil
@@ -81,7 +81,7 @@ func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error)
 	}
 
 	// Parse worktrees and check if name matches any worktree path or name
-	worktreeObjects := util.ParseWorktrees(worktrees)
+	worktreeObjects := transformer.TransformWorktrees(worktrees)
 	for _, wt := range worktreeObjects {
 		// Check if name matches the full path or the directory name
 		if wt.FullPath == name || wt.Folder == name {
@@ -159,7 +159,7 @@ func (r *RealConnector) connectToTmux(connection models.Connection, opts models.
 			return fmt.Errorf("failed to create tmux session: %w", err)
 		}
 	}
-	
+
 	// Switch or attach to the session
 	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
 }

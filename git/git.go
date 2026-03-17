@@ -15,15 +15,15 @@ import (
 func AddWorktree(bareRepoPath, worktreeTargetDir, worktreeName string, worktreeArgs []string) error {
 	args := []string{"-C", bareRepoPath, "worktree", "add", filepath.Join(worktreeTargetDir, worktreeName)}
 	args = append(args, worktreeArgs...)
-	
+
 	fullCommand := strings.Join(append([]string{"git"}, args...), " ")
 	log.Debug("Executing git worktree command", "command", fullCommand)
-	
+
 	err := runCommand("git", args...)
 	if err != nil {
 		return fmt.Errorf("failed to add worktree: %v\nCommand: %s", err, fullCommand)
 	}
-	
+
 	return nil
 }
 
@@ -33,7 +33,7 @@ func RemoveWorktree(bareRepoPath, worktreePath string, force bool) error {
 	if force {
 		args = append(args, "--force")
 	}
-	
+
 	err := runCommand("git", args...)
 	if err != nil {
 		log.Debug(fmt.Errorf("failed to remove worktree %s: %w", worktreePath, err))
@@ -60,7 +60,7 @@ func GetRemoteBranches(bareRepoPath string) ([]string, error) {
 		return nil, err
 	}
 	branches := strings.Split(strings.TrimSpace(output), "\n")
-	
+
 	// Remove "origin/" prefix
 	cleaned := make([]string, 0, len(branches))
 	for _, branch := range branches {
@@ -79,7 +79,7 @@ func GetLocalBranches(bareRepoPath string) ([]string, error) {
 		return nil, err
 	}
 	branches := strings.Split(strings.TrimSpace(output), "\n")
-	
+
 	// Remove quotes if present
 	cleaned := make([]string, 0, len(branches))
 	for _, branch := range branches {
@@ -113,18 +113,27 @@ func ConfigureBare(bareRepoPath string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Fetch to populate remote-tracking branches
 	_, err = runCommandOutput("git", "-C", bareRepoPath, "fetch", "origin")
 	if err != nil {
 		log.Debug("Warning: fetch after bare config failed", "error", err)
 	}
-	
+
 	return nil
 }
 
 // GetBareRepoPath returns the path to the bare repository
-func GetBareRepoPath() (string, error) {
+func GetBareRepoPath(dir string) (string, error) {
+	if dir != "" {
+		command := exec.Command("git", "rev-parse", "--git-common-dir")
+		command.Dir = dir
+		output, err := command.Output()
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(output)), nil
+	}
 	return runCommandOutput("git", "rev-parse", "--git-common-dir")
 }
 
@@ -134,7 +143,7 @@ func GetProjectName() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	output, err := runCommandOutput("basename", "-s", ".git", strings.TrimSpace(url))
 	if err != nil {
 		return "", err
@@ -146,10 +155,10 @@ func GetProjectName() (string, error) {
 
 func runCommand(cmd string, args ...string) error {
 	log.Debug(cmd, "args", args)
-	
+
 	command := exec.Command(cmd, args...)
 	command.Stdin = nil
-	
+
 	// Set environment to prevent git from using pagers or editors
 	command.Env = append(os.Environ(),
 		"GIT_PAGER=cat",
@@ -157,14 +166,14 @@ func runCommand(cmd string, args ...string) error {
 		"EDITOR=true",
 		"VISUAL=true",
 	)
-	
+
 	// Create new process group
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
-	
+
 	output, err := command.CombinedOutput()
-	
+
 	// Log output
 	if len(output) > 0 {
 		for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
@@ -173,20 +182,20 @@ func runCommand(cmd string, args ...string) error {
 			}
 		}
 	}
-	
+
 	return err
 }
 
 func runCommandOutput(cmd string, args ...string) (string, error) {
 	log.Debug(cmd, "args", args)
-	
+
 	command := exec.Command(cmd, args...)
 	command.Stdin = nil
-	
+
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
-	
+
 	output, err := command.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -197,6 +206,6 @@ func runCommandOutput(cmd string, args ...string) (string, error) {
 		}
 		return "", err
 	}
-	
+
 	return strings.TrimSuffix(string(output), "\n"), nil
 }

@@ -6,60 +6,46 @@ import (
 	"github.com/garrettkrohn/treekanga/models"
 )
 
-type transformer interface {
-	TransformWorktrees([]string) []models.Worktree
-	RemoveOriginPrefix([]string) []string
-	TransformWorktreesToBranchNames([]models.Worktree) []string
-	RemoveQuotes([]string) []string
+type Transformer interface {
+	Transform(worktrees []models.Worktree) ([]string, error)
 }
 
-type RealTransformer struct {
-}
-
-func NewTransformer() *RealTransformer {
-	return &RealTransformer{}
-}
-
-func (r *RealTransformer) TransformWorktrees(worktreeStrings []string) []models.Worktree {
-
+func TransformWorktrees(worktreeStrings []string) []models.Worktree {
 	var worktrees []models.Worktree
 
 	for _, worktreeString := range worktreeStrings {
 		parts := strings.Fields(worktreeString)
 
-		// takes care of bare repo and mysterious empty last worktree
 		if len(parts) < 3 {
 			continue
 		}
 
-		FullPath := parts[0]
-		CommitHash := parts[1]
+		fullPath := parts[0]
+		commitHash := parts[1]
 
-		// Split the FullPath by "/" and get the last part
-		Folder := strings.Split(FullPath, "/")[len(strings.Split(FullPath, "/"))-1]
+		folder := strings.Split(fullPath, "/")[len(strings.Split(fullPath, "/"))-1]
 
-		// Remove the brackets from the branch name
-		BranchName := strings.Trim(parts[2], "[]")
+		branchName := strings.Trim(parts[2], "[]")
 
 		worktrees = append(worktrees, models.Worktree{
-			FullPath:   FullPath,
-			Folder:     Folder,
-			BranchName: BranchName,
-			CommitHash: CommitHash,
+			FullPath:   fullPath,
+			Folder:     folder,
+			BranchName: branchName,
+			CommitHash: commitHash,
 		})
 	}
 
 	return worktrees
 }
 
-func (r *RealTransformer) RemoveOriginPrefix(branchStrings []string) []string {
+func RemoveOriginPrefix(branchStrings []string) []string {
 	for i, branch := range branchStrings {
 		branchStrings[i] = strings.TrimSpace(strings.Replace(branch, "origin/", "", -1))
 	}
 	return branchStrings
 }
 
-func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []models.Worktree) []string {
+func TransformWorktreesToBranchNames(worktreeObjs []models.Worktree) []string {
 	var stringWorktrees []string
 	for _, worktreeObj := range worktreeObjs {
 		stringWorktrees = append(stringWorktrees, worktreeObj.Folder)
@@ -67,7 +53,7 @@ func (r *RealTransformer) TransformWorktreesToBranchNames(worktreeObjs []models.
 	return stringWorktrees
 }
 
-func (r *RealTransformer) RemoveQuotes(branchStrings []string) []string {
+func RemoveQuotes(branchStrings []string) []string {
 	for i, branch := range branchStrings {
 		branchStrings[i] = strings.TrimSpace(strings.Replace(branch, "'", "", -1))
 	}

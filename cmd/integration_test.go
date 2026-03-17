@@ -9,7 +9,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/services"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
-	"github.com/garrettkrohn/treekanga/util"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -139,7 +139,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.NoError(t, err, "Should be able to list worktrees")
 	assert.Greater(t, len(rawWorktrees), 0, "Should have at least one worktree")
 
-	worktrees := util.ParseWorktrees(rawWorktrees)
+	worktrees := transformer.TransformWorktrees(rawWorktrees)
 
 	// Resolve symlinks in our worktree path (on macOS, /var is a symlink to /private/var)
 	resolvedWorktreePath, err := filepath.EvalSymlinks(worktreePath)
@@ -151,7 +151,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	foundWorktree := false
 	for _, wt := range worktrees {
 		resolvedWtPath, _ := filepath.EvalSymlinks(wt.FullPath)
-		
+
 		if resolvedWtPath == resolvedWorktreePath || wt.FullPath == worktreePath {
 			foundWorktree = true
 			t.Logf("Found our worktree in git worktree list")
@@ -239,7 +239,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	rawWorktreesAfterDelete, err := git.ListWorktrees(bareRepoPath)
 	assert.NoError(t, err, "Should be able to list worktrees after deletion")
 
-	worktreesAfterDelete := util.ParseWorktrees(rawWorktreesAfterDelete)
+	worktreesAfterDelete := transformer.TransformWorktrees(rawWorktreesAfterDelete)
 
 	foundAfterDelete := false
 	for _, wt := range worktreesAfterDelete {
