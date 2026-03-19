@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/util"
 )
 
@@ -17,7 +18,7 @@ func BuildWorktreeTableRows(appConfig config.AppConfig) ([]table.Row, error) {
 		return nil, err
 	}
 
-	worktreeObjects := util.ParseWorktrees(rawWorktrees)
+	worktreeObjects := transformer.TransformWorktrees(rawWorktrees)
 
 	// Sort worktrees by most recently modified
 	util.SortWorktreesByModTime(worktreeObjects)

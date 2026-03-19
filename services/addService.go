@@ -12,6 +12,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
 )
@@ -110,7 +111,7 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 		worktrees, err := git.ListWorktrees(cfg.BareRepoPath)
 		utility.CheckError(err)
 
-		worktreeObjects := util.ParseWorktrees(worktrees)
+		worktreeObjects := transformer.TransformWorktrees(worktrees)
 
 		util.SortWorktreesByModTime(worktreeObjects)
 

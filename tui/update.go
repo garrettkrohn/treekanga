@@ -19,6 +19,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/services"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/util"
 )
 
@@ -480,7 +481,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Store the selected worktree path
 			m.pendingConnectPath = selectedRow[2]
-			
+
 			// Fetch folder options and show selection popup
 			return m, m.fetchFoldersForSelection()
 		case "enter":
@@ -776,7 +777,7 @@ func (m Model) fetchBranchesForSelection() tea.Cmd {
 			return addErrorMsg{err: err, branchName: m.addingBranchName}
 		}
 
-		worktreeObjects := util.ParseWorktrees(worktrees)
+		worktreeObjects := transformer.TransformWorktrees(worktrees)
 		util.SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
@@ -849,13 +850,13 @@ func (m Model) fetchFoldersForSelection() tea.Cmd {
 	return func() tea.Msg {
 		// Start with the root worktree path
 		folders := []string{m.pendingConnectPath}
-		
+
 		// Add subdirectories based on zoxideFolders config
 		for _, folder := range m.appConfig.ZoxideFolders {
 			expandedPaths := services.ExpandZoxideFolder(m.pendingConnectPath, folder, m.dirReader)
 			folders = append(folders, expandedPaths...)
 		}
-		
+
 		return folderSelectionReadyMsg{folders: folders}
 	}
 }

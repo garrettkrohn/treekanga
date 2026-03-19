@@ -10,7 +10,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
-	"github.com/garrettkrohn/treekanga/util"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -69,7 +69,7 @@ func (r *RealConnector) tmuxStrategy(name string) (models.Connection, error) {
 // worktreeStrategy checks if the name matches a worktree path
 func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error) {
 	// Try to get bare repo path
-	bareRepoPath, err := git.GetBareRepoPath()
+	bareRepoPath, err := git.GetBareRepoPath("")
 	if err != nil {
 		// Not in a git repo, skip this strategy
 		return models.Connection{Found: false}, nil
@@ -81,11 +81,11 @@ func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error)
 	}
 
 	// Parse worktrees and check if name matches any worktree path or name
-	worktreeObjects := util.ParseWorktrees(worktrees)
+	worktreeObjects := transformer.TransformWorktrees(worktrees)
 	for _, wt := range worktreeObjects {
 		// Check if name matches the full path or the directory name
 		if wt.FullPath == name || wt.Folder == name {
-			sessionName := r.generateSessionName(wt.FullPath)
+			sessionName := r.generateWorktreeSessionName(wt.FullPath, wt.BranchName)
 			return models.Connection{
 				Found: true,
 				New:   true,
@@ -151,6 +151,22 @@ func (r *RealConnector) generateSessionName(path string) string {
 	return name
 }
 
+// generateWorktreeSessionName creates a session name in the format "repo - branch"
+func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName string) string {
+	// Get the parent directory name as the repo name
+	parentDir := filepath.Dir(worktreePath)
+	repoName := filepath.Base(parentDir)
+
+	// Clean up common suffixes from the repo name
+	repoName = strings.TrimSuffix(repoName, "_work")
+	repoName = strings.TrimSuffix(repoName, "_worktrees")
+	repoName = strings.TrimSuffix(repoName, "-bare")
+	repoName = strings.TrimSuffix(repoName, ".git")
+
+	// Format as "repo - branch"
+	return fmt.Sprintf("%s - %s", repoName, branchName)
+}
+
 // connectToTmux handles the actual connection to tmux
 func (r *RealConnector) connectToTmux(connection models.Connection, opts models.ConnectOpts) error {
 	if connection.New {
@@ -159,7 +175,7 @@ func (r *RealConnector) connectToTmux(connection models.Connection, opts models.
 			return fmt.Errorf("failed to create tmux session: %w", err)
 		}
 	}
-	
+
 	// Switch or attach to the session
 	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
 }

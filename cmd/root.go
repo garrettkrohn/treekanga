@@ -51,7 +51,7 @@ func NewRootCmd(
 				return
 			}
 
-			bareRepoPath, err := git.GetBareRepoPath()
+			bareRepoPath, err := git.GetBareRepoPath("")
 			utility.CheckError(err)
 
 			projectName, err := git.GetProjectName()

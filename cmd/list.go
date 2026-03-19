@@ -9,14 +9,10 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/charmbracelet/log"
 
-	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
-	"github.com/garrettkrohn/treekanga/services"
-	"github.com/garrettkrohn/treekanga/util"
 	utilpkg "github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -32,29 +28,36 @@ var listCmd = &cobra.Command{
 	Long: `Display all worktrees in the current repository.
 
     By default, shows the branch name for each worktree.
-    You can configure the display mode using the 'listDisplayMode' 
+    You can configure the display mode using the 'listDisplayMode'
     configuration option:
       - "branch" (default): Display branch names
       - "directory" or "folder": Display directory names
-    
+
     Configuration example:
       repos:
         myrepo:
           listDisplayMode: directory
-    
+
+    Use the -p/--path flag to display full paths to worktrees.
     Use the -v/--verbose flag to show all details including both
     branch names and directory names.
-    
+
     Use the -a/--all flag to show all worktrees plus subdirectories
     defined in the zoxideFolders configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		verbose, err := cmd.Flags().GetBool("verbose")
 		utilpkg.CheckError(err)
 
-		all, err := cmd.Flags().GetBool("all")
+		expand, err := cmd.Flags().GetBool("expand")
 		utilpkg.CheckError(err)
 
-		worktrees, err := buildWorktreeStrings(verbose, all)
+		global, err := cmd.Flags().GetBool("global")
+		utilpkg.CheckError(err)
+
+		fullPath, err := cmd.Flags().GetBool("path")
+		utilpkg.CheckError(err)
+
+		worktrees, err := buildWorktreeStrings(verbose, global, expand, fullPath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -64,52 +67,20 @@ var listCmd = &cobra.Command{
 	},
 }
 
-func buildWorktreeStrings(verbose bool, all bool) ([]string, error) {
-	rawWorktrees, err := git.ListWorktrees(deps.AppConfig.BareRepoPath)
-	if err != nil {
-		return nil, err
-	}
+func buildWorktreeStrings(verbose, global, expand, fullPath bool) ([]string, error) {
+	// get fetcher
+	fetcher := getFetcher(global)
+	rawWorktrees, err := fetcher.fetch()
+	log.Debug("rawWorktrees", rawWorktrees)
+	utilpkg.CheckError(err)
 
-	worktreeObjects := util.ParseWorktrees(rawWorktrees)
+	// get lister
+	lister := getLister(verbose, global, expand, fullPath)
+	worktreeStrings, err := lister.list()
+	utilpkg.CheckError(err)
 
-	// Sort worktrees by most recently modified
-	sortWorktreesByModTime(worktreeObjects)
-
-	// If --all flag is set, expand with zoxide folders
-	if all {
-		log.Debug("Expanding worktrees with zoxide folders", "zoxideFolders", deps.AppConfig.ZoxideFolders)
-		allPaths := services.ExpandWorktreesWithZoxideFolders(worktreeObjects, deps.AppConfig.ZoxideFolders, deps.DirectoryReader)
-		return allPaths, nil
-	}
-
-	// Get the display mode from config (default to "branch" for backward compatibility)
-	displayMode := getListDisplayMode()
-	log.Debug("List display mode", "mode", displayMode)
-
-	var worktreeBranches []string
-	for _, worktree := range worktreeObjects {
-		var branchDisplay string
-		if verbose {
-			branchDisplay = fmt.Sprintf("worktree: %s, branch: %s, fullPath: %s, commitHash: %s", worktree.Folder, worktree.BranchName, worktree.FullPath, worktree.CommitHash)
-		} else {
-			branchDisplay = getDisplayString(worktree, displayMode)
-		}
-		worktreeBranches = append(worktreeBranches, branchDisplay)
-	}
-
-	return worktreeBranches, nil
-}
-
-// getListDisplayMode retrieves the configured display mode for list command
-// Returns "branch" or "directory" (default: "branch")
-func getListDisplayMode() string {
-	if deps.AppConfig.RepoNameForConfig != "" {
-		displayMode := viper.GetString("repos." + deps.AppConfig.RepoNameForConfig + ".listDisplayMode")
-		if displayMode == "directory" || displayMode == "folder" {
-			return "directory"
-		}
-	}
-	return "branch"
+	log.Debug(worktreeStrings)
+	return worktreeStrings, nil
 }
 
 // getDisplayString returns the appropriate display string based on the configured mode
@@ -143,5 +114,7 @@ func sortWorktreesByModTime(worktrees []models.Worktree) {
 
 func init() {
 	listCmd.Flags().BoolP("verbose", "v", false, "Verbose display of worktrees")
-	listCmd.Flags().BoolP("all", "a", false, "Show all worktrees plus subdirectories from zoxideFolders config")
+	listCmd.Flags().BoolP("expand", "e", false, "Expand the root with all defined sub folders")
+	listCmd.Flags().BoolP("global", "g", false, "Show all worktrees for every repo in the config file")
+	listCmd.Flags().BoolP("path", "p", false, "List the full path of the worktree")
 }

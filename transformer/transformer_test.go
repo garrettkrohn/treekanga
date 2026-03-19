@@ -23,8 +23,7 @@ func TestTransformer(t *testing.T) {
 	}
 
 	t.Run("test worktree transformer", func(t *testing.T) {
-		transformer := &RealTransformer{}
-		result := transformer.TransformWorktrees(worktreeStrings)
+		result := TransformWorktrees(worktreeStrings)
 		assert.Equal(t, result, expectedWt)
 	})
 
@@ -39,8 +38,7 @@ func TestTransformer(t *testing.T) {
 	}
 
 	t.Run("test clean branch names", func(t *testing.T) {
-		transformer := &RealTransformer{}
-		result := transformer.RemoveOriginPrefix(branchStrings)
+		result := RemoveOriginPrefix(branchStrings)
 		assert.Equal(t, result, expectedB)
 	})
 }

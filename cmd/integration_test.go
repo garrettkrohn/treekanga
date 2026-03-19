@@ -9,7 +9,7 @@ import (
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/services"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
-	"github.com/garrettkrohn/treekanga/util"
+	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -139,7 +139,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.NoError(t, err, "Should be able to list worktrees")
 	assert.Greater(t, len(rawWorktrees), 0, "Should have at least one worktree")
 
-	worktrees := util.ParseWorktrees(rawWorktrees)
+	worktrees := transformer.TransformWorktrees(rawWorktrees)
 
 	// Resolve symlinks in our worktree path (on macOS, /var is a symlink to /private/var)
 	resolvedWorktreePath, err := filepath.EvalSymlinks(worktreePath)
@@ -151,7 +151,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	foundWorktree := false
 	for _, wt := range worktrees {
 		resolvedWtPath, _ := filepath.EvalSymlinks(wt.FullPath)
-		
+
 		if resolvedWtPath == resolvedWorktreePath || wt.FullPath == worktreePath {
 			foundWorktree = true
 			t.Logf("Found our worktree in git worktree list")
@@ -179,7 +179,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	deps.AppConfig.BareRepoPath = bareRepoPath
 
 	// Get the list of worktrees
-	worktreeList, err := buildWorktreeStrings(false, false)
+	worktreeList, err := buildWorktreeStrings(false, false, false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings")
 	assert.Greater(t, len(worktreeList), 0, "Should have at least one worktree in the list")
 
@@ -195,7 +195,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.True(t, foundInList, "Should find test_branch in the worktree list output")
 
 	// Also test verbose mode
-	verboseList, err := buildWorktreeStrings(true, false)
+	verboseList, err := buildWorktreeStrings(true, false, false, false)
 	assert.NoError(t, err, "Should be able to build verbose worktree strings")
 	assert.Greater(t, len(verboseList), 0, "Should have at least one worktree in verbose list")
 
@@ -239,7 +239,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	rawWorktreesAfterDelete, err := git.ListWorktrees(bareRepoPath)
 	assert.NoError(t, err, "Should be able to list worktrees after deletion")
 
-	worktreesAfterDelete := util.ParseWorktrees(rawWorktreesAfterDelete)
+	worktreesAfterDelete := transformer.TransformWorktrees(rawWorktreesAfterDelete)
 
 	foundAfterDelete := false
 	for _, wt := range worktreesAfterDelete {
@@ -254,7 +254,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.False(t, foundAfterDelete, "Worktree should not appear in git worktree list after deletion")
 
 	// Verify the list command no longer shows it
-	worktreeListAfterDelete, err := buildWorktreeStrings(false, false)
+	worktreeListAfterDelete, err := buildWorktreeStrings(false, false, false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings after deletion")
 
 	foundInListAfterDelete := false
