@@ -85,7 +85,7 @@ func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error)
 	for _, wt := range worktreeObjects {
 		// Check if name matches the full path or the directory name
 		if wt.FullPath == name || wt.Folder == name {
-			sessionName := r.generateSessionName(wt.FullPath)
+			sessionName := r.generateWorktreeSessionName(wt.FullPath, wt.BranchName)
 			return models.Connection{
 				Found: true,
 				New:   true,
@@ -149,6 +149,22 @@ func (r *RealConnector) generateSessionName(path string) string {
 	name = strings.ReplaceAll(name, ".", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 	return name
+}
+
+// generateWorktreeSessionName creates a session name in the format "repo - branch"
+func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName string) string {
+	// Get the parent directory name as the repo name
+	parentDir := filepath.Dir(worktreePath)
+	repoName := filepath.Base(parentDir)
+
+	// Clean up common suffixes from the repo name
+	repoName = strings.TrimSuffix(repoName, "_work")
+	repoName = strings.TrimSuffix(repoName, "_worktrees")
+	repoName = strings.TrimSuffix(repoName, "-bare")
+	repoName = strings.TrimSuffix(repoName, ".git")
+
+	// Format as "repo - branch"
+	return fmt.Sprintf("%s - %s", repoName, branchName)
 }
 
 // connectToTmux handles the actual connection to tmux

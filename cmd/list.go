@@ -28,19 +28,20 @@ var listCmd = &cobra.Command{
 	Long: `Display all worktrees in the current repository.
 
     By default, shows the branch name for each worktree.
-    You can configure the display mode using the 'listDisplayMode' 
+    You can configure the display mode using the 'listDisplayMode'
     configuration option:
       - "branch" (default): Display branch names
       - "directory" or "folder": Display directory names
-    
+
     Configuration example:
       repos:
         myrepo:
           listDisplayMode: directory
-    
+
+    Use the -p/--path flag to display full paths to worktrees.
     Use the -v/--verbose flag to show all details including both
     branch names and directory names.
-    
+
     Use the -a/--all flag to show all worktrees plus subdirectories
     defined in the zoxideFolders configuration.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -53,7 +54,10 @@ var listCmd = &cobra.Command{
 		global, err := cmd.Flags().GetBool("global")
 		utilpkg.CheckError(err)
 
-		worktrees, err := buildWorktreeStrings(verbose, global, expand)
+		fullPath, err := cmd.Flags().GetBool("path")
+		utilpkg.CheckError(err)
+
+		worktrees, err := buildWorktreeStrings(verbose, global, expand, fullPath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -63,7 +67,7 @@ var listCmd = &cobra.Command{
 	},
 }
 
-func buildWorktreeStrings(verbose, global, expand bool) ([]string, error) {
+func buildWorktreeStrings(verbose, global, expand, fullPath bool) ([]string, error) {
 	// get fetcher
 	fetcher := getFetcher(global)
 	rawWorktrees, err := fetcher.fetch()
@@ -71,7 +75,7 @@ func buildWorktreeStrings(verbose, global, expand bool) ([]string, error) {
 	utilpkg.CheckError(err)
 
 	// get lister
-	lister := getLister(verbose, global, expand)
+	lister := getLister(verbose, global, expand, fullPath)
 	worktreeStrings, err := lister.list()
 	utilpkg.CheckError(err)
 
@@ -112,4 +116,5 @@ func init() {
 	listCmd.Flags().BoolP("verbose", "v", false, "Verbose display of worktrees")
 	listCmd.Flags().BoolP("expand", "e", false, "Expand the root with all defined sub folders")
 	listCmd.Flags().BoolP("global", "g", false, "Show all worktrees for every repo in the config file")
+	listCmd.Flags().BoolP("path", "p", false, "List the full path of the worktree")
 }

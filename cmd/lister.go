@@ -11,11 +11,13 @@ type lister interface {
 	list() ([]string, error)
 }
 
-func getLister(verbose, global, expand bool) lister {
+func getLister(verbose, global, expand, fullPath bool) lister {
 	f := getFetcher(global)
 
 	var t transformer.Transformer
-	if verbose {
+	if fullPath {
+		t = &fullPathTransformer{}
+	} else if verbose {
 		t = &verboseTransformer{}
 	} else {
 		t = &simpleTransformer{}
@@ -62,4 +64,14 @@ func (t *verboseTransformer) Transform(worktrees []models.Worktree) ([]string, e
 		worktreeBranches = append(worktreeBranches, branchDisplay)
 	}
 	return worktreeBranches, nil
+}
+
+type fullPathTransformer struct{}
+
+func (t *fullPathTransformer) Transform(worktrees []models.Worktree) ([]string, error) {
+	var worktreePaths []string
+	for _, worktree := range worktrees {
+		worktreePaths = append(worktreePaths, worktree.FullPath)
+	}
+	return worktreePaths, nil
 }
