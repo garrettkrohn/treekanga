@@ -32,6 +32,9 @@ func SetConfigForAddService(cfg config.AppConfig, args []string) config.AppConfi
 		log.Debug(fmt.Sprintf("No worktree name specified in flags, so defaults to new branch name: %s", cfg.NewWorktreeName))
 	}
 
+	// Sanitize worktree name by replacing slashes with dashes to prevent nested directory issues
+	cfg.NewWorktreeName = strings.ReplaceAll(cfg.NewWorktreeName, "/", "-")
+
 	remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
 	utility.CheckError(err)
 	log.Debug("Remote branches", "branches", remoteBranches)

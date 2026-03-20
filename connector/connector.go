@@ -11,6 +11,7 @@ import (
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -145,10 +146,7 @@ func (r *RealConnector) dirStrategy(name string) (models.Connection, error) {
 func (r *RealConnector) generateSessionName(path string) string {
 	// Use the basename of the path
 	name := filepath.Base(path)
-	// Replace dots and other special characters with underscores
-	name = strings.ReplaceAll(name, ".", "_")
-	name = strings.ReplaceAll(name, " ", "_")
-	return name
+	return util.SanitizeForSessionName(name)
 }
 
 // generateWorktreeSessionName creates a session name in the format "repo - branch"
@@ -163,8 +161,11 @@ func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName str
 	repoName = strings.TrimSuffix(repoName, "-bare")
 	repoName = strings.TrimSuffix(repoName, ".git")
 
+	// Sanitize branch name for use in session name
+	safeBranchName := util.SanitizeForSessionName(branchName)
+
 	// Format as "repo - branch"
-	return fmt.Sprintf("%s - %s", repoName, branchName)
+	return fmt.Sprintf("%s - %s", repoName, safeBranchName)
 }
 
 // connectToTmux handles the actual connection to tmux

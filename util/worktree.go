@@ -63,7 +63,7 @@ func SortWorktreesByModTime(worktrees []models.Worktree) {
 // FilterStaleBranches filters worktrees to only those without remote branches
 func FilterStaleBranches(worktrees []models.Worktree, remoteBranches []string) []models.Worktree {
 	var filtered []models.Worktree
-	
+
 	for _, wt := range worktrees {
 		isStale := true
 		for _, remoteBranch := range remoteBranches {
@@ -76,6 +76,16 @@ func FilterStaleBranches(worktrees []models.Worktree, remoteBranches []string) [
 			filtered = append(filtered, wt)
 		}
 	}
-	
+
 	return filtered
+}
+
+// SanitizeForSessionName sanitizes a string to be safe for tmux session names
+// Replaces characters that are problematic in tmux session names
+func SanitizeForSessionName(name string) string {
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, ":", "-")
+	name = strings.ReplaceAll(name, ".", "_")
+	name = strings.ReplaceAll(name, " ", "_")
+	return name
 }
