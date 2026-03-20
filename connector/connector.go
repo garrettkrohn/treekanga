@@ -161,11 +161,12 @@ func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName str
 	repoName = strings.TrimSuffix(repoName, "-bare")
 	repoName = strings.TrimSuffix(repoName, ".git")
 
-	// Sanitize branch name for use in session name
+	// Sanitize both repo name and branch name for use in session name
+	safeRepoName := util.SanitizeForSessionName(repoName)
 	safeBranchName := util.SanitizeForSessionName(branchName)
 
-	// Format as "repo - branch"
-	return fmt.Sprintf("%s - %s", repoName, safeBranchName)
+	// Format as "repo-branch" (using dash instead of space-dash-space to avoid tmux parsing issues)
+	return fmt.Sprintf("%s-%s", safeRepoName, safeBranchName)
 }
 
 // connectToTmux handles the actual connection to tmux
