@@ -44,7 +44,7 @@ func (f *RealFilter) GetBranchNoMatchList(remoteBranches []string, worktreeBranc
 func (f *RealFilter) GetBranchMatchList(selectedBranchNames []string, allWorktrees []models.Worktree) []models.Worktree {
 	var selectedWorktreeObj []models.Worktree
 	for _, worktree := range allWorktrees {
-		if slices.Contains(selectedBranchNames, worktree.Folder) {
+		if slices.Contains(selectedBranchNames, worktree.BranchName) {
 			selectedWorktreeObj = append(selectedWorktreeObj, worktree)
 		}
 	}
