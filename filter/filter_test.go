@@ -47,6 +47,7 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 	})
 
 	t.Run("TestGetBranchMatch", func(t *testing.T) {
+		selectedBranches := []string{"branch1", "branch2"}
 		expected := []models.Worktree{
 			{
 				FullPath:   "/path/to/repo1",
@@ -63,9 +64,53 @@ func TestFilterWorktreesAndBranches(t *testing.T) {
 		}
 
 		f := &RealFilter{}
-		result := f.GetBranchMatchList(remoteBranches, worktreeObjs)
+		result := f.GetBranchMatchList(selectedBranches, worktreeObjs)
 
 		assert.Equal(t, result, expected)
+	})
+
+	t.Run("TestGetBranchMatchWithSlashes", func(t *testing.T) {
+		worktreesWithSlashes := []models.Worktree{
+			{
+				FullPath:   "/path/to/feature-abc",
+				Folder:     "feature-abc",
+				BranchName: "feature/abc",
+				CommitHash: "hash1",
+			},
+			{
+				FullPath:   "/path/to/bugfix-xyz",
+				Folder:     "bugfix-xyz",
+				BranchName: "bugfix/xyz",
+				CommitHash: "hash2",
+			},
+			{
+				FullPath:   "/path/to/main",
+				Folder:     "main",
+				BranchName: "main",
+				CommitHash: "hash3",
+			},
+		}
+
+		selectedBranches := []string{"feature/abc", "bugfix/xyz"}
+		expected := []models.Worktree{
+			{
+				FullPath:   "/path/to/feature-abc",
+				Folder:     "feature-abc",
+				BranchName: "feature/abc",
+				CommitHash: "hash1",
+			},
+			{
+				FullPath:   "/path/to/bugfix-xyz",
+				Folder:     "bugfix-xyz",
+				BranchName: "bugfix/xyz",
+				CommitHash: "hash2",
+			},
+		}
+
+		f := &RealFilter{}
+		result := f.GetBranchMatchList(selectedBranches, worktreesWithSlashes)
+
+		assert.Equal(t, expected, result)
 	})
 
 }
