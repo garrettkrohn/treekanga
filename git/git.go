@@ -102,6 +102,38 @@ func DeleteBranch(bareRepoPath, branch string, force bool) error {
 	return runCommand("git", args...)
 }
 
+// RenameBranch renames a local branch
+func RenameBranch(bareRepoPath, oldName, newName string) error {
+	args := []string{"-C", bareRepoPath, "branch", "-m", oldName, newName}
+	err := runCommand("git", args...)
+	if err != nil {
+		return fmt.Errorf("failed to rename branch from %s to %s: %w", oldName, newName, err)
+	}
+	return nil
+}
+
+// MoveWorktree moves a worktree to a new location
+func MoveWorktree(bareRepoPath, oldPath, newPath string) error {
+	args := []string{"-C", bareRepoPath, "worktree", "move", oldPath, newPath}
+	err := runCommand("git", args...)
+	if err != nil {
+		return fmt.Errorf("failed to move worktree from %s to %s: %w", oldPath, newPath, err)
+	}
+	return nil
+}
+
+// GetCurrentBranch returns the current branch name for a given directory
+func GetCurrentBranch(dir string) (string, error) {
+	command := exec.Command("git", "branch", "--show-current")
+	command.Dir = dir
+	output, err := command.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current branch: %w", err)
+	}
+	branchName := strings.TrimSpace(string(output))
+	return branchName, nil
+}
+
 // CloneBare clones a repository as bare
 func CloneBare(url, folderName string) error {
 	return runCommand("git", "clone", "--progress", "--bare", url, folderName)

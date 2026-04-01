@@ -1,0 +1,310 @@
+package services
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/confirmer"
+	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/util"
+	"github.com/garrettkrohn/treekanga/utility"
+)
+
+// RenameWorktree renames the current worktree's branch and folder
+func RenameWorktree(
+	cfg config.AppConfig,
+	newBranchName string,
+	currentWorktreePath string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+	autoSwitchTmux bool,
+) error {
+	log.Debug("Starting worktree rename", "newBranchName", newBranchName)
+
+	// Get current branch
+	currentBranch, err := git.GetCurrentBranch(currentWorktreePath)
+	if err != nil {
+		return fmt.Errorf("failed to get current branch: %w", err)
+	}
+
+	if currentBranch == "" {
+		return fmt.Errorf("not on a branch (detached HEAD state) - cannot rename")
+	}
+
+	log.Debug("Current branch", "branch", currentBranch)
+
+	// Validate new branch doesn't already exist
+	localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
+	if err != nil {
+		return fmt.Errorf("failed to get local branches: %w", err)
+	}
+
+	remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
+	if err != nil {
+		return fmt.Errorf("failed to get remote branches: %w", err)
+	}
+
+	if slices.Contains(localBranches, newBranchName) {
+		return fmt.Errorf("branch '%s' already exists locally", newBranchName)
+	}
+
+	if slices.Contains(remoteBranches, newBranchName) {
+		return fmt.Errorf("branch '%s' already exists on remote", newBranchName)
+	}
+
+	// Sanitize new branch name for folder (replace / with -)
+	newFolderName := strings.ReplaceAll(newBranchName, "/", "-")
+	newWorktreePath := filepath.Join(cfg.WorktreeTargetDir, newFolderName)
+
+	// Check if target folder already exists
+	if _, err := os.Stat(newWorktreePath); err == nil {
+		return fmt.Errorf("target folder '%s' already exists", newWorktreePath)
+	}
+
+	log.Debug("Renaming branch", "from", currentBranch, "to", newBranchName)
+
+	// Rename the branch
+	err = git.RenameBranch(cfg.BareRepoPath, currentBranch, newBranchName)
+	if err != nil {
+		return fmt.Errorf("failed to rename branch: %w", err)
+	}
+
+	log.Debug("Moving worktree", "from", currentWorktreePath, "to", newWorktreePath)
+
+	// Move the worktree folder
+	err = git.MoveWorktree(cfg.BareRepoPath, currentWorktreePath, newWorktreePath)
+	if err != nil {
+		// Try to rollback the branch rename
+		rollbackErr := git.RenameBranch(cfg.BareRepoPath, newBranchName, currentBranch)
+		if rollbackErr != nil {
+			log.Error("Failed to rollback branch rename after worktree move failure", "error", rollbackErr)
+		}
+		return fmt.Errorf("failed to move worktree: %w", err)
+	}
+
+	log.Info("Worktree renamed successfully",
+		"oldBranch", currentBranch,
+		"newBranch", newBranchName,
+		"newPath", newWorktreePath)
+
+	// Handle tmux session rename if user is in tmux
+	handleTmuxSessionRename(newBranchName, newWorktreePath, conn, conf, autoSwitchTmux)
+
+	// Inform user about path change
+	fmt.Printf("\n✓ Worktree renamed successfully!\n")
+	fmt.Printf("  Branch: %s → %s\n", currentBranch, newBranchName)
+	fmt.Printf("  Folder: %s → %s\n", filepath.Base(currentWorktreePath), newFolderName)
+	fmt.Printf("\nNote: Your current directory is now invalid. Navigate to the new location:\n")
+	fmt.Printf("  cd %s\n\n", newWorktreePath)
+
+	return nil
+}
+
+// GetCurrentWorktreePath returns the current worktree path by calling GetBareRepoPath and resolving
+func GetCurrentWorktreePath() (string, error) {
+	// Get the git common dir (which points to the bare repo or main .git)
+	gitCommonDir, err := git.GetBareRepoPath("")
+	if err != nil {
+		return "", fmt.Errorf("failed to get git directory: %w", err)
+	}
+
+	// Check if we're in a worktree or bare repo
+	// In a worktree, gitCommonDir will be something like /path/to/bare.git/worktrees/branch-name
+	// We want the actual worktree directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	// If gitCommonDir contains "/worktrees/", we're in a worktree
+	if strings.Contains(gitCommonDir, "/worktrees/") {
+		// We're in a worktree, return the current directory
+		return currentDir, nil
+	}
+
+	// Check if we're in a bare repo by seeing if we have a working tree
+	_, err = git.GetCurrentBranch(currentDir)
+	if err != nil {
+		return "", fmt.Errorf("not in a worktree - cannot rename from bare repository")
+	}
+
+	return currentDir, nil
+}
+
+// SetConfigForRenameService sets up configuration for rename command
+func SetConfigForRenameService(cfg config.AppConfig) (config.AppConfig, error) {
+	log.Debug("Running configuration for rename command")
+
+	// Get current worktree path
+	currentWorktreePath, err := GetCurrentWorktreePath()
+	if err != nil {
+		return cfg, err
+	}
+
+	// Determine WorktreeTargetDir from current path
+	cfg.WorktreeTargetDir = filepath.Dir(currentWorktreePath)
+	log.Debug("Set WorktreeTargetDir", "dir", cfg.WorktreeTargetDir)
+
+	return cfg, nil
+}
+
+// ValidateRenameArgs validates the arguments for rename command
+func ValidateRenameArgs(args []string) (string, error) {
+	if len(args) == 0 {
+		return "", fmt.Errorf("please provide new branch name as an argument")
+	}
+
+	if len(args) > 1 {
+		return "", fmt.Errorf("too many arguments - expected 1, got %d", len(args))
+	}
+
+	newBranchName := strings.TrimSpace(args[0])
+	if newBranchName == "" {
+		return "", fmt.Errorf("branch name cannot be empty")
+	}
+
+	return newBranchName, nil
+}
+
+// ExecuteRename executes the full rename workflow
+func ExecuteRename(
+	cfg config.AppConfig,
+	args []string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+	autoSwitchTmux bool,
+) error {
+	// Validate arguments
+	newBranchName, err := ValidateRenameArgs(args)
+	if err != nil {
+		return err
+	}
+
+	// Set up configuration
+	cfg, err = SetConfigForRenameService(cfg)
+	if err != nil {
+		return err
+	}
+
+	// Get current worktree path
+	currentWorktreePath, err := GetCurrentWorktreePath()
+	if err != nil {
+		return err
+	}
+
+	// Execute rename
+	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf, autoSwitchTmux)
+	utility.CheckError(err)
+
+	return nil
+}
+
+// generateSessionName creates a tmux session name for a worktree
+// Format: "repo-branch" (e.g., "treekanga-feature-api-users")
+func generateSessionName(worktreePath, branchName string) string {
+	// Get parent directory as repo name
+	parentDir := filepath.Dir(worktreePath)
+	repoName := filepath.Base(parentDir)
+
+	// Clean up common suffixes
+	repoName = strings.TrimSuffix(repoName, "_work")
+	repoName = strings.TrimSuffix(repoName, "_worktrees")
+	repoName = strings.TrimSuffix(repoName, "-bare")
+	repoName = strings.TrimSuffix(repoName, ".git")
+
+	// Sanitize both parts
+	safeRepoName := util.SanitizeForSessionName(repoName)
+	safeBranchName := util.SanitizeForSessionName(branchName)
+
+	return fmt.Sprintf("%s-%s", safeRepoName, safeBranchName)
+}
+
+// handleTmuxSessionRename prompts user to close current session and connect to new one
+func handleTmuxSessionRename(
+	newBranch string,
+	newWorktreePath string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+	autoSwitch bool,
+) {
+	// Skip if connector is nil (e.g., in tests)
+	if conn == nil {
+		log.Debug("Skipping tmux handling (no connector provided)")
+		return
+	}
+
+	// Check if we're in a tmux session
+	tmux := adapters.NewTmux(shell.NewShell(execwrap.NewExec()))
+	if !tmux.IsAttached() {
+		log.Debug("Not in a tmux session, skipping tmux handling")
+		return
+	}
+
+	// Get current session name
+	currentSessionName, err := tmux.GetCurrentSessionName()
+	if err != nil {
+		log.Debug("Could not get current tmux session name", "error", err)
+		return
+	}
+
+	// Generate new session name
+	newSessionName := generateSessionName(newWorktreePath, newBranch)
+
+	log.Info("Currently in tmux session", "current", currentSessionName, "new", newSessionName)
+
+	// If auto-switch flag is set, skip prompt
+	if !autoSwitch {
+		// Skip if confirmer is nil (e.g., in tests)
+		if conf == nil {
+			log.Debug("Skipping tmux handling (no confirmer provided)")
+			return
+		}
+
+		// Prompt user
+		confirm, err := conf.Confirm(
+			fmt.Sprintf("Close current tmux session and connect to new session '%s'?", newSessionName))
+		if err != nil {
+			log.Warn("Error prompting for tmux session handling", "error", err)
+			return
+		}
+
+		if !confirm {
+			log.Info("Keeping current tmux session as-is")
+			return
+		}
+	}
+
+	// Kill current session (this will also close our shell)
+	log.Info("Killing current tmux session and connecting to new one")
+
+	// First, create the new session in detached mode
+	err = tmux.NewSession(newSessionName, newWorktreePath)
+	if err != nil {
+		log.Warn("Failed to create new tmux session", "error", err)
+		return
+	}
+
+	// Switch to the new session, then kill the old one
+	err = tmux.SwitchClient(newSessionName)
+	if err != nil {
+		log.Warn("Failed to switch to new session", "error", err)
+		return
+	}
+
+	// Kill the old session (we're now in the new one)
+	err = tmux.KillSession(currentSessionName)
+	if err != nil {
+		log.Warn("Failed to kill old session", "error", err)
+	}
+
+	log.Info("Successfully switched to new tmux session", "session", newSessionName)
+}
