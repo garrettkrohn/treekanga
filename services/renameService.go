@@ -8,13 +8,25 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/confirmer"
 	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/execwrap"
 	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
 )
 
 // RenameWorktree renames the current worktree's branch and folder
-func RenameWorktree(cfg config.AppConfig, newBranchName, currentWorktreePath string) error {
+func RenameWorktree(
+	cfg config.AppConfig,
+	newBranchName string,
+	currentWorktreePath string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+) error {
 	log.Debug("Starting worktree rename", "newBranchName", newBranchName)
 
 	// Get current branch
@@ -82,6 +94,9 @@ func RenameWorktree(cfg config.AppConfig, newBranchName, currentWorktreePath str
 		"oldBranch", currentBranch,
 		"newBranch", newBranchName,
 		"newPath", newWorktreePath)
+
+	// Handle tmux session rename if user is in tmux
+	handleTmuxSessionRename(newBranchName, newWorktreePath, conn, conf)
 
 	// Inform user about path change
 	fmt.Printf("\n✓ Worktree renamed successfully!\n")
@@ -160,7 +175,12 @@ func ValidateRenameArgs(args []string) (string, error) {
 }
 
 // ExecuteRename executes the full rename workflow
-func ExecuteRename(cfg config.AppConfig, args []string) error {
+func ExecuteRename(
+	cfg config.AppConfig,
+	args []string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+) error {
 	// Validate arguments
 	newBranchName, err := ValidateRenameArgs(args)
 	if err != nil {
@@ -180,8 +200,99 @@ func ExecuteRename(cfg config.AppConfig, args []string) error {
 	}
 
 	// Execute rename
-	err = RenameWorktree(cfg, newBranchName, currentWorktreePath)
+	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf)
 	utility.CheckError(err)
 
 	return nil
+}
+
+// generateSessionName creates a tmux session name for a worktree
+// Format: "repo-branch" (e.g., "treekanga-feature-api-users")
+func generateSessionName(worktreePath, branchName string) string {
+	// Get parent directory as repo name
+	parentDir := filepath.Dir(worktreePath)
+	repoName := filepath.Base(parentDir)
+
+	// Clean up common suffixes
+	repoName = strings.TrimSuffix(repoName, "_work")
+	repoName = strings.TrimSuffix(repoName, "_worktrees")
+	repoName = strings.TrimSuffix(repoName, "-bare")
+	repoName = strings.TrimSuffix(repoName, ".git")
+
+	// Sanitize both parts
+	safeRepoName := util.SanitizeForSessionName(repoName)
+	safeBranchName := util.SanitizeForSessionName(branchName)
+
+	return fmt.Sprintf("%s-%s", safeRepoName, safeBranchName)
+}
+
+// handleTmuxSessionRename prompts user to close current session and connect to new one
+func handleTmuxSessionRename(
+	newBranch string,
+	newWorktreePath string,
+	conn connector.Connector,
+	conf confirmer.Confirmer,
+) {
+	// Skip if connector or confirmer is nil (e.g., in tests)
+	if conn == nil || conf == nil {
+		log.Debug("Skipping tmux handling (no connector or confirmer provided)")
+		return
+	}
+
+	// Check if we're in a tmux session
+	tmux := adapters.NewTmux(shell.NewShell(execwrap.NewExec()))
+	if !tmux.IsAttached() {
+		log.Debug("Not in a tmux session, skipping tmux handling")
+		return
+	}
+
+	// Get current session name
+	currentSessionName, err := tmux.GetCurrentSessionName()
+	if err != nil {
+		log.Debug("Could not get current tmux session name", "error", err)
+		return
+	}
+
+	// Generate new session name
+	newSessionName := generateSessionName(newWorktreePath, newBranch)
+
+	log.Info("Currently in tmux session", "current", currentSessionName, "new", newSessionName)
+
+	// Prompt user
+	confirm, err := conf.Confirm(
+		fmt.Sprintf("Close current tmux session and connect to new session '%s'?", newSessionName))
+	if err != nil {
+		log.Warn("Error prompting for tmux session handling", "error", err)
+		return
+	}
+
+	if !confirm {
+		log.Info("Keeping current tmux session as-is")
+		return
+	}
+
+	// Kill current session (this will also close our shell)
+	log.Info("Killing current tmux session and connecting to new one")
+
+	// First, create the new session in detached mode
+	err = tmux.NewSession(newSessionName, newWorktreePath)
+	if err != nil {
+		log.Warn("Failed to create new tmux session", "error", err)
+		return
+	}
+
+	// Switch to the new session, then kill the old one
+	err = tmux.SwitchClient(newSessionName)
+	if err != nil {
+		log.Warn("Failed to switch to new session", "error", err)
+		return
+	}
+
+	// Kill the old session (we're now in the new one)
+	err = tmux.KillSession(currentSessionName)
+	if err != nil {
+		log.Warn("Failed to kill old session", "error", err)
+	}
+
+	log.Info("Successfully switched to new tmux session", "session", newSessionName)
 }

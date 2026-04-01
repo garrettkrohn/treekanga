@@ -16,6 +16,8 @@ type Tmux interface {
 	SwitchClient(targetSession string) error
 	SwitchOrAttach(name string, opts models.ConnectOpts) error
 	FindSession(name string) (models.Session, bool)
+	KillSession(sessionName string) error
+	GetCurrentSessionName() (string, error)
 }
 
 type RealTmux struct {
@@ -95,4 +97,17 @@ func (t *RealTmux) SwitchOrAttach(name string, opts models.ConnectOpts) error {
 		return t.SwitchClient(name)
 	}
 	return t.AttachSession(name)
+}
+
+func (t *RealTmux) KillSession(sessionName string) error {
+	_, err := t.shell.Cmd("tmux", "kill-session", "-t", sessionName)
+	return err
+}
+
+func (t *RealTmux) GetCurrentSessionName() (string, error) {
+	output, err := t.shell.Cmd("tmux", "display-message", "-p", "#{session_name}")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(output), nil
 }

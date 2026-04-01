@@ -42,8 +42,8 @@ func TestRenameWorktree(t *testing.T) {
 			WorktreeTargetDir: tempDir,
 		}
 
-		// Rename the worktree
-		err = RenameWorktree(cfg, "new-branch", worktreePath)
+		// Rename the worktree (pass nil for connector and confirmer since we don't need tmux handling in tests)
+		err = RenameWorktree(cfg, "new-branch", worktreePath, nil, nil)
 		assert.NoError(t, err, "Should successfully rename worktree")
 
 		// Verify branch was renamed
@@ -87,7 +87,7 @@ func TestRenameWorktree(t *testing.T) {
 		}
 
 		// Rename to a branch with slashes
-		err = RenameWorktree(cfg, "feature/api/users", worktreePath)
+		err = RenameWorktree(cfg, "feature/api/users", worktreePath, nil, nil)
 		assert.NoError(t, err, "Should successfully rename worktree with slashes")
 
 		// Verify branch was renamed (with slashes preserved)
@@ -130,7 +130,7 @@ func TestRenameWorktree(t *testing.T) {
 		}
 
 		// Try to rename to existing branch
-		err = RenameWorktree(cfg, "existing-branch", worktreePath)
+		err = RenameWorktree(cfg, "existing-branch", worktreePath, nil, nil)
 		assert.Error(t, err, "Should error when new branch already exists")
 		assert.Contains(t, err.Error(), "already exists", "Error should mention branch exists")
 	})
@@ -166,7 +166,7 @@ func TestRenameWorktree(t *testing.T) {
 		}
 
 		// Try to rename to existing folder
-		err = RenameWorktree(cfg, "new/folder", worktreePath)
+		err = RenameWorktree(cfg, "new/folder", worktreePath, nil, nil)
 		assert.Error(t, err, "Should error when target folder already exists")
 		assert.Contains(t, err.Error(), "already exists", "Error should mention folder exists")
 	})

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/garrettkrohn/treekanga/confirmer"
 	"github.com/garrettkrohn/treekanga/services"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,12 @@ var renameCmd = &cobra.Command{
     - After rename, you'll need to cd to the new folder path
     - Your shell will be in an invalid directory after the rename`,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := services.ExecuteRename(deps.AppConfig, args)
+		err := services.ExecuteRename(
+			deps.AppConfig,
+			args,
+			deps.Connector,
+			confirmer.NewConfirmer(),
+		)
 		if err != nil {
 			cmd.PrintErrln("Error:", err)
 			return
