@@ -26,6 +26,7 @@ func RenameWorktree(
 	currentWorktreePath string,
 	conn connector.Connector,
 	conf confirmer.Confirmer,
+	autoSwitchTmux bool,
 ) error {
 	log.Debug("Starting worktree rename", "newBranchName", newBranchName)
 
@@ -96,7 +97,7 @@ func RenameWorktree(
 		"newPath", newWorktreePath)
 
 	// Handle tmux session rename if user is in tmux
-	handleTmuxSessionRename(newBranchName, newWorktreePath, conn, conf)
+	handleTmuxSessionRename(newBranchName, newWorktreePath, conn, conf, autoSwitchTmux)
 
 	// Inform user about path change
 	fmt.Printf("\n✓ Worktree renamed successfully!\n")
@@ -180,6 +181,7 @@ func ExecuteRename(
 	args []string,
 	conn connector.Connector,
 	conf confirmer.Confirmer,
+	autoSwitchTmux bool,
 ) error {
 	// Validate arguments
 	newBranchName, err := ValidateRenameArgs(args)
@@ -200,7 +202,7 @@ func ExecuteRename(
 	}
 
 	// Execute rename
-	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf)
+	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf, autoSwitchTmux)
 	utility.CheckError(err)
 
 	return nil
@@ -232,10 +234,11 @@ func handleTmuxSessionRename(
 	newWorktreePath string,
 	conn connector.Connector,
 	conf confirmer.Confirmer,
+	autoSwitch bool,
 ) {
-	// Skip if connector or confirmer is nil (e.g., in tests)
-	if conn == nil || conf == nil {
-		log.Debug("Skipping tmux handling (no connector or confirmer provided)")
+	// Skip if connector is nil (e.g., in tests)
+	if conn == nil {
+		log.Debug("Skipping tmux handling (no connector provided)")
 		return
 	}
 
@@ -258,17 +261,26 @@ func handleTmuxSessionRename(
 
 	log.Info("Currently in tmux session", "current", currentSessionName, "new", newSessionName)
 
-	// Prompt user
-	confirm, err := conf.Confirm(
-		fmt.Sprintf("Close current tmux session and connect to new session '%s'?", newSessionName))
-	if err != nil {
-		log.Warn("Error prompting for tmux session handling", "error", err)
-		return
-	}
+	// If auto-switch flag is set, skip prompt
+	if !autoSwitch {
+		// Skip if confirmer is nil (e.g., in tests)
+		if conf == nil {
+			log.Debug("Skipping tmux handling (no confirmer provided)")
+			return
+		}
 
-	if !confirm {
-		log.Info("Keeping current tmux session as-is")
-		return
+		// Prompt user
+		confirm, err := conf.Confirm(
+			fmt.Sprintf("Close current tmux session and connect to new session '%s'?", newSessionName))
+		if err != nil {
+			log.Warn("Error prompting for tmux session handling", "error", err)
+			return
+		}
+
+		if !confirm {
+			log.Info("Keeping current tmux session as-is")
+			return
+		}
 	}
 
 	// Kill current session (this will also close our shell)
