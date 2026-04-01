@@ -35,6 +35,12 @@ func TestRenameBranch(t *testing.T) {
 	err = AddWorktree(bareRepoPath, tempDir, "test-branch", []string{"-b", "old-branch"})
 	require.NoError(t, err)
 
+	// Configure git user for the worktree
+	err = runCommand("git", "-C", worktreePath, "config", "user.email", "test@example.com")
+	require.NoError(t, err)
+	err = runCommand("git", "-C", worktreePath, "config", "user.name", "Test User")
+	require.NoError(t, err)
+
 	// Create an initial commit so the branch actually exists
 	err = runCommand("sh", "-c", fmt.Sprintf("cd %s && echo 'test' > test.txt && git add test.txt && git commit -m 'initial commit'", worktreePath))
 	require.NoError(t, err)
