@@ -91,6 +91,7 @@ func Execute(version string) {
 	rootCmd.AddCommand(cloneCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(connectCmd)
+	rootCmd.AddCommand(renameCmd)
 
 	options := []fang.Option{
 		fang.WithVersion(version),

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/services"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
@@ -268,6 +269,152 @@ func TestCloneAndAddIntegration(t *testing.T) {
 
 	t.Logf("✓ Successfully verified worktree is deleted and no longer appears anywhere")
 	t.Log("✅ Integration test completed successfully!")
+}
+
+// TestRenameWorktreeIntegration is an integration test that verifies
+// the rename command successfully renames both the branch and worktree folder
+func TestRenameWorktreeIntegration(t *testing.T) {
+	// Skip if running in CI without git
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	// Create a temporary directory for the test
+	tempDir, err := os.MkdirTemp("", "treekanga-rename-integration-*")
+	require.NoError(t, err, "Failed to create temp directory")
+	defer os.RemoveAll(tempDir)
+
+	// Save current directory and change to temp directory
+	originalDir, err := os.Getwd()
+	require.NoError(t, err, "Failed to get working directory")
+	defer os.Chdir(originalDir)
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err, "Failed to change to temp directory")
+
+	// Use a small public repository for testing
+	testRepoURL := "https://github.com/octocat/Hello-World.git"
+	expectedFolderName := "Hello-World.git_bare"
+
+	t.Log("Step 1: Cloning bare repository...")
+
+	// Clone the bare repo
+	mockSpinner := &mockSpinner{}
+	args := []string{testRepoURL}
+	CloneBareRepo(mockSpinner, args)
+
+	bareRepoPath := filepath.Join(tempDir, expectedFolderName)
+	_, err = os.Stat(bareRepoPath)
+	require.NoError(t, err, "Bare repository should exist")
+
+	t.Log("Step 2: Creating initial worktree...")
+
+	// Set up deps for commands
+	deps.AppConfig.BareRepoPath = bareRepoPath
+
+	// Get remote branches
+	remoteBranches, err := git.GetRemoteBranches(bareRepoPath)
+	require.NoError(t, err)
+	require.Greater(t, len(remoteBranches), 0)
+
+	var baseBranch string
+	for _, branch := range remoteBranches {
+		if branch != "" && !strings.Contains(branch, "HEAD") {
+			baseBranch = branch
+			break
+		}
+	}
+	require.NotEmpty(t, baseBranch)
+
+	// Create initial worktree
+	initialBranch := "feature/old-name"
+	initialFolder := "feature-old-name"
+	worktreePath := filepath.Join(tempDir, initialFolder)
+
+	worktreeConfig := services.AddWorktreeConfig{
+		BareRepoPath:               bareRepoPath,
+		WorktreeTargetDirectory:    tempDir,
+		NewBranchExistsLocally:     false,
+		NewBranchExistsRemotely:    false,
+		BaseBranchExistsLocally:    false,
+		NewBranchName:              initialBranch,
+		PullBeforeCuttingNewBranch: false,
+		BaseBranch:                 baseBranch,
+		NewWorktreeName:            initialFolder,
+	}
+
+	branchArgs := services.GetAddWorktreeArguements(worktreeConfig)
+	err = git.AddWorktree(bareRepoPath, tempDir, initialFolder, branchArgs)
+	require.NoError(t, err)
+
+	t.Logf("✓ Created worktree at: %s", worktreePath)
+
+	// Verify initial state
+	branches, err := git.GetLocalBranches(bareRepoPath)
+	require.NoError(t, err)
+	assert.Contains(t, branches, initialBranch, "Initial branch should exist")
+
+	_, err = os.Stat(worktreePath)
+	assert.NoError(t, err, "Initial worktree folder should exist")
+
+	t.Log("Step 3: Renaming the worktree...")
+
+	// Change into the worktree directory
+	err = os.Chdir(worktreePath)
+	require.NoError(t, err, "Should be able to cd into worktree")
+
+	// Set up config for rename
+	newBranchName := "feature/new-name"
+	newFolderName := "feature-new-name"
+	newWorktreePath := filepath.Join(tempDir, newFolderName)
+
+	cfg := config.AppConfig{
+		BareRepoPath:     bareRepoPath,
+		WorktreeTargetDir: tempDir,
+	}
+
+	// Execute rename
+	err = services.RenameWorktree(cfg, newBranchName, worktreePath)
+	assert.NoError(t, err, "Should successfully rename worktree")
+
+	t.Log("Step 4: Verifying the rename...")
+
+	// Verify branch was renamed
+	branches, err = git.GetLocalBranches(bareRepoPath)
+	require.NoError(t, err)
+	assert.Contains(t, branches, newBranchName, "New branch should exist")
+	assert.NotContains(t, branches, initialBranch, "Old branch should not exist")
+
+	// Verify folder was moved
+	_, err = os.Stat(newWorktreePath)
+	assert.NoError(t, err, "New worktree folder should exist")
+
+	_, err = os.Stat(worktreePath)
+	assert.True(t, os.IsNotExist(err), "Old worktree folder should not exist")
+
+	// Verify worktree list shows the new branch
+	rawWorktrees, err := git.ListWorktrees(bareRepoPath)
+	require.NoError(t, err)
+
+	worktrees := transformer.TransformWorktrees(rawWorktrees)
+	foundNewBranch := false
+	for _, wt := range worktrees {
+		if wt.BranchName == newBranchName {
+			foundNewBranch = true
+			t.Logf("Found renamed branch in worktree list: %s", wt.BranchName)
+			break
+		}
+	}
+	assert.True(t, foundNewBranch, "New branch should appear in git worktree list")
+
+	t.Logf("✓ Successfully verified rename: %s → %s", initialBranch, newBranchName)
+	t.Logf("✓ Successfully verified folder move: %s → %s", initialFolder, newFolderName)
+
+	// Change back to temp dir before cleanup
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	t.Log("✅ Rename integration test completed successfully!")
 }
 
 // assertPathExists is a helper function to check if a path exists
