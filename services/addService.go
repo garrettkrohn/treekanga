@@ -80,15 +80,15 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	if params.BaseBranchExistsLocally {
 		if params.PullBeforeCuttingNewBranch {
 			// Create new branch from remote version of base branch
-			return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch}
+			return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 		} else {
 			// Create new branch from local version of base branch
-			return []string{"-b", params.NewBranchName, params.BaseBranch}
+			return []string{"-b", params.NewBranchName, "--no-track", params.BaseBranch}
 		}
 	}
 
 	// Case 3: Base branch only exists remotely
-	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch}
+	return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 }
 
 func handleFromForm(form form.HuhForm, worktrees []string) string {
