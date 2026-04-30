@@ -27,6 +27,28 @@ func AddWorktree(bareRepoPath, worktreeTargetDir, worktreeName string, worktreeA
 	return nil
 }
 
+// SetUpstream configures the upstream branch using git config for the current branch in a worktree
+func SetUpstream(worktreePath, branchName string) error {
+	// Set remote for the branch
+	remoteArgs := []string{"-C", worktreePath, "config", "branch." + branchName + ".remote", "origin"}
+	err := runCommand("git", remoteArgs...)
+	if err != nil {
+		log.Debug("Failed to set remote for branch", "branch", branchName, "error", err)
+		return err
+	}
+
+	// Set merge ref for the branch
+	mergeArgs := []string{"-C", worktreePath, "config", "branch." + branchName + ".merge", "refs/heads/" + branchName}
+	err = runCommand("git", mergeArgs...)
+	if err != nil {
+		log.Debug("Failed to set merge ref for branch", "branch", branchName, "error", err)
+		return err
+	}
+
+	log.Debug("Set upstream config for branch", "branch", branchName, "remote", "origin", "merge", "refs/heads/"+branchName)
+	return nil
+}
+
 // RemoveWorktree removes a worktree (worktreePath can be name or path)
 func RemoveWorktree(bareRepoPath, worktreePath string, force bool) error {
 	args := []string{"-C", bareRepoPath, "worktree", "remove", worktreePath}

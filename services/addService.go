@@ -152,6 +152,17 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 	err := git.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
 	utility.CheckError(err)
 
+	//TODO: different place for this?
+	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
+
+	// Set upstream for new branches (not existing ones)
+	if !cfg.NewBranchExistsLocally && !cfg.NewBranchExistsRemotely {
+		err = git.SetUpstream(newRootDirectory, cfg.NewBranchName)
+		if err != nil {
+			log.Warn("Failed to set upstream branch", "branch", cfg.NewBranchName, "error", err)
+		}
+	}
+
 	if cfg.NewBranchExistsLocally {
 		log.Info("worktree created with existing branch", "branch", cfg.NewBranchName)
 	} else {
@@ -159,9 +170,6 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 			"newBranch", cfg.NewBranchName,
 			"baseBranch", cfg.BaseBranch)
 	}
-
-	//TODO: different place for this?
-	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
 
 	if cfg.TmuxConnect != "" {
 		connectPath := newRootDirectory
