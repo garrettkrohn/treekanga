@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/charmbracelet/log"
 )
@@ -222,9 +221,7 @@ func runCommand(cmd string, args ...string) error {
 	)
 
 	// Create new process group
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+	command.SysProcAttr = setSysProcAttr()
 
 	output, err := command.CombinedOutput()
 
@@ -246,9 +243,7 @@ func runCommandOutput(cmd string, args ...string) (string, error) {
 	command := exec.Command(cmd, args...)
 	command.Stdin = nil
 
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+	command.SysProcAttr = setSysProcAttr()
 
 	output, err := command.Output()
 	if err != nil {
