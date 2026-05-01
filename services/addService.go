@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
-	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/form"
+	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/util"
 	"github.com/garrettkrohn/treekanga/utility"
-	util "github.com/garrettkrohn/treekanga/utility"
 )
 
-func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig, args []string) config.AppConfig {
+func SetConfigForAddService(cfg config.AppConfig, args []string) config.AppConfig {
 	log.Debug("Running configuration for add command")
 
 	if len(args) == 1 {
@@ -32,28 +32,27 @@ func SetConfigForAddService(gitClient adapters.GitAdapter, cfg config.AppConfig,
 		log.Debug(fmt.Sprintf("No worktree name specified in flags, so defaults to new branch name: %s", cfg.NewWorktreeName))
 	}
 
-	t := transformer.NewTransformer()
+	// Sanitize worktree name by replacing slashes with dashes to prevent nested directory issues
+	cfg.NewWorktreeName = strings.ReplaceAll(cfg.NewWorktreeName, "/", "-")
 
-	remoteBranches, err := gitClient.GetRemoteBranches(&cfg.BareRepoPath)
-	util.CheckError(err)
-	cleanRemoteBranches := t.RemoveOriginPrefix(remoteBranches)
-	log.Debug(cleanRemoteBranches)
+	remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
+	utility.CheckError(err)
+	log.Debug("Remote branches", "branches", remoteBranches)
 
-	localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
-	util.CheckError(err)
-	cleanLocalBranches := t.RemoveQuotes(localBranches)
-	log.Debug(cleanLocalBranches)
+	localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
+	utility.CheckError(err)
+	log.Debug("Local branches", "branches", localBranches)
 
-	cfg.NewBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.NewBranchName)
+	cfg.NewBranchExistsLocally = slices.Contains(localBranches, cfg.NewBranchName)
 	log.Debug(fmt.Sprintf("Setting NewBranchExistsLocally = %t from addService", cfg.NewBranchExistsLocally))
 
-	cfg.NewBranchExistsRemotely = slices.Contains(cleanRemoteBranches, cfg.NewBranchName)
+	cfg.NewBranchExistsRemotely = slices.Contains(remoteBranches, cfg.NewBranchName)
 	log.Debug(fmt.Sprintf("Setting NewBranchExistsRemotely = %t from addService", cfg.NewBranchExistsRemotely))
 
-	cfg.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.BaseBranch)
+	cfg.BaseBranchExistsLocally = slices.Contains(localBranches, cfg.BaseBranch)
 	log.Debug(fmt.Sprintf("Setting BaseBranchExistsLocally = %t from addService", cfg.BaseBranchExistsLocally))
 
-	cfg.BaseBranchExistsRemotely = slices.Contains(cleanRemoteBranches, cfg.BaseBranch)
+	cfg.BaseBranchExistsRemotely = slices.Contains(remoteBranches, cfg.BaseBranch)
 	log.Debug(fmt.Sprintf("Setting BaseBranchExistsRemotely = %t from addService", cfg.BaseBranchExistsRemotely))
 
 	return cfg
@@ -81,15 +80,15 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	if params.BaseBranchExistsLocally {
 		if params.PullBeforeCuttingNewBranch {
 			// Create new branch from remote version of base branch
-			return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
+			return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 		} else {
 			// Create new branch from local version of base branch
-			return []string{"-b", params.NewBranchName, params.BaseBranch}
+			return []string{"-b", params.NewBranchName, "--no-track", params.BaseBranch}
 		}
 	}
 
 	// Case 3: Base branch only exists remotely
-	return []string{"-b", params.NewBranchName, "origin/" + params.BaseBranch, "--no-track"}
+	return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 }
 
 func handleFromForm(form form.HuhForm, worktrees []string) string {
@@ -99,7 +98,7 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	form.SetOptions(worktrees)
 	form.SetTitle("Select base branch for new worktree:")
 	err := form.Run()
-	util.CheckError(err)
+	utility.CheckError(err)
 
 	if selectedBranch == "" {
 		log.Fatal("No branch selected")
@@ -109,15 +108,15 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 	return selectedBranch
 }
 
-func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
 
 	if cfg.UseFormToSetBaseBranch {
-		worktrees, err := gitClient.GetWorktrees(&cfg.BareRepoPath)
+		worktrees, err := git.ListWorktrees(cfg.BareRepoPath)
 		utility.CheckError(err)
 
-		worktreeObjects := transformer.NewTransformer().TransformWorktrees(worktrees)
+		worktreeObjects := transformer.TransformWorktrees(worktrees)
 
-		SortWorktreesByModTime(worktreeObjects)
+		util.SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
 
@@ -132,11 +131,9 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 		log.Debug(fmt.Sprintf("Set BaseBranch = %s from form selection", selectedBranch))
 
 		// Update the BaseBranchExistsLocally flag after selection
-		t := transformer.NewTransformer()
-		localBranches, err := gitClient.GetLocalBranches(&cfg.BareRepoPath)
+		localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
 		utility.CheckError(err)
-		cleanLocalBranches := t.RemoveQuotes(localBranches)
-		cfg.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, cfg.BaseBranch)
+		cfg.BaseBranchExistsLocally = slices.Contains(localBranches, cfg.BaseBranch)
 		log.Debug(fmt.Sprintf("Updated BaseBranchExistsLocally = %t after form selection", cfg.BaseBranchExistsLocally))
 	}
 
@@ -152,8 +149,19 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 		NewWorktreeName:            cfg.NewWorktreeName,
 	})
 
-	err := gitClient.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
-	util.CheckError(err)
+	err := git.AddWorktree(cfg.BareRepoPath, cfg.WorktreeTargetDir, cfg.NewWorktreeName, worktreeAddArgs)
+	utility.CheckError(err)
+
+	//TODO: different place for this?
+	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
+
+	// Set upstream for new branches (not existing ones)
+	if !cfg.NewBranchExistsLocally && !cfg.NewBranchExistsRemotely {
+		err = git.SetUpstream(newRootDirectory, cfg.NewBranchName)
+		if err != nil {
+			log.Warn("Failed to set upstream branch", "branch", cfg.NewBranchName, "error", err)
+		}
+	}
 
 	if cfg.NewBranchExistsLocally {
 		log.Info("worktree created with existing branch", "branch", cfg.NewBranchName)
@@ -163,18 +171,18 @@ func AddWorktree(gitClient adapters.GitAdapter, zoxide adapters.Zoxide, connecto
 			"baseBranch", cfg.BaseBranch)
 	}
 
-	//TODO: different place for this?
-	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
-
-	// always add the root, add folders if included
-	log.Info("adding zoxide entries")
-	directoryReader := directoryReader.NewDirectoryReader()
-	zoxidePathsToAdd := CompileZoxidePathsToAdd(cfg.ZoxideFolders, newRootDirectory, directoryReader)
-	zoxide.AddZoxideEntries(zoxidePathsToAdd)
-
-	if cfg.SeshConnect != "" {
-		seshConnectPath := GetSeshPath(cfg.SeshConnect, cfg.ZoxideFolders, newRootDirectory)
-		connector.SeshConnect(seshConnectPath)
+	if cfg.TmuxConnect != "" {
+		connectPath := newRootDirectory
+		if cfg.TmuxConnect != "." {
+			connectPath = newRootDirectory + "/" + cfg.TmuxConnect
+		}
+		opts := models.ConnectOpts{Switch: false}
+		if err := connector.Connect(connectPath, opts); err != nil {
+			log.Warn("Subdirectory not found, connecting to root instead", "subdirectory", cfg.TmuxConnect)
+			if err := connector.Connect(newRootDirectory, opts); err != nil {
+				log.Error("Failed to connect to tmux session", "error", err)
+			}
+		}
 	}
 
 	if cfg.CursorConnect {

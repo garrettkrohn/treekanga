@@ -47,3 +47,8 @@ func (i popupItem) FilterValue() string { return i.title }
 type branchSelectionReadyMsg struct {
 	branches []string
 }
+
+// folderSelectionReadyMsg is sent when folder list is ready for selection
+type folderSelectionReadyMsg struct {
+	folders []string
+}

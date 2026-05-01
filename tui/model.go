@@ -11,9 +11,9 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
+	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/shell"
 )
@@ -54,16 +54,18 @@ type Model struct {
 	pendingAddInput     string
 	pendingAddArgs      []string
 	pendingAddConfig    config.AppConfig
+	// Folder selection state
+	showFolderSelection bool
+	pendingConnectPath  string
 	// Log viewer state
 	logsFocused   bool
 	logsViewport  viewport.Model
 	operationLogs []OperationLog
 	// Dependencies
-	git       adapters.GitAdapter
-	zoxide    adapters.Zoxide
 	connector connector.Connector
 	shell     shell.Shell
 	appConfig config.AppConfig
+	dirReader directoryReader.DirectoryReader
 }
 
 // theme returns the theme from the app config
@@ -75,11 +77,10 @@ func (m Model) theme() *models.Theme {
 func NewModel(
 	table table.Model,
 	spinner spinner.Model,
-	git adapters.GitAdapter,
-	zoxide adapters.Zoxide,
 	conn connector.Connector,
 	shell shell.Shell,
 	appConfig config.AppConfig,
+	dirReader directoryReader.DirectoryReader,
 ) Model {
 	// Initialize text input for add command
 	ti := textinput.New()
@@ -101,13 +102,13 @@ func NewModel(
 		addInput:            ti,
 		isAdding:            false,
 		showBranchSelection: false,
+		showFolderSelection: false,
 		logsFocused:         false,
 		logsViewport:        vp,
 		operationLogs:       []OperationLog{},
-		git:                 git,
-		zoxide:              zoxide,
 		connector:           conn,
 		shell:               shell,
 		appConfig:           appConfig,
+		dirReader:           dirReader,
 	}
 }

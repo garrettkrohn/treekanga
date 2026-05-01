@@ -16,9 +16,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/git"
+	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/transformer"
-	"github.com/garrettkrohn/treekanga/utility"
+	"github.com/garrettkrohn/treekanga/util"
 )
 
 // Init initializes the model
@@ -61,7 +63,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
+		rows, err := BuildWorktreeTableRows(m.appConfig)
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
@@ -119,6 +121,41 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.showBranchSelection = true
 		return m, nil
+	case folderSelectionReadyMsg:
+		// Show the folder selection popup
+		items := make([]list.Item, len(msg.folders))
+		for i, folder := range msg.folders {
+			items[i] = popupItem{title: folder, desc: ""}
+		}
+
+		delegate := list.NewDefaultDelegate()
+		delegate.SetSpacing(0)
+		delegate.ShowDescription = false
+		delegate.SetHeight(1)
+
+		delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
+			Foreground(m.theme().AccentFg).
+			Background(m.theme().Accent).
+			Bold(true)
+		delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
+			Foreground(lipgloss.Color("#ffffff"))
+
+		popupHeight := m.termHeight - 4
+		m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
+		m.popupList.Title = "Select folder to connect to"
+		m.popupList.SetShowStatusBar(false)
+		m.popupList.SetFilteringEnabled(false)
+
+		m.popupList.Styles.Title = m.popupList.Styles.Title.
+			Foreground(m.theme().Cyan).
+			Bold(true).
+			Padding(0, 1).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(m.theme().BorderDim).
+			BorderBottom(true)
+
+		m.showFolderSelection = true
+		return m, nil
 	case addCompleteMsg:
 		m.isAdding = false
 		if msg.err != nil {
@@ -145,7 +182,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.git, m.appConfig)
+		rows, err := BuildWorktreeTableRows(m.appConfig)
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
@@ -167,6 +204,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// If folder selection popup is showing, handle it first
+	if m.showFolderSelection {
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "esc", "q":
+				m.showFolderSelection = false
+				return m, nil
+			case "enter", "o":
+				// Handle selection from popup
+				selected := m.popupList.SelectedItem()
+				if item, ok := selected.(popupItem); ok {
+					m.showFolderSelection = false
+					opts := models.ConnectOpts{Switch: false}
+					if err := m.connector.Connect(item.title, opts); err != nil {
+						log.Error("Failed to connect", "error", err)
+						return m, tea.Printf("Failed to connect: %v", err)
+					}
+					return m, tea.Quit
+				}
+				m.showFolderSelection = false
+				return m, nil
+			}
+		}
+		m.popupList, cmd = m.popupList.Update(msg)
+		return m, cmd
+	}
+
 	// If branch selection popup is showing, handle it first
 	if m.showBranchSelection {
 		switch msg := msg.(type) {
@@ -186,11 +251,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					log.Debug("Selected base branch from popup", "branch", item.title)
 
 					// Update BaseBranchExistsLocally flag
-					localBranches, err := m.git.GetLocalBranches(&m.pendingAddConfig.BareRepoPath)
+					localBranches, err := git.GetLocalBranches(m.pendingAddConfig.BareRepoPath)
 					if err == nil {
-						t := transformer.NewTransformer()
-						cleanLocalBranches := t.RemoveQuotes(localBranches)
-						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(cleanLocalBranches, m.pendingAddConfig.BaseBranch)
+						m.pendingAddConfig.BaseBranchExistsLocally = slices.Contains(localBranches, m.pendingAddConfig.BaseBranch)
 					}
 
 					// Now continue with the add operation
@@ -296,8 +359,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selected := m.popupList.SelectedItem()
 				if item, ok := selected.(popupItem); ok {
 					m.showPopup = false
-					// Connect to the selected path using sesh
-					m.connector.SeshConnect(item.title)
+					opts := models.ConnectOpts{Switch: false}
+					if err := m.connector.Connect(item.title, opts); err != nil {
+						log.Error("Failed to connect", "error", err)
+						return m, tea.Printf("Failed to connect: %v", err)
+					}
 					return m, tea.Quit
 				}
 				m.showPopup = false
@@ -400,48 +466,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Printf("No worktree selected")
 			}
 
-			zoxideEntries, err := services.GetQueryList(m.zoxide, selectedRow[2])
-			utility.CheckError(err)
-
-			log.Info(zoxideEntries)
-
-			// If only one option, connect directly without showing popup
-			if len(zoxideEntries) == 1 {
-				m.connector.SeshConnect(zoxideEntries[0])
-				return m, tea.Quit
+			// Connect directly to the worktree root path
+			opts := models.ConnectOpts{Switch: false}
+			if err := m.connector.Connect(selectedRow[2], opts); err != nil {
+				log.Error("Failed to connect", "error", err)
+				return m, tea.Printf("Failed to connect: %v", err)
+			}
+			return m, tea.Quit
+		case "O":
+			selectedRow := m.table.SelectedRow()
+			if len(selectedRow) < 3 {
+				return m, tea.Printf("No worktree selected")
 			}
 
-			// Multiple options - show popup for selection
-			items := getPopupItems(zoxideEntries)
-			delegate := list.NewDefaultDelegate()
-			delegate.SetSpacing(0)           // Remove spacing between items
-			delegate.ShowDescription = false // Single line items like table
-			delegate.SetHeight(1)            // Single line height
+			// Store the selected worktree path
+			m.pendingConnectPath = selectedRow[2]
 
-			// Apply theme styling to match table
-			delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-				Foreground(m.theme().AccentFg).
-				Background(m.theme().Accent).
-				Bold(true)
-			delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
-				Foreground(lipgloss.Color("#ffffff"))
-
-			popupHeight := m.termHeight - 4 // Use most of the terminal height
-			m.popupList = list.New(items, delegate, m.termWidth, popupHeight)
-			m.popupList.Title = "Select a sesh to connect to"
-			m.popupList.SetShowStatusBar(false) // Hide status bar to match table
-			m.popupList.SetFilteringEnabled(false)
-
-			// Style the list title to match table header
-			m.popupList.Styles.Title = m.popupList.Styles.Title.
-				Foreground(m.theme().Cyan).
-				Bold(true).
-				Padding(0, 1).
-				BorderStyle(lipgloss.RoundedBorder()).
-				BorderForeground(m.theme().BorderDim).
-				BorderBottom(true)
-			m.showPopup = true
-			return m, nil
+			// Fetch folder options and show selection popup
+			return m, m.fetchFoldersForSelection()
 		case "enter":
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
@@ -472,12 +514,7 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 
 		log.Debug("Removing worktree", "fullPath", worktreePath, "force", force)
 
-		var err error
-		if force {
-			err = m.git.RemoveWorktree(worktreeName, &worktreePath, true)
-		} else {
-			err = m.git.RemoveWorktree(worktreeName, &worktreePath, false)
-		}
+		err := git.RemoveWorktree(m.appConfig.BareRepoPath, worktreePath, force)
 
 		if err != nil {
 			log.SetOutput(os.Stderr)
@@ -496,17 +533,11 @@ func (m Model) performDelete(worktreePath, worktreeName, branchName string, forc
 			}
 		}
 
-		_ = m.zoxide.RemovePath(worktreePath)
 		log.Debug("Worktree removed successfully")
 
 		if deleteBranch {
 			log.Debug("Deleting branch", "branchName", branchName)
-			err = m.git.DeleteBranchRef(branchName, m.appConfig.BareRepoPath)
-			if force {
-				err = m.git.DeleteBranch(branchName, m.appConfig.BareRepoPath, true)
-			} else {
-				err = m.git.DeleteBranch(branchName, m.appConfig.BareRepoPath, false)
-			}
+			err = git.DeleteBranch(m.appConfig.BareRepoPath, branchName, force)
 			if err != nil {
 				log.Warn("Failed to delete branch", "branchName", branchName, "error", err)
 			}
@@ -550,7 +581,7 @@ func (m Model) performAdd(input string) tea.Cmd {
 		log.Debug("Adding worktree", "input", input, "branch", args[0])
 
 		// Configure the add service
-		cfg = services.SetConfigForAddService(m.git, cfg, args)
+		cfg = services.SetConfigForAddService(cfg, args)
 
 		// Capture log output - write ONLY to buffer, not to stderr
 		var logBuffer bytes.Buffer
@@ -569,7 +600,7 @@ func (m Model) performAdd(input string) tea.Cmd {
 					}
 				}
 			}()
-			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+			services.AddWorktree(m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output
@@ -636,10 +667,9 @@ func parseAddCommand(input string, baseConfig config.AppConfig) ([]string, confi
 				cfg.RunPostScript = true
 			case "-f", "--from":
 				cfg.UseFormToSetBaseBranch = true
-			case "-s", "--sesh":
-				// Next part should be the sesh value
+			case "-t", "--tmux":
 				if i+1 < len(parts) && !strings.HasPrefix(parts[i+1], "-") {
-					cfg.SeshConnect = parts[i+1]
+					cfg.TmuxConnect = parts[i+1]
 					i++
 				}
 			case "-b", "--base":
@@ -741,15 +771,14 @@ func (m *Model) updateLogsViewport() {
 // fetchBranchesForSelection fetches the list of branches for selection
 func (m Model) fetchBranchesForSelection() tea.Cmd {
 	return func() tea.Msg {
-		worktrees, err := m.git.GetWorktrees(&m.pendingAddConfig.BareRepoPath)
+		worktrees, err := git.ListWorktrees(m.pendingAddConfig.BareRepoPath)
 		if err != nil {
 			log.Error("Failed to fetch worktrees", "error", err)
 			return addErrorMsg{err: err, branchName: m.addingBranchName}
 		}
 
-		t := transformer.NewTransformer()
-		worktreeObjects := t.TransformWorktrees(worktrees)
-		services.SortWorktreesByModTime(worktreeObjects)
+		worktreeObjects := transformer.TransformWorktrees(worktrees)
+		util.SortWorktreesByModTime(worktreeObjects)
 
 		var branchStrings []string
 		for _, wt := range worktreeObjects {
@@ -770,7 +799,7 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 		log.Debug("Adding worktree with selected base branch", "branch", args[0], "baseBranch", cfg.BaseBranch)
 
 		// Configure the add service
-		cfg = services.SetConfigForAddService(m.git, cfg, args)
+		cfg = services.SetConfigForAddService(cfg, args)
 
 		// Capture log output - write ONLY to buffer, not to stderr
 		var logBuffer bytes.Buffer
@@ -791,7 +820,7 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 			}()
 			// Call AddWorktree but the form won't show since BaseBranch is already set
 			cfg.UseFormToSetBaseBranch = false
-			services.AddWorktree(m.git, m.zoxide, m.connector, m.shell, cfg)
+			services.AddWorktree(m.connector, m.shell, cfg)
 		}()
 
 		// Restore stderr as log output
@@ -813,5 +842,21 @@ func (m Model) performAddWithConfig(args []string, cfg config.AppConfig) tea.Cmd
 			branchName: cfg.NewBranchName,
 			output:     output,
 		}
+	}
+}
+
+// fetchFoldersForSelection builds the list of folder options for the selected worktree
+func (m Model) fetchFoldersForSelection() tea.Cmd {
+	return func() tea.Msg {
+		// Start with the root worktree path
+		folders := []string{m.pendingConnectPath}
+
+		// Add subdirectories based on zoxideFolders config
+		for _, folder := range m.appConfig.ZoxideFolders {
+			expandedPaths := services.ExpandZoxideFolder(m.pendingConnectPath, folder, m.dirReader)
+			folders = append(folders, expandedPaths...)
+		}
+
+		return folderSelectionReadyMsg{folders: folders}
 	}
 }

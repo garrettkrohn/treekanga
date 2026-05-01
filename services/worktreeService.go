@@ -2,29 +2,22 @@ package services
 
 import (
 	"github.com/charmbracelet/log"
-	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
 	"github.com/garrettkrohn/treekanga/transformer"
+	"github.com/garrettkrohn/treekanga/util"
 )
 
-func getWorktrees(git adapters.GitAdapter, transformer *transformer.RealTransformer, bareRepoPath string) []models.Worktree {
-	var worktreeStrings []string
-	var wError error
-
-	if bareRepoPath != "" {
-		worktreeStrings, wError = git.GetWorktrees(&bareRepoPath)
-	} else {
-		worktreeStrings, wError = git.GetWorktrees(nil)
-	}
-
-	if wError != nil {
-		log.Fatal(wError)
+func getWorktrees(bareRepoPath string) []models.Worktree {
+	worktreeStrings, err := git.ListWorktrees(bareRepoPath)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	worktrees := transformer.TransformWorktrees(worktreeStrings)
 
 	// Sort worktrees by most recently modified
-	SortWorktreesByModTime(worktrees)
+	util.SortWorktreesByModTime(worktrees)
 
 	return worktrees
 }

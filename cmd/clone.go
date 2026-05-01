@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/garrettkrohn/treekanga/adapters"
+	"github.com/garrettkrohn/treekanga/git"
 	spinner "github.com/garrettkrohn/treekanga/spinnerHuh"
 	util "github.com/garrettkrohn/treekanga/utility"
 	"github.com/spf13/cobra"
@@ -32,11 +32,11 @@ var cloneCmd = &cobra.Command{
     If no folder name is provided, it will use the repository name 
     with "_bare" suffix.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		CloneBareRepo(deps.Git, spinner.NewRealHuhSpinner(), args)
+		CloneBareRepo(spinner.NewRealHuhSpinner(), args)
 	},
 }
 
-func CloneBareRepo(git adapters.GitAdapter, spinner spinner.HuhSpinner, args []string) {
+func CloneBareRepo(spinner spinner.HuhSpinner, args []string) {
 	if len(args) == 0 {
 		fmt.Print("must include url to clone, folder name can be included optionally")
 	}
@@ -59,7 +59,7 @@ func CloneBareRepo(git adapters.GitAdapter, spinner spinner.HuhSpinner, args []s
 
 	barePath := filepath.Join(workingDir, folderName)
 
-	git.ConfigureGitBare(barePath)
+	git.ConfigureBare(barePath)
 
 	fmt.Printf("\n✓ Successfully cloned %s\n", folderName)
 }

@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/charmbracelet/fang"
-	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/config"
 	"github.com/garrettkrohn/treekanga/connector"
 	"github.com/garrettkrohn/treekanga/directoryReader"
 	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/logger"
 	"github.com/garrettkrohn/treekanga/shell"
 	"github.com/garrettkrohn/treekanga/utility"
@@ -17,8 +17,6 @@ import (
 )
 
 type Dependencies struct {
-	Git             adapters.GitAdapter
-	Zoxide          adapters.Zoxide
 	DirectoryReader directoryReader.DirectoryReader
 	Connector       connector.Connector
 	Shell           shell.Shell
@@ -30,10 +28,9 @@ var (
 	logLevel string // Variable to store the log level
 )
 
-func NewRootCmd(git adapters.GitAdapter,
-	zoxide adapters.Zoxide,
+func NewRootCmd(
 	directoryReader directoryReader.DirectoryReader,
-	sesh connector.Connector,
+	conn connector.Connector,
 	shell shell.Shell,
 	version string) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -45,10 +42,8 @@ func NewRootCmd(git adapters.GitAdapter,
 			logger.LoggerInit(logLevel)
 
 			deps = Dependencies{
-				Git:             git,
-				Zoxide:          zoxide,
 				DirectoryReader: directoryReader,
-				Connector:       sesh,
+				Connector:       conn,
 				Shell:           shell,
 			}
 
@@ -56,7 +51,7 @@ func NewRootCmd(git adapters.GitAdapter,
 				return
 			}
 
-			bareRepoPath, err := git.GetBareRepoPath()
+			bareRepoPath, err := git.GetBareRepoPath("")
 			utility.CheckError(err)
 
 			projectName, err := git.GetProjectName()
@@ -86,17 +81,17 @@ func Execute(version string) {
 
 	execWrap := execwrap.NewExec()
 	shell := shell.NewShell(execWrap)
-	git := adapters.NewGitAdapter(shell)
-	zoxide := adapters.NewZoxide(shell)
 	connector := connector.NewConnector(shell)
 	directoryReader := directoryReader.NewDirectoryReader()
 
-	rootCmd := NewRootCmd(git, zoxide, directoryReader, connector, shell, version)
+	rootCmd := NewRootCmd(directoryReader, connector, shell, version)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(cloneCmd)
 	rootCmd.AddCommand(tuiCmd)
+	rootCmd.AddCommand(connectCmd)
+	rootCmd.AddCommand(renameCmd)
 
 	options := []fang.Option{
 		fang.WithVersion(version),

@@ -12,13 +12,14 @@ import (
 )
 
 type AppConfig struct {
-	BareRepoPath               string   // path to the bare repo, this is where the git commnand will be run from
+	BareRepoPath               string // path to the bare repo, this is where the git commnand will be run from
+	AllBareRepoPaths           []string
 	RepoNameForConfig          string   // this is the git project name, used to find the config
 	ParentDirOfBareRepo        string   // this is an option for configuration to allow the user to have multiple configs for multiple instances of one project
 	BaseBranch                 string   // default base branch
 	WorktreeTargetDir          string   // this is where the added worktree will be
 	ListDisplayMode            string   // branch or directory
-	ZoxideFolders              []string // list of zoxide folders to be added
+	ZoxideFolders              []string // list of folders to show with --all flag (subdirectories within worktrees)
 	PostScriptPath             string   // path to the post script to be run
 	RunPostScript              bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
@@ -30,7 +31,7 @@ type AppConfig struct {
 	ForceDelete             bool // use --force when deleting
 
 	// ADD COMMAND
-	SeshConnect              string
+	TmuxConnect              string
 	CursorConnect            bool
 	VsCodeConnect            bool
 	NewWorktreeName          string
@@ -99,10 +100,24 @@ func getRepoConfigPrefix(repoNameForConfig string, parentDirOfBareRepo string) s
 func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) {
 
 	repoconfig := viper.GetStringMap("repos")
+	// log.Debug(repoconfig)
 
 	if repoconfig == nil {
 		log.Fatal("could not find configuration file")
 	}
+
+	for repoName := range repoconfig {
+		log.Debug(repoName)
+		worktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
+		if worktreeTargetDir != "" {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				worktreeTargetDir = filepath.Join(homeDir, strings.TrimPrefix(worktreeTargetDir, "~/"))
+			}
+			cfg.AllBareRepoPaths = append(cfg.AllBareRepoPaths, worktreeTargetDir)
+		}
+	}
+	log.Debug(cfg.AllBareRepoPaths)
 
 	viperRepoPrefix := getRepoConfigPrefix(cfg.RepoNameForConfig, cfg.ParentDirOfBareRepo)
 

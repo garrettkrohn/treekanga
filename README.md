@@ -11,7 +11,6 @@ Treekanga is a powerful CLI tool for managing Git worktrees with ease. It simpli
 - List all worktrees in a repository
 - Delete worktrees with stale branch filtering and interactive selector
 - Clone repositories as bare worktrees
-- Zoxide integration for quick navigation
 - Simple YAML configuration
 
 ## Installation
@@ -38,7 +37,7 @@ repos:
     # Display mode for the list command: "branch" (default) or "directory"/"folder"
     # "branch" shows branch names, "directory" shows directory names
     listDisplayMode: branch
-    # Folders to register with zoxide for quick navigation
+    # Folders to show with --all flag (subdirectories within worktrees)
     zoxideFolders:
       - frontEnd
       - frontEnd/* # adds all folders immediately within frontEnd
@@ -54,7 +53,7 @@ repos:
     listDisplayMode: directory
     zoxideFolders:
       - cmd
-      - git
+      - adapters
 ```
 
 ## Deprecated config options
@@ -86,8 +85,9 @@ treekanga add example_branch -c
 # Open in VS Code after creation
 treekanga add example_branch -v
 
-# Connect to a sesh session after creation
-treekanga add example_branch -s session_name
+# Connect to tmux session at subdirectory (or use '.' for root)
+treekanga add example_branch -t frontend
+treekanga add example_branch -t .
 
 # Specify custom directory for bare repo
 treekanga add example_branch -d /path/to/bare/repo
@@ -111,6 +111,9 @@ treekanga list
 
 # Verbose output showing all details
 treekanga list -v
+
+# Show all worktrees plus subdirectories from zoxideFolders config
+treekanga list --all
 ```
 
 By default, the list command displays branch names. You can configure it to display directory names instead using the `listDisplayMode` configuration option:
@@ -126,6 +129,28 @@ repos:
 ```
 
 The verbose flag (`-v`) will always show all details including both branch names and directory names, regardless of the configured display mode.
+
+#### List All with Subdirectories
+
+The `--all` or `-a` flag expands the list to include subdirectories within each worktree based on the `zoxideFolders` configuration. This is useful when you have a monorepo structure and want to quickly connect to specific subdirectories.
+
+Example configuration:
+```yaml
+repos:
+  platform:
+    zoxideFolders:
+      - parent
+      - ui
+      - backend/*  # Wildcard to include all folders in backend
+```
+
+With this configuration, `treekanga list --all` would show:
+- `/code/platform_work` (worktree root)
+- `/code/platform_work/parent`
+- `/code/platform_work/ui`
+- `/code/platform_work/backend/api`
+- `/code/platform_work/backend/services`
+- etc.
 
 ### Delete Worktrees
 
@@ -149,6 +174,31 @@ Clone a repository as a bare worktree:
 ```bash
 treekanga clone https://www.github.com/example/example
 ```
+
+### Connect to a Session
+
+Connect to a tmux session using various strategies:
+
+```bash
+# Connect to an existing tmux session by name
+treekanga connect my-session
+
+# Connect to a worktree by name
+treekanga connect feature-branch
+
+# Connect to a directory (absolute or relative path)
+treekanga connect ~/code/myproject
+treekanga connect ./my-worktree
+
+# Switch to a session when already inside tmux
+treekanga connect my-session --switch
+```
+
+The connect command will automatically:
+1. Check for an existing tmux session with the given name
+2. Look for a worktree matching the name or path
+3. Check if the input is a valid directory path
+4. Create a new tmux session if none exists
 
 ### TUI (In Beta)
 

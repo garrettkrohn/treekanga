@@ -27,6 +27,11 @@ func (m Model) View() string {
 		return m.renderAddInputPopup(baseView)
 	}
 
+	// Show folder selection popup
+	if m.showFolderSelection {
+		return m.renderFolderSelectionPopup()
+	}
+
 	// Show branch selection popup
 	if m.showBranchSelection {
 		return m.renderBranchSelectionPopup()
@@ -338,6 +343,7 @@ func helpText(m Model) string {
 			m.renderKeyHint("↑/↓", "Navigate"),
 			m.renderKeyHint("a", "Add"),
 			m.renderKeyHint("o", "Open"),
+			m.renderKeyHint("O", "Open options"),
 			m.renderKeyHint("d", "Delete"),
 			m.renderKeyHint("D", "Delete+Branch"),
 			m.renderKeyHint("l", "Focus logs"),
@@ -362,6 +368,60 @@ func (m Model) renderKeyHint(key, label string) string {
 
 // renderBranchSelectionPopup shows a centered popup for selecting base branch
 func (m Model) renderBranchSelectionPopup() string {
+	// Create popup (60% width, 70% height to leave visible margins)
+	popupWidth := (m.termWidth * 3) / 5
+	popupHeight := (m.termHeight * 7) / 10
+
+	// Ensure minimum size
+	if popupWidth < 45 {
+		popupWidth = 45
+	}
+	if popupHeight < 12 {
+		popupHeight = 12
+	}
+
+	// Add padding around popup to create "floating" effect
+	marginSize := 2
+
+	// Create the popup content area
+	popupStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.theme().Accent).
+		Padding(0, 1).
+		Width(popupWidth - (marginSize * 2)).
+		Height(popupHeight - (marginSize * 2))
+
+	popupContent := popupStyle.Render(m.popupList.View())
+
+	// Add hint text above popup
+	hintStyle := lipgloss.NewStyle().
+		Foreground(m.theme().MutedFg).
+		Italic(true).
+		Align(lipgloss.Center)
+
+	hint := hintStyle.Render("↑↓ to navigate • Enter/o to select • ESC/q to cancel")
+
+	// Combine hint and popup
+	fullPopup := lipgloss.JoinVertical(
+		lipgloss.Center,
+		"",
+		hint,
+		"",
+		popupContent,
+	)
+
+	// Center the popup with margins to show it's floating
+	return lipgloss.Place(
+		m.termWidth,
+		m.termHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		fullPopup,
+	)
+}
+
+// renderFolderSelectionPopup shows a centered popup for selecting folder to connect to
+func (m Model) renderFolderSelectionPopup() string {
 	// Create popup (60% width, 70% height to leave visible margins)
 	popupWidth := (m.termWidth * 3) / 5
 	popupHeight := (m.termHeight * 7) / 10

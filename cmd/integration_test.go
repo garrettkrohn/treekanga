@@ -6,11 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/garrettkrohn/treekanga/adapters"
-	"github.com/garrettkrohn/treekanga/execwrap"
-	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/config"
+	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/services"
-	"github.com/garrettkrohn/treekanga/shell"
 	spinnerhuh "github.com/garrettkrohn/treekanga/spinnerHuh"
 	"github.com/garrettkrohn/treekanga/transformer"
 	"github.com/stretchr/testify/assert"
@@ -40,9 +38,6 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	require.NoError(t, err, "Failed to change to temp directory")
 
 	// Set up real dependencies
-	realExec := execwrap.NewExec()
-	realShell := shell.NewShell(realExec)
-	realGit := adapters.NewGitAdapter(realShell)
 	mockSpinner := &mockSpinner{}
 
 	// Use a small public repository for testing
@@ -53,7 +48,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 
 	// Run the clone command
 	args := []string{testRepoURL}
-	CloneBareRepo(realGit, mockSpinner, args)
+	CloneBareRepo(mockSpinner, args)
 
 	// Verify the bare repository was created
 	bareRepoPath := filepath.Join(tempDir, expectedFolderName)
@@ -73,34 +68,27 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	_, err = os.Stat(gitSubdir)
 	assert.True(t, os.IsNotExist(err), "Bare repo should not have .git subdirectory")
 
-	// Verify git config was set up correctly
-	output, err := realShell.Cmd("git", "-C", bareRepoPath, "config", "--get", "remote.origin.fetch")
-	assert.NoError(t, err, "Should be able to read git config")
-	assert.Equal(t, "+refs/heads/*:refs/remotes/origin/*", output, "Git fetch config should be set correctly")
-
 	t.Logf("✓ Successfully verified bare repository at: %s", bareRepoPath)
 
 	t.Log("Step 2: Creating worktree from bare repository...")
 
 	// First, fetch remote branches to determine what's available
-	remoteBranches, err := realGit.GetRemoteBranches(&bareRepoPath)
+	remoteBranches, err := git.GetRemoteBranches(bareRepoPath)
 	require.NoError(t, err, "Should be able to get remote branches")
 	require.Greater(t, len(remoteBranches), 0, "Should have at least one remote branch")
 
 	// Log all remote branches for debugging
 	t.Logf("All remote branches: %v", remoteBranches)
 
-	// Find a valid remote branch (must contain "origin/" prefix and have a branch name after it)
+	// Find a valid remote branch
 	var baseBranch string
 	for _, branch := range remoteBranches {
-		// Skip entries that are just "origin" or don't have the expected format
-		if strings.HasPrefix(branch, "origin/") && len(branch) > 7 {
-			// This is a valid remote branch like "origin/master" or "origin/main"
-			baseBranch = branch[7:] // Remove "origin/" prefix
+		if branch != "" && !strings.Contains(branch, "HEAD") {
+			baseBranch = branch
 			break
 		}
 	}
-	require.NotEmpty(t, baseBranch, "Should find at least one valid remote branch (origin/...)")
+	require.NotEmpty(t, baseBranch, "Should find at least one valid remote branch")
 	t.Logf("Using base branch: %s", baseBranch)
 
 	// Create a worktree using the add functionality
@@ -123,8 +111,8 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// Get the branch arguments from the service function
 	branchArgs := services.GetAddWorktreeArguements(worktreeConfig)
 
-	// Add the worktree using the adapter
-	err = realGit.AddWorktree(bareRepoPath, tempDir, testBranchName, branchArgs)
+	// Add the worktree
+	err = git.AddWorktree(bareRepoPath, tempDir, testBranchName, branchArgs)
 	require.NoError(t, err, "Should successfully add worktree")
 
 	t.Logf("✓ Successfully created worktree at: %s", worktreePath)
@@ -148,9 +136,11 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.Contains(t, string(gitFileContent), expectedFolderName, ".git file should reference the bare repo")
 
 	// Verify we can see the worktree in git worktree list
-	worktrees, err := realGit.GetWorktrees(&bareRepoPath)
+	rawWorktrees, err := git.ListWorktrees(bareRepoPath)
 	assert.NoError(t, err, "Should be able to list worktrees")
-	assert.Greater(t, len(worktrees), 0, "Should have at least one worktree")
+	assert.Greater(t, len(rawWorktrees), 0, "Should have at least one worktree")
+
+	worktrees := transformer.TransformWorktrees(rawWorktrees)
 
 	// Resolve symlinks in our worktree path (on macOS, /var is a symlink to /private/var)
 	resolvedWorktreePath, err := filepath.EvalSymlinks(worktreePath)
@@ -159,27 +149,14 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	}
 
 	// Check that our worktree is in the list
-	// git worktree list returns lines like: "/path/to/worktree abcdef12345 [branch_name]"
 	foundWorktree := false
 	for _, wt := range worktrees {
-		// Check if the worktree path is mentioned in this line
-		if len(wt) > 0 {
-			// Parse the worktree line to extract the path
-			fields := splitWorktreeListLine(wt)
-			if len(fields) > 0 {
-				wtPath := fields[0]
-				// Resolve symlinks in the worktree list path too
-				resolvedWtPath, err := filepath.EvalSymlinks(wtPath)
-				if err != nil {
-					resolvedWtPath = wtPath
-				}
+		resolvedWtPath, _ := filepath.EvalSymlinks(wt.FullPath)
 
-				if resolvedWtPath == resolvedWorktreePath || wtPath == worktreePath {
-					foundWorktree = true
-					t.Logf("Found our worktree in git worktree list")
-					break
-				}
-			}
+		if resolvedWtPath == resolvedWorktreePath || wt.FullPath == worktreePath {
+			foundWorktree = true
+			t.Logf("Found our worktree in git worktree list")
+			break
 		}
 	}
 	assert.True(t, foundWorktree, "Should find our worktree in git worktree list")
@@ -195,18 +172,15 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	// We need to set up deps for the list command to work
 	// Save the original deps values
 	originalBareRepoPath := deps.AppConfig.BareRepoPath
-	originalGit := deps.Git
 	defer func() {
 		deps.AppConfig.BareRepoPath = originalBareRepoPath
-		deps.Git = originalGit
 	}()
 
 	// Set deps for the list command
 	deps.AppConfig.BareRepoPath = bareRepoPath
-	deps.Git = realGit
 
 	// Get the list of worktrees
-	worktreeList, err := buildWorktreeStrings(false)
+	worktreeList, err := buildWorktreeStrings(false, false, false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings")
 	assert.Greater(t, len(worktreeList), 0, "Should have at least one worktree in the list")
 
@@ -222,7 +196,7 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.True(t, foundInList, "Should find test_branch in the worktree list output")
 
 	// Also test verbose mode
-	verboseList, err := buildWorktreeStrings(true)
+	verboseList, err := buildWorktreeStrings(true, false, false, false)
 	assert.NoError(t, err, "Should be able to build verbose worktree strings")
 	assert.Greater(t, len(verboseList), 0, "Should have at least one worktree in verbose list")
 
@@ -252,34 +226,8 @@ func TestCloneAndAddIntegration(t *testing.T) {
 
 	t.Log("Step 5: Deleting the worktree and verifying it's gone...")
 
-	// Instead of using deleteWorktrees which calls util.CheckError (log.Fatal),
-	// we'll call RemoveWorktree directly so we can handle errors properly in the test
-
-	// Get the worktree objects to find our test_branch
-	realTransformer := transformer.NewTransformer()
-	worktreeStrings, err := realGit.GetWorktrees(&bareRepoPath)
-	require.NoError(t, err, "Should be able to get worktrees")
-
-	worktreeObjects := realTransformer.TransformWorktrees(worktreeStrings)
-
-	// Find our test_branch worktree
-	var testWorktree *models.Worktree
-	for i, wt := range worktreeObjects {
-		if wt.BranchName == testBranchName {
-			testWorktree = &worktreeObjects[i]
-			break
-		}
-	}
-	require.NotNil(t, testWorktree, "Should find test_branch worktree object")
-
-	// Resolve symlinks in bareRepoPath to match the FullPath format (macOS /var vs /private/var)
-	resolvedBareRepoPath, err := filepath.EvalSymlinks(bareRepoPath)
-	if err != nil {
-		resolvedBareRepoPath = bareRepoPath
-	}
-
-	// Remove the worktree directly using the resolved path
-	err = realGit.RemoveWorktree(testWorktree.FullPath, &resolvedBareRepoPath, true)
+	// Remove the worktree directly
+	err = git.RemoveWorktree(bareRepoPath, worktreePath, true)
 	assert.NoError(t, err, "Should successfully remove worktree")
 
 	t.Logf("✓ Successfully deleted worktree")
@@ -289,27 +237,25 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	assert.True(t, os.IsNotExist(err), "Worktree directory should no longer exist")
 
 	// Verify the worktree is no longer in git worktree list
-	worktreesAfterDelete, err := realGit.GetWorktrees(&bareRepoPath)
+	rawWorktreesAfterDelete, err := git.ListWorktrees(bareRepoPath)
 	assert.NoError(t, err, "Should be able to list worktrees after deletion")
+
+	worktreesAfterDelete := transformer.TransformWorktrees(rawWorktreesAfterDelete)
 
 	foundAfterDelete := false
 	for _, wt := range worktreesAfterDelete {
-		fields := splitWorktreeListLine(wt)
-		if len(fields) > 0 {
-			wtPath := fields[0]
-			resolvedWtPath, _ := filepath.EvalSymlinks(wtPath)
-			resolvedWorktreePath, _ := filepath.EvalSymlinks(worktreePath)
+		resolvedWtPath, _ := filepath.EvalSymlinks(wt.FullPath)
+		resolvedWorktreePath, _ := filepath.EvalSymlinks(worktreePath)
 
-			if resolvedWtPath == resolvedWorktreePath || wtPath == worktreePath {
-				foundAfterDelete = true
-				break
-			}
+		if resolvedWtPath == resolvedWorktreePath || wt.FullPath == worktreePath {
+			foundAfterDelete = true
+			break
 		}
 	}
 	assert.False(t, foundAfterDelete, "Worktree should not appear in git worktree list after deletion")
 
 	// Verify the list command no longer shows it
-	worktreeListAfterDelete, err := buildWorktreeStrings(false)
+	worktreeListAfterDelete, err := buildWorktreeStrings(false, false, false, false)
 	assert.NoError(t, err, "Should be able to build worktree strings after deletion")
 
 	foundInListAfterDelete := false
@@ -325,43 +271,157 @@ func TestCloneAndAddIntegration(t *testing.T) {
 	t.Log("✅ Integration test completed successfully!")
 }
 
+// TestRenameWorktreeIntegration is an integration test that verifies
+// the rename command successfully renames both the branch and worktree folder
+func TestRenameWorktreeIntegration(t *testing.T) {
+	// Skip if running in CI without git
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	// Create a temporary directory for the test
+	tempDir, err := os.MkdirTemp("", "treekanga-rename-integration-*")
+	require.NoError(t, err, "Failed to create temp directory")
+	defer os.RemoveAll(tempDir)
+
+	// Save current directory and change to temp directory
+	originalDir, err := os.Getwd()
+	require.NoError(t, err, "Failed to get working directory")
+	defer os.Chdir(originalDir)
+
+	err = os.Chdir(tempDir)
+	require.NoError(t, err, "Failed to change to temp directory")
+
+	// Use a small public repository for testing
+	testRepoURL := "https://github.com/octocat/Hello-World.git"
+	expectedFolderName := "Hello-World.git_bare"
+
+	t.Log("Step 1: Cloning bare repository...")
+
+	// Clone the bare repo
+	mockSpinner := &mockSpinner{}
+	args := []string{testRepoURL}
+	CloneBareRepo(mockSpinner, args)
+
+	bareRepoPath := filepath.Join(tempDir, expectedFolderName)
+	_, err = os.Stat(bareRepoPath)
+	require.NoError(t, err, "Bare repository should exist")
+
+	t.Log("Step 2: Creating initial worktree...")
+
+	// Set up deps for commands
+	deps.AppConfig.BareRepoPath = bareRepoPath
+
+	// Get remote branches
+	remoteBranches, err := git.GetRemoteBranches(bareRepoPath)
+	require.NoError(t, err)
+	require.Greater(t, len(remoteBranches), 0)
+
+	var baseBranch string
+	for _, branch := range remoteBranches {
+		if branch != "" && !strings.Contains(branch, "HEAD") {
+			baseBranch = branch
+			break
+		}
+	}
+	require.NotEmpty(t, baseBranch)
+
+	// Create initial worktree
+	initialBranch := "feature/old-name"
+	initialFolder := "feature-old-name"
+	worktreePath := filepath.Join(tempDir, initialFolder)
+
+	worktreeConfig := services.AddWorktreeConfig{
+		BareRepoPath:               bareRepoPath,
+		WorktreeTargetDirectory:    tempDir,
+		NewBranchExistsLocally:     false,
+		NewBranchExistsRemotely:    false,
+		BaseBranchExistsLocally:    false,
+		NewBranchName:              initialBranch,
+		PullBeforeCuttingNewBranch: false,
+		BaseBranch:                 baseBranch,
+		NewWorktreeName:            initialFolder,
+	}
+
+	branchArgs := services.GetAddWorktreeArguements(worktreeConfig)
+	err = git.AddWorktree(bareRepoPath, tempDir, initialFolder, branchArgs)
+	require.NoError(t, err)
+
+	t.Logf("✓ Created worktree at: %s", worktreePath)
+
+	// Verify initial state
+	branches, err := git.GetLocalBranches(bareRepoPath)
+	require.NoError(t, err)
+	assert.Contains(t, branches, initialBranch, "Initial branch should exist")
+
+	_, err = os.Stat(worktreePath)
+	assert.NoError(t, err, "Initial worktree folder should exist")
+
+	t.Log("Step 3: Renaming the worktree...")
+
+	// Change into the worktree directory
+	err = os.Chdir(worktreePath)
+	require.NoError(t, err, "Should be able to cd into worktree")
+
+	// Set up config for rename
+	newBranchName := "feature/new-name"
+	newFolderName := "feature-new-name"
+	newWorktreePath := filepath.Join(tempDir, newFolderName)
+
+	cfg := config.AppConfig{
+		BareRepoPath:     bareRepoPath,
+		WorktreeTargetDir: tempDir,
+	}
+
+	// Execute rename (pass nil for connector and confirmer since we don't need tmux handling in tests)
+	err = services.RenameWorktree(cfg, newBranchName, worktreePath, nil, nil, false)
+	assert.NoError(t, err, "Should successfully rename worktree")
+
+	t.Log("Step 4: Verifying the rename...")
+
+	// Verify branch was renamed
+	branches, err = git.GetLocalBranches(bareRepoPath)
+	require.NoError(t, err)
+	assert.Contains(t, branches, newBranchName, "New branch should exist")
+	assert.NotContains(t, branches, initialBranch, "Old branch should not exist")
+
+	// Verify folder was moved
+	_, err = os.Stat(newWorktreePath)
+	assert.NoError(t, err, "New worktree folder should exist")
+
+	_, err = os.Stat(worktreePath)
+	assert.True(t, os.IsNotExist(err), "Old worktree folder should not exist")
+
+	// Verify worktree list shows the new branch
+	rawWorktrees, err := git.ListWorktrees(bareRepoPath)
+	require.NoError(t, err)
+
+	worktrees := transformer.TransformWorktrees(rawWorktrees)
+	foundNewBranch := false
+	for _, wt := range worktrees {
+		if wt.BranchName == newBranchName {
+			foundNewBranch = true
+			t.Logf("Found renamed branch in worktree list: %s", wt.BranchName)
+			break
+		}
+	}
+	assert.True(t, foundNewBranch, "New branch should appear in git worktree list")
+
+	t.Logf("✓ Successfully verified rename: %s → %s", initialBranch, newBranchName)
+	t.Logf("✓ Successfully verified folder move: %s → %s", initialFolder, newFolderName)
+
+	// Change back to temp dir before cleanup
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	t.Log("✅ Rename integration test completed successfully!")
+}
+
 // assertPathExists is a helper function to check if a path exists
 func assertPathExists(t *testing.T, path string) {
 	t.Helper()
 	_, err := os.Stat(path)
 	assert.NoError(t, err, "Path should exist: %s", path)
-}
-
-// splitWorktreeListLine splits a git worktree list line into fields
-// Format: "/path/to/worktree abcdef12345 [branch_name]"
-func splitWorktreeListLine(line string) []string {
-	var fields []string
-	current := ""
-	inBracket := false
-
-	for i := 0; i < len(line); i++ {
-		char := line[i]
-		if char == ' ' && !inBracket {
-			if current != "" {
-				fields = append(fields, current)
-				current = ""
-			}
-		} else if char == '[' {
-			inBracket = true
-			current += string(char)
-		} else if char == ']' {
-			inBracket = false
-			current += string(char)
-		} else {
-			current += string(char)
-		}
-	}
-
-	if current != "" {
-		fields = append(fields, current)
-	}
-
-	return fields
 }
 
 // mockSpinner is a simple mock that does nothing - we don't need UI in tests
