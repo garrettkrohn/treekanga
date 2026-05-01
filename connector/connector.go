@@ -38,6 +38,7 @@ func (r *RealConnector) Connect(name string, opts models.ConnectOpts) error {
 	strategies := []func(string) (models.Connection, error){
 		r.tmuxStrategy,
 		r.worktreeStrategy,
+		r.bareRepoStrategy,
 		r.dirStrategy,
 	}
 
@@ -180,6 +181,44 @@ func (r *RealConnector) connectToTmux(connection models.Connection, opts models.
 
 	// Switch or attach to the session
 	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
+}
+
+// bareRepoStrategy checks if the name is a bare repo path
+func (r *RealConnector) bareRepoStrategy(name string) (models.Connection, error) {
+	// Check if name ends with ".bare"
+	if !strings.HasSuffix(name, ".bare") {
+		return models.Connection{Found: false}, nil
+	}
+
+	// Check if path exists
+	if _, err := os.Stat(name); err != nil {
+		return models.Connection{Found: false}, nil
+	}
+
+	sessionName := r.generateBareRepoSessionName(name)
+	return models.Connection{
+		Found: true,
+		New:   true,
+		Session: models.Session{
+			Name: sessionName,
+			Path: name,
+			Src:  "bare",
+		},
+	}, nil
+}
+
+// generateBareRepoSessionName creates a session name for bare repos in the format "repo - bare"
+func (r *RealConnector) generateBareRepoSessionName(bareRepoPath string) string {
+	// Get parent directory name
+	parentDir := filepath.Dir(bareRepoPath)
+	repoName := filepath.Base(parentDir)
+
+	// Strip _work suffix
+	repoName = strings.TrimSuffix(repoName, "_work")
+
+	// Sanitize and format
+	safeRepoName := util.SanitizeForSessionName(repoName)
+	return fmt.Sprintf("%s - bare", safeRepoName)
 }
 
 func (r *RealConnector) VsCodeConnect(newRootPath string) {

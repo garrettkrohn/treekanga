@@ -24,6 +24,7 @@ type AppConfig struct {
 	RunPostScript              bool     // run the post script without the execute flag
 	PullBeforeCuttingNewBranch bool     // pull before cutting new branch
 	Theme                      *models.Theme
+	SelectorMode               string   // "fzf" or "" for bubbletea (default)
 
 	// DELETE COMMAND
 	FilterOnlyStaleBranches bool // only show branches that don't exist on remote
@@ -46,6 +47,7 @@ type AppConfig struct {
 type Config interface {
 	GetDefaultConfig(bareRepoPath string, projectName string) (AppConfig, error)
 	ImportYamlConfigFile(cfg AppConfig) (AppConfig, error)
+	ImportGlobalConfigOnly() (AppConfig, error)
 }
 
 type ConfigInstance struct {
@@ -119,6 +121,15 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 	}
 	log.Debug(cfg.AllBareRepoPaths)
 
+	// Load global selectorMode config (not repo-specific)
+	if viper.IsSet("selectorMode") {
+		selectorMode := viper.GetString("selectorMode")
+		if selectorMode != "" {
+			log.Debug(fmt.Sprintf("setting selectorMode: %s from config", selectorMode))
+			cfg.SelectorMode = selectorMode
+		}
+	}
+
 	viperRepoPrefix := getRepoConfigPrefix(cfg.RepoNameForConfig, cfg.ParentDirOfBareRepo)
 
 	if viperRepoPrefix == "" {
@@ -191,6 +202,42 @@ func (c *ConfigInstance) ImportYamlConfigFile(cfg AppConfig) (AppConfig, error) 
 		if tuiTheme != "" {
 			log.Debug(fmt.Sprintf("setting theme to %s from config", tuiTheme))
 			cfg.Theme = GetTheme(tuiTheme)
+		}
+	}
+
+	return cfg, nil
+}
+
+// ImportGlobalConfigOnly loads only global config (selectorMode and AllBareRepoPaths)
+// Used for commands that don't require being in a specific git repo
+func (c *ConfigInstance) ImportGlobalConfigOnly() (AppConfig, error) {
+	cfg := AppConfig{
+		Theme:            GetTheme("default"),
+		AllBareRepoPaths: []string{},
+	}
+
+	repoconfig := viper.GetStringMap("repos")
+	if repoconfig == nil {
+		return cfg, fmt.Errorf("could not find configuration file")
+	}
+
+	// Load AllBareRepoPaths from all repos
+	for repoName := range repoconfig {
+		worktreeTargetDir := viper.GetString("repos." + repoName + ".worktreeTargetDir")
+		if worktreeTargetDir != "" {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				worktreeTargetDir = filepath.Join(homeDir, strings.TrimPrefix(worktreeTargetDir, "~/"))
+			}
+			cfg.AllBareRepoPaths = append(cfg.AllBareRepoPaths, worktreeTargetDir)
+		}
+	}
+
+	// Load global selectorMode config
+	if viper.IsSet("selectorMode") {
+		selectorMode := viper.GetString("selectorMode")
+		if selectorMode != "" {
+			cfg.SelectorMode = selectorMode
 		}
 	}
 

@@ -27,6 +27,11 @@ Create a YAML configuration file at `~/.config/treekanga/treekanga.yml`:
 
 ```yaml
 # Example Configuration
+
+# Global selector mode (optional)
+# Use "fzf" for fzf selector, or omit for built-in selector
+selectorMode: fzf
+
 repos:
   # Repository name or the parent of the bare repo
   exampleRepository:
@@ -200,6 +205,46 @@ The connect command will automatically:
 3. Check if the input is a valid directory path
 4. Create a new tmux session if none exists
 
+### Interactive Selection Mode
+
+The `connect` command supports interactive selection with the `--select` flag:
+
+#### Flat Mode (All Worktrees)
+```bash
+treekanga connect --select
+```
+Shows all worktrees from all repos in your config. Select one to connect.
+
+#### Hierarchical Mode (Pick Repo, Then Worktree)
+```bash
+treekanga connect --select --by-repo
+```
+First select a repo, then select a worktree within that repo.
+
+#### Bare Repo Mode
+```bash
+treekanga connect --select --bare
+```
+Shows all bare repos and connects to the selected one.
+
+### Selector Configuration
+
+By default, treekanga uses a built-in interactive selector. If you prefer `fzf`, add this to your config:
+
+```yaml
+selectorMode: fzf
+```
+
+**Requirements**: fzf version 0.20.0 or higher in your PATH.
+
+**Fallback**: If fzf is configured but not found, treekanga will warn and use the built-in selector.
+
+### Troubleshooting
+
+**"fzf not found in PATH" warning**:
+- Install fzf: `brew install fzf` (macOS) or see [fzf installation](https://github.com/junegunn/fzf#installation)
+- Or remove `selectorMode: fzf` from config to use built-in selector
+
 ### TUI (In Beta)
 
 ```bash
@@ -231,6 +276,33 @@ treekanga tui
 "ayu-mirage"
 "kanagawa"         
 ```
+
+## Tmux Integration
+
+Treekanga works great with tmux for quick worktree/bare repo switching. Add these keybinds to your `~/.config/tmux/tmux.conf`:
+
+```bash
+# Select worktree from all repos (flat view)
+bind-key "w" run-shell "tmux popup -E -w 80% -h 90% 'treekanga connect --select --switch'"
+
+# Select repo first, then worktree (hierarchical)
+bind-key "W" run-shell "tmux popup -E -w 80% -h 90% 'treekanga connect --select --by-repo --switch'"
+
+# Select bare repo
+bind-key "b" run-shell "tmux popup -E -w 80% -h 90% 'treekanga connect --select --bare --switch'"
+```
+
+Then reload your config:
+```bash
+tmux source ~/.config/tmux/tmux.conf
+```
+
+**Usage**:
+- Press `Ctrl-a w` to quickly switch worktrees
+- Press `Ctrl-a W` for hierarchical selection
+- Press `Ctrl-a b` to navigate to a bare repo
+
+**Note**: Adjust `Ctrl-a` to your tmux prefix if different.
 
 ## Logging
 

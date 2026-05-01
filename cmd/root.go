@@ -51,6 +51,19 @@ func NewRootCmd(
 				return
 			}
 
+			// Skip bare repo requirement for connect --select (uses global config only)
+			if cmd.Name() == "connect" {
+				selectFlag, _ := cmd.Flags().GetBool("select")
+				if selectFlag {
+					// For --select mode, we only need global config
+					configuration := config.NewConfig()
+					cfg, err := configuration.ImportGlobalConfigOnly()
+					utility.CheckError(err)
+					deps.AppConfig = cfg
+					return
+				}
+			}
+
 			bareRepoPath, err := git.GetBareRepoPath("")
 			utility.CheckError(err)
 

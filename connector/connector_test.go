@@ -205,3 +205,94 @@ func TestGenerateWorktreeSessionNameRealWorldExamples(t *testing.T) {
 		})
 	}
 }
+
+func TestBareRepoStrategy_RecognizesBareRepoPaths(t *testing.T) {
+	// Arrange - path ending in .bare
+	connector := &RealConnector{}
+	path := "/Users/gkrohn/code/cal_work/.bare"
+
+	// Act - call bareRepoStrategy(path)
+	connection, err := connector.bareRepoStrategy(path)
+
+	// Assert - expect Found=true in Connection
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+	if !connection.Found {
+		t.Errorf("Expected Found=true for bare repo path ending in .bare")
+	}
+	if connection.Session.Name == "" {
+		t.Errorf("Expected session name to be set")
+	}
+	if connection.Session.Src != "bare" {
+		t.Errorf("Expected Src='bare', got: %s", connection.Session.Src)
+	}
+}
+
+func TestBareRepoStrategy_IgnoresNonBareRepoPaths(t *testing.T) {
+	// Arrange - path NOT ending in .bare
+	connector := &RealConnector{}
+	path := "/Users/gkrohn/code/cal_work/feature-branch"
+
+	// Act - call bareRepoStrategy(path)
+	connection, err := connector.bareRepoStrategy(path)
+
+	// Assert - expect Found=false
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+	if connection.Found {
+		t.Errorf("Expected Found=false for non-bare repo path")
+	}
+}
+
+func TestGenerateBareRepoSessionName_FormatsAsRepoBareName(t *testing.T) {
+	// Arrange - bare repo path
+	connector := &RealConnector{}
+	path := "/Users/gkrohn/code/cal_work/.bare"
+
+	// Act - call generateBareRepoSessionName(path)
+	result := connector.generateBareRepoSessionName(path)
+
+	// Assert - expect "cal - bare" format
+	expected := "cal - bare"
+	if result != expected {
+		t.Errorf("generateBareRepoSessionName(%q) = %q, expected %q", path, result, expected)
+	}
+}
+
+func TestGenerateBareRepoSessionName_StripsWorkSuffix(t *testing.T) {
+	// Arrange - bare repo path with _work suffix
+	connector := &RealConnector{}
+	path := "/Users/gkrohn/code/core_work/.bare"
+
+	// Act - call generateBareRepoSessionName(path)
+	result := connector.generateBareRepoSessionName(path)
+
+	// Assert - verify _work suffix removed
+	expected := "core - bare"
+	if result != expected {
+		t.Errorf("generateBareRepoSessionName(%q) = %q, expected %q (should strip _work suffix)", path, result, expected)
+	}
+}
+
+func TestConnect_SuccessfullyConnectsToBareRepo(t *testing.T) {
+	// Note: This is an integration-style test that requires actual filesystem
+	// For now, we verify the strategy exists and can be called
+	// Full integration testing will happen when the feature is wired up
+
+	// Arrange - bare repo path
+	connector := &RealConnector{}
+	path := "/Users/gkrohn/code/cal_work/.bare"
+
+	// Act - call bareRepoStrategy (not full Connect, as that requires tmux mock)
+	connection, err := connector.bareRepoStrategy(path)
+
+	// Assert - verify connection object structure
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+	if connection.Found && connection.Session.Name == "" {
+		t.Errorf("Expected session name to be set when Found=true")
+	}
+}

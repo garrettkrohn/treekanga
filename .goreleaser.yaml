@@ -22,6 +22,8 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - -X main.version={{.Version}}
 
 archives:
   - format: tar.gz
@@ -59,5 +61,7 @@ brews:
     commit_author:
       name: goreleaser-bot
       email: bot@goreleaser.com
+    install: |
+      bin.install "treekanga"
     dependencies:
       - tmux
