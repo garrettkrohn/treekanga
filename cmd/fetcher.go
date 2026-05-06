@@ -62,6 +62,13 @@ func (f *globalFetcher) fetch() ([]models.Worktree, error) {
 }
 
 func findBareRepoFromWorktreeDir(targetDir string) (string, error) {
+	// First check if there's a .bare directory directly in targetDir
+	bareRepoPath := filepath.Join(targetDir, ".bare")
+	if info, err := os.Stat(bareRepoPath); err == nil && info.IsDir() {
+		return bareRepoPath, nil
+	}
+
+	// Otherwise, search for a worktree and extract the bare repo path from it
 	entries, err := os.ReadDir(targetDir)
 	if err != nil {
 		return "", err
@@ -81,6 +88,13 @@ func findBareRepoFromWorktreeDir(targetDir string) (string, error) {
 		content := string(data)
 		if strings.HasPrefix(content, "gitdir:") {
 			gitDir := strings.TrimSpace(strings.TrimPrefix(content, "gitdir:"))
+			// gitDir is like "/path/.bare/worktrees/branch-name"
+			// We need to extract just "/path/.bare"
+			// Find the "/worktrees/" part and strip everything after .bare
+			if idx := strings.Index(gitDir, "/worktrees/"); idx != -1 {
+				bareRepoPath := gitDir[:idx]
+				return bareRepoPath, nil
+			}
 			return gitDir, nil
 		}
 	}

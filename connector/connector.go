@@ -70,8 +70,19 @@ func (r *RealConnector) tmuxStrategy(name string) (models.Connection, error) {
 
 // worktreeStrategy checks if the name matches a worktree path
 func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error) {
-	// Try to get bare repo path
-	bareRepoPath, err := git.GetBareRepoPath("")
+	// First try to get bare repo path from the given name (if it's a path)
+	var bareRepoPath string
+	var err error
+
+	// Check if name is a directory path
+	if filepath.IsAbs(name) {
+		// Try to get bare repo from the path itself
+		bareRepoPath, err = git.GetBareRepoPath(name)
+	} else {
+		// Try from current directory
+		bareRepoPath, err = git.GetBareRepoPath("")
+	}
+
 	if err != nil {
 		// Not in a git repo, skip this strategy
 		return models.Connection{Found: false}, nil
@@ -88,6 +99,17 @@ func (r *RealConnector) worktreeStrategy(name string) (models.Connection, error)
 		// Check if name matches the full path or the directory name
 		if wt.FullPath == name || wt.Folder == name {
 			sessionName := r.generateWorktreeSessionName(wt.FullPath, wt.BranchName)
+
+			// Check if session already exists
+			session, exists := r.tmux.FindSession(sessionName)
+			if exists {
+				return models.Connection{
+					Found:   true,
+					New:     false,
+					Session: session,
+				}, nil
+			}
+
 			return models.Connection{
 				Found: true,
 				New:   true,
@@ -132,6 +154,17 @@ func (r *RealConnector) dirStrategy(name string) (models.Connection, error) {
 	}
 
 	sessionName := r.generateSessionName(path)
+
+	// Check if session already exists
+	session, exists := r.tmux.FindSession(sessionName)
+	if exists {
+		return models.Connection{
+			Found:   true,
+			New:     false,
+			Session: session,
+		}, nil
+	}
+
 	return models.Connection{
 		Found: true,
 		New:   true,
@@ -150,7 +183,7 @@ func (r *RealConnector) generateSessionName(path string) string {
 	return util.SanitizeForSessionName(name)
 }
 
-// generateWorktreeSessionName creates a session name in the format "repo - branch"
+// generateWorktreeSessionName creates a session name in the format "repo|branch"
 func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName string) string {
 	// Get the parent directory name as the repo name
 	parentDir := filepath.Dir(worktreePath)
@@ -166,8 +199,8 @@ func (r *RealConnector) generateWorktreeSessionName(worktreePath, branchName str
 	safeRepoName := util.SanitizeForSessionName(repoName)
 	safeBranchName := util.SanitizeForSessionName(branchName)
 
-	// Format as "repo-branch" (using dash instead of space-dash-space to avoid tmux parsing issues)
-	return fmt.Sprintf("%s-%s", safeRepoName, safeBranchName)
+	// Format as "repo|branch"
+	return fmt.Sprintf("%s|%s", safeRepoName, safeBranchName)
 }
 
 // connectToTmux handles the actual connection to tmux
@@ -196,6 +229,17 @@ func (r *RealConnector) bareRepoStrategy(name string) (models.Connection, error)
 	}
 
 	sessionName := r.generateBareRepoSessionName(name)
+
+	// Check if session already exists
+	session, exists := r.tmux.FindSession(sessionName)
+	if exists {
+		return models.Connection{
+			Found:   true,
+			New:     false,
+			Session: session,
+		}, nil
+	}
+
 	return models.Connection{
 		Found: true,
 		New:   true,

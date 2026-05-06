@@ -205,7 +205,7 @@ func formatWorktreeForDisplay(wt models.Worktree) string {
 	// Strip _work suffix if present
 	repoName = strings.TrimSuffix(repoName, "_work")
 
-	return fmt.Sprintf("%s - %s", repoName, wt.BranchName)
+	return fmt.Sprintf("%s|%s", repoName, wt.BranchName)
 }
 
 // formatRepoForDisplay formats a repo name with worktree count
