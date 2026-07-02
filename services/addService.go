@@ -66,6 +66,7 @@ type AddWorktreeConfig struct {
 	NewBranchExistsLocally     bool
 	NewBranchExistsRemotely    bool
 	BaseBranchExistsLocally    bool
+	BaseBranchExistsRemotely   bool
 	NewBranchName              string
 	PullBeforeCuttingNewBranch bool
 	BaseBranch                 string
@@ -86,8 +87,8 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 	// Case 3: Default mode - create new branch from base branch
 	// Base branch exists locally
 	if params.BaseBranchExistsLocally {
-		if params.PullBeforeCuttingNewBranch {
-			// Create new branch from remote version of base branch
+		if params.PullBeforeCuttingNewBranch && params.BaseBranchExistsRemotely {
+			// Create new branch from remote version of base branch (only if it exists remotely)
 			return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 		} else {
 			// Create new branch from local version of base branch
@@ -186,6 +187,7 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 		NewBranchExistsLocally:     cfg.NewBranchExistsLocally,
 		NewBranchExistsRemotely:    cfg.NewBranchExistsRemotely,
 		BaseBranchExistsLocally:    cfg.BaseBranchExistsLocally,
+		BaseBranchExistsRemotely:   cfg.BaseBranchExistsRemotely,
 		NewBranchName:              cfg.NewBranchName,
 		PullBeforeCuttingNewBranch: cfg.PullBeforeCuttingNewBranch,
 		BaseBranch:                 cfg.BaseBranch,

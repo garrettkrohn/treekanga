@@ -132,6 +132,7 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 			NewBranchName:              "feature/new",
 			BaseBranch:                 "main",
 			BaseBranchExistsLocally:    true,
+			BaseBranchExistsRemotely:   true,
 			NewBranchExistsLocally:     false,
 			NewBranchExistsRemotely:    false,
 			PullBeforeCuttingNewBranch: false,
@@ -151,8 +152,9 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 			NewBranchName:              "feature/new",
 			BaseBranch:                 "main",
 			BaseBranchExistsLocally:    true,
-			NewBranchExistsRemotely:    false,
+			BaseBranchExistsRemotely:   true,
 			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
 			PullBeforeCuttingNewBranch: true,
 		}
 
@@ -163,15 +165,16 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 
 	t.Run("remote mode checks out existing remote branch", func(t *testing.T) {
 		params := AddWorktreeConfig{
-			BareRepoPath:            "/test/path",
-			WorktreeTargetDirectory: "/test/worktrees",
-			CheckoutRemote:          true,
-			CheckoutLocal:           false,
-			NewBranchName:           "existing-remote-branch",
-			BaseBranch:              "main",
-			NewBranchExistsLocally:  false,
-			NewBranchExistsRemotely: true,
-			BaseBranchExistsLocally: true,
+			BareRepoPath:             "/test/path",
+			WorktreeTargetDirectory:  "/test/worktrees",
+			CheckoutRemote:           true,
+			CheckoutLocal:            false,
+			NewBranchName:            "existing-remote-branch",
+			BaseBranch:               "main",
+			NewBranchExistsLocally:   false,
+			NewBranchExistsRemotely:  true,
+			BaseBranchExistsLocally:  true,
+			BaseBranchExistsRemotely: true,
 		}
 
 		args := GetAddWorktreeArguements(params)
@@ -181,15 +184,16 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 
 	t.Run("local mode checks out existing local branch", func(t *testing.T) {
 		params := AddWorktreeConfig{
-			BareRepoPath:            "/test/path",
-			WorktreeTargetDirectory: "/test/worktrees",
-			CheckoutRemote:          false,
-			CheckoutLocal:           true,
-			NewBranchName:           "existing-local-branch",
-			BaseBranch:              "main",
-			NewBranchExistsLocally:  true,
-			NewBranchExistsRemotely: false,
-			BaseBranchExistsLocally: true,
+			BareRepoPath:             "/test/path",
+			WorktreeTargetDirectory:  "/test/worktrees",
+			CheckoutRemote:           false,
+			CheckoutLocal:            true,
+			NewBranchName:            "existing-local-branch",
+			BaseBranch:               "main",
+			NewBranchExistsLocally:   true,
+			NewBranchExistsRemotely:  false,
+			BaseBranchExistsLocally:  true,
+			BaseBranchExistsRemotely: true,
 		}
 
 		args := GetAddWorktreeArguements(params)
@@ -206,6 +210,7 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 			NewBranchName:              "feature/new",
 			BaseBranch:                 "main",
 			BaseBranchExistsLocally:    false,
+			BaseBranchExistsRemotely:   true,
 			NewBranchExistsLocally:     false,
 			NewBranchExistsRemotely:    false,
 			PullBeforeCuttingNewBranch: false,
@@ -214,6 +219,26 @@ func TestGetAddWorktreeArguments(t *testing.T) {
 		args := GetAddWorktreeArguements(params)
 		expected := []string{"-b", "feature/new", "--no-track", "origin/main"}
 		assert.Equal(t, expected, args, "Should create from remote when base doesn't exist locally")
+	})
+
+	t.Run("default mode creates from local when pull flag is true but base only exists locally", func(t *testing.T) {
+		params := AddWorktreeConfig{
+			BareRepoPath:               "/test/path",
+			WorktreeTargetDirectory:    "/test/worktrees",
+			CheckoutRemote:             false,
+			CheckoutLocal:              false,
+			NewBranchName:              "feature/new",
+			BaseBranch:                 "local-only-branch",
+			BaseBranchExistsLocally:    true,
+			BaseBranchExistsRemotely:   false,
+			NewBranchExistsLocally:     false,
+			NewBranchExistsRemotely:    false,
+			PullBeforeCuttingNewBranch: true,
+		}
+
+		args := GetAddWorktreeArguements(params)
+		expected := []string{"-b", "feature/new", "--no-track", "local-only-branch"}
+		assert.Equal(t, expected, args, "Should create from local branch when pull flag is true but base doesn't exist remotely")
 	})
 }
 
