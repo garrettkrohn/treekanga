@@ -99,6 +99,20 @@ var addCmd = &cobra.Command{
 			deps.AppConfig.UseFormToSetBaseBranch = true
 		}
 
+		remote, err := cmd.Flags().GetBool("remote")
+		util.CheckError(err)
+		if remote {
+			log.Debug("set CheckoutRemote = true from flags")
+			deps.AppConfig.CheckoutRemote = true
+		}
+
+		local, err := cmd.Flags().GetBool("local")
+		util.CheckError(err)
+		if local {
+			log.Debug("set CheckoutLocal = true from flags")
+			deps.AppConfig.CheckoutLocal = true
+		}
+
 		cfg := services.SetConfigForAddService(deps.AppConfig, args)
 
 		services.AddWorktree(deps.Connector, deps.Shell, cfg)
@@ -112,6 +126,8 @@ func init() {
 	addCmd.Flags().BoolP("vscode", "v", false, "Open up new worktree in vs code")
 	addCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
 	addCmd.Flags().BoolP("from", "f", false, "Select base branch from list of branches")
+	addCmd.Flags().BoolP("remote", "r", false, "Checkout existing branch from remote")
+	addCmd.Flags().BoolP("local", "L", false, "Checkout existing branch from local repository")
 	addCmd.Flags().StringP("tmux", "t", "", "Connect to tmux session at subdirectory (use '.' for root)")
 	addCmd.Flags().StringP("base", "b", "", "Specify the base branch for the new worktree")
 	addCmd.Flags().StringP("directory", "d", "", "Specify the directory to the bare repo where the worktree will be added")

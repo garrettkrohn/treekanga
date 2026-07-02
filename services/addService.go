@@ -61,6 +61,8 @@ func SetConfigForAddService(cfg config.AppConfig, args []string) config.AppConfi
 type AddWorktreeConfig struct {
 	BareRepoPath               string
 	WorktreeTargetDirectory    string
+	CheckoutRemote             bool
+	CheckoutLocal              bool
 	NewBranchExistsLocally     bool
 	NewBranchExistsRemotely    bool
 	BaseBranchExistsLocally    bool
@@ -71,12 +73,18 @@ type AddWorktreeConfig struct {
 }
 
 func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
-	// Case 1: Branch already exists (locally or remotely) - just checkout
-	if params.NewBranchExistsLocally || params.NewBranchExistsRemotely {
+	// Case 1: Checkout existing remote branch
+	if params.CheckoutRemote {
 		return []string{params.NewBranchName}
 	}
 
-	// Case 2: Base branch exists locally
+	// Case 2: Checkout existing local branch
+	if params.CheckoutLocal {
+		return []string{params.NewBranchName}
+	}
+
+	// Case 3: Default mode - create new branch from base branch
+	// Base branch exists locally
 	if params.BaseBranchExistsLocally {
 		if params.PullBeforeCuttingNewBranch {
 			// Create new branch from remote version of base branch
@@ -87,7 +95,7 @@ func GetAddWorktreeArguements(params AddWorktreeConfig) []string {
 		}
 	}
 
-	// Case 3: Base branch only exists remotely
+	// Base branch only exists remotely
 	return []string{"-b", params.NewBranchName, "--no-track", "origin/" + params.BaseBranch}
 }
 
@@ -109,6 +117,27 @@ func handleFromForm(form form.HuhForm, worktrees []string) string {
 }
 
 func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.AppConfig) {
+
+	// Validation: Check mode and branch existence constraints
+	if cfg.CheckoutRemote {
+		// --remote mode: branch must exist remotely
+		if !cfg.NewBranchExistsRemotely {
+			log.Fatal(fmt.Sprintf("Branch '%s' not found on remote", cfg.NewBranchName))
+		}
+		log.Debug("Checkout mode: remote - ignoring -b and -p flags if set")
+	} else if cfg.CheckoutLocal {
+		// --local mode: branch must exist locally
+		if !cfg.NewBranchExistsLocally {
+			log.Fatal(fmt.Sprintf("Branch '%s' not found locally", cfg.NewBranchName))
+		}
+		log.Debug("Checkout mode: local - ignoring -b and -p flags if set")
+	} else {
+		// Default mode: branch must NOT exist
+		if cfg.NewBranchExistsLocally || cfg.NewBranchExistsRemotely {
+			log.Fatal(fmt.Sprintf("Branch '%s' already exists. Use --remote or --local to checkout existing branch.", cfg.NewBranchName))
+		}
+		log.Debug("Default mode: creating new branch")
+	}
 
 	if cfg.UseFormToSetBaseBranch {
 		worktrees, err := git.ListWorktrees(cfg.BareRepoPath)
@@ -137,9 +166,18 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 		log.Debug(fmt.Sprintf("Updated BaseBranchExistsLocally = %t after form selection", cfg.BaseBranchExistsLocally))
 	}
 
+	// Fetch the latest state of base branch if pull flag is set
+	if cfg.PullBeforeCuttingNewBranch && cfg.BaseBranchExistsRemotely {
+		err := git.Fetch(cfg.BareRepoPath, cfg.BaseBranch)
+		utility.CheckError(err)
+		log.Debug(fmt.Sprintf("Fetched latest state of %s from remote", cfg.BaseBranch))
+	}
+
 	worktreeAddArgs := GetAddWorktreeArguements(AddWorktreeConfig{
 		BareRepoPath:               cfg.BareRepoPath,
 		WorktreeTargetDirectory:    cfg.WorktreeTargetDir,
+		CheckoutRemote:             cfg.CheckoutRemote,
+		CheckoutLocal:              cfg.CheckoutLocal,
 		NewBranchExistsLocally:     cfg.NewBranchExistsLocally,
 		NewBranchExistsRemotely:    cfg.NewBranchExistsRemotely,
 		BaseBranchExistsLocally:    cfg.BaseBranchExistsLocally,
@@ -156,15 +194,17 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 	newRootDirectory := cfg.WorktreeTargetDir + "/" + cfg.NewWorktreeName
 
 	// Set upstream for new branches (not existing ones)
-	if !cfg.NewBranchExistsLocally && !cfg.NewBranchExistsRemotely {
+	if !cfg.CheckoutRemote && !cfg.CheckoutLocal {
 		err = git.SetUpstream(newRootDirectory, cfg.NewBranchName)
 		if err != nil {
 			log.Warn("Failed to set upstream branch", "branch", cfg.NewBranchName, "error", err)
 		}
 	}
 
-	if cfg.NewBranchExistsLocally {
-		log.Info("worktree created with existing branch", "branch", cfg.NewBranchName)
+	if cfg.CheckoutRemote {
+		log.Info("worktree created with remote branch", "branch", cfg.NewBranchName)
+	} else if cfg.CheckoutLocal {
+		log.Info("worktree created with local branch", "branch", cfg.NewBranchName)
 	} else {
 		log.Info("worktree created with new branch cut from branch",
 			"newBranch", cfg.NewBranchName,
