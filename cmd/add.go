@@ -23,18 +23,10 @@ var addCmd = &cobra.Command{
 	Short: "Add a git worktree",
 	Long: `Create a new worktree with the specified branch name.
 
-    The branch name is required as an argument. Treekanga will create 
-    this branch off of the defaultBranch defined in the config, or 
-    you can specify a base branch with the -b flag.
+    By default, creates a new branch off of the defaultBranch defined in
+    the config, or you can specify a base branch with the -b flag.
 
-    Available flags:
-    -b, --base: Specify the base branch for the new worktree
-    -f, --from: Select base branch from list of existing worktrees (sorted by recent use)
-    -p, --pull: Pull the base branch before creating new branch
-    -c, --cursor: Open the new worktree in Cursor
-    -v, --vscode: Open the new worktree in VS Code
-    -t, --tmux: Connect to tmux session at subdirectory (or root if '.')
-    -d, --directory: Specify the directory to the bare repo`,
+    Use --remote or --local to explicitly checkout an existing branch.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		directory, err := cmd.Flags().GetString("directory")
