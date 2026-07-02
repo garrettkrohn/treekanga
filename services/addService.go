@@ -159,11 +159,16 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 		cfg.BaseBranch = selectedBranch
 		log.Debug(fmt.Sprintf("Set BaseBranch = %s from form selection", selectedBranch))
 
-		// Update the BaseBranchExistsLocally flag after selection
+		// Update the BaseBranchExists flags after selection
 		localBranches, err := git.GetLocalBranches(cfg.BareRepoPath)
 		utility.CheckError(err)
 		cfg.BaseBranchExistsLocally = slices.Contains(localBranches, cfg.BaseBranch)
 		log.Debug(fmt.Sprintf("Updated BaseBranchExistsLocally = %t after form selection", cfg.BaseBranchExistsLocally))
+
+		remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
+		utility.CheckError(err)
+		cfg.BaseBranchExistsRemotely = slices.Contains(remoteBranches, cfg.BaseBranch)
+		log.Debug(fmt.Sprintf("Updated BaseBranchExistsRemotely = %t after form selection", cfg.BaseBranchExistsRemotely))
 	}
 
 	// Fetch the latest state of base branch if pull flag is set
