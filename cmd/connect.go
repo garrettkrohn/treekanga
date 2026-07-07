@@ -55,13 +55,23 @@ Examples:
 			return
 		}
 
+		executeScript, err := cmd.Flags().GetBool("script")
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		if executeScript {
+			log.Debug("set RunPostScript = true from flags")
+			deps.AppConfig.RunPostScript = true
+		}
+
 		opts := models.ConnectOpts{
 			Switch: switchFlag,
 		}
 
 		log.Debug("Attempting to connect", "name", name, "switch", switchFlag)
 
-		if err := deps.Connector.Connect(name, opts); err != nil {
+		if err := deps.Connector.ConnectWithConfig(name, opts, deps.AppConfig.PostScriptPath, deps.AppConfig.RunPostScript); err != nil {
 			log.Fatal(err)
 			return
 		}
@@ -72,4 +82,5 @@ Examples:
 
 func init() {
 	connectCmd.Flags().BoolP("switch", "s", false, "Switch to the session (rather than attach). Useful when already inside tmux.")
+	connectCmd.Flags().BoolP("script", "x", false, "Execute Custom Script")
 }
