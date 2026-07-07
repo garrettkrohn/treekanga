@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/garrettkrohn/treekanga/adapters"
 	"github.com/garrettkrohn/treekanga/git"
 	"github.com/garrettkrohn/treekanga/models"
@@ -17,6 +18,7 @@ import (
 
 type Connector interface {
 	Connect(name string, opts models.ConnectOpts) error
+	ConnectWithConfig(name string, opts models.ConnectOpts, postScriptPath string, runPostScript bool) error
 	VsCodeConnect(newRootPath string)
 	CursorConnect(newRootPath string)
 }
@@ -35,23 +37,34 @@ func NewConnector(shell shell.Shell) Connector {
 
 // Connect attempts to connect to a session using various strategies
 func (r *RealConnector) Connect(name string, opts models.ConnectOpts) error {
+	return r.ConnectWithConfig(name, opts, "", false)
+}
+
+// ConnectWithConfig attempts to connect to a session and optionally runs a post-script
+func (r *RealConnector) ConnectWithConfig(name string, opts models.ConnectOpts, postScriptPath string, runPostScript bool) error {
 	strategies := []func(string) (models.Connection, error){
 		r.tmuxStrategy,
 		r.worktreeStrategy,
 		r.dirStrategy,
 	}
 
+	var connection models.Connection
 	for _, strategy := range strategies {
-		connection, err := strategy(name)
+		conn, err := strategy(name)
 		if err != nil {
 			return fmt.Errorf("connection strategy error: %w", err)
 		}
-		if connection.Found {
-			return r.connectToTmux(connection, opts)
+		if conn.Found {
+			connection = conn
+			break
 		}
 	}
 
-	return fmt.Errorf("no connection found for '%s'", name)
+	if !connection.Found {
+		return fmt.Errorf("no connection found for '%s'", name)
+	}
+
+	return r.connectToTmuxWithPostScript(connection, opts, postScriptPath, runPostScript)
 }
 
 // tmuxStrategy checks if a tmux session with the given name exists
@@ -182,6 +195,27 @@ func (r *RealConnector) connectToTmux(connection models.Connection, opts models.
 	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
 }
 
+// connectToTmuxWithPostScript handles the connection to tmux and optionally runs a post-script in the session
+func (r *RealConnector) connectToTmuxWithPostScript(connection models.Connection, opts models.ConnectOpts, postScriptPath string, runPostScript bool) error {
+	if connection.New {
+		// Create new session
+		if err := r.tmux.NewSession(connection.Session.Name, connection.Session.Path); err != nil {
+			return fmt.Errorf("failed to create tmux session: %w", err)
+		}
+
+		// Execute post-script in the tmux session if configured
+		if runPostScript && postScriptPath != "" {
+			if err := r.executePostScriptInTmux(connection.Session.Name, postScriptPath); err != nil {
+				// Log warning but don't fail the connection
+				log.Warn("Failed to execute post-script in tmux", "path", postScriptPath, "error", err)
+			}
+		}
+	}
+
+	// Switch or attach to the session
+	return r.tmux.SwitchOrAttach(connection.Session.Name, opts)
+}
+
 func (r *RealConnector) VsCodeConnect(newRootPath string) {
 	_, err := r.shell.Cmd("code", newRootPath)
 	utility.CheckError(err)
@@ -190,4 +224,47 @@ func (r *RealConnector) VsCodeConnect(newRootPath string) {
 func (r *RealConnector) CursorConnect(newRootPath string) {
 	_, err := r.shell.Cmd("cursor", newRootPath)
 	utility.CheckError(err)
+}
+
+// executePostScript runs the configured post-script in the given directory
+func (r *RealConnector) executePostScript(directory, scriptPath string) error {
+	// Expand tilde in script path
+	expandedPath := scriptPath
+	if strings.HasPrefix(scriptPath, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		expandedPath = filepath.Join(homeDir, scriptPath[2:])
+	}
+
+	log.Info("Running post script", "script", expandedPath, "directory", directory)
+	_, err := r.shell.CmdWithDir(directory, "sh", expandedPath)
+	if err != nil {
+		return fmt.Errorf("post script execution failed: %w", err)
+	}
+	log.Info("Post script completed successfully")
+	return nil
+}
+
+// executePostScriptInTmux runs the configured post-script inside a tmux session
+func (r *RealConnector) executePostScriptInTmux(sessionName, scriptPath string) error {
+	// Expand tilde in script path
+	expandedPath := scriptPath
+	if strings.HasPrefix(scriptPath, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %w", err)
+		}
+		expandedPath = filepath.Join(homeDir, scriptPath[2:])
+	}
+
+	log.Info("Running post script in tmux session", "script", expandedPath, "session", sessionName)
+	// Send the command to the tmux session
+	_, err := r.shell.Cmd("tmux", "send-keys", "-t", sessionName, "sh "+expandedPath, "Enter")
+	if err != nil {
+		return fmt.Errorf("failed to send post script to tmux session: %w", err)
+	}
+	log.Info("Post script command sent to tmux session")
+	return nil
 }

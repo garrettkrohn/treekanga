@@ -1,7 +1,15 @@
 package connector
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/garrettkrohn/treekanga/execwrap"
+	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/shell"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateSessionName(t *testing.T) {
@@ -204,4 +212,94 @@ func TestGenerateWorktreeSessionNameRealWorldExamples(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExecutePostScript(t *testing.T) {
+	// Skip if running in CI without shell
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	t.Run("executes post script successfully", func(t *testing.T) {
+		// Create a temporary directory and script
+		tempDir, err := os.MkdirTemp("", "connector-postscript-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Create a simple test script that creates a marker file
+		markerFile := filepath.Join(tempDir, "script-executed.txt")
+		scriptPath := filepath.Join(tempDir, "test-script.sh")
+		scriptContent := "#!/bin/sh\necho 'Script executed' > " + markerFile
+		err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+		require.NoError(t, err)
+
+		// Create connector with real shell
+		execWrap := execwrap.NewExec()
+		sh := shell.NewShell(execWrap)
+		connector := NewConnector(sh).(*RealConnector)
+
+		// Execute the post script
+		err = connector.executePostScript(tempDir, scriptPath)
+		assert.NoError(t, err, "Post script should execute successfully")
+
+		// Verify the marker file was created
+		_, err = os.Stat(markerFile)
+		assert.NoError(t, err, "Marker file should exist after script execution")
+	})
+
+	t.Run("handles script execution failure gracefully", func(t *testing.T) {
+		// Create a temporary directory
+		tempDir, err := os.MkdirTemp("", "connector-postscript-fail-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Create a script that exits with error
+		scriptPath := filepath.Join(tempDir, "failing-script.sh")
+		scriptContent := "#!/bin/sh\nexit 1"
+		err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+		require.NoError(t, err)
+
+		// Create connector with real shell
+		execWrap := execwrap.NewExec()
+		sh := shell.NewShell(execWrap)
+		connector := NewConnector(sh).(*RealConnector)
+
+		// Execute the failing post script
+		err = connector.executePostScript(tempDir, scriptPath)
+		assert.Error(t, err, "Post script should return an error when it fails")
+	})
+}
+
+func TestConnectWithConfig_PostScript(t *testing.T) {
+	// Skip if running in CI
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	t.Run("does not execute post script when runPostScript is false", func(t *testing.T) {
+		// Create a temporary directory
+		tempDir, err := os.MkdirTemp("", "connector-config-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Create a marker file that should NOT be created
+		markerFile := filepath.Join(tempDir, "should-not-exist.txt")
+		scriptPath := filepath.Join(tempDir, "test-script.sh")
+		scriptContent := "#!/bin/sh\necho 'Should not run' > " + markerFile
+		err = os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+		require.NoError(t, err)
+
+		// Create connector
+		execWrap := execwrap.NewExec()
+		sh := shell.NewShell(execWrap)
+		connector := NewConnector(sh).(*RealConnector)
+
+		// Try to connect to a non-existent session (will fail, but we just want to verify script isn't run)
+		opts := models.ConnectOpts{Switch: false}
+		_ = connector.ConnectWithConfig("non-existent-session", opts, scriptPath, false)
+
+		// Verify the marker file was NOT created
+		_, err = os.Stat(markerFile)
+		assert.True(t, os.IsNotExist(err), "Marker file should not exist when runPostScript is false")
+	})
 }

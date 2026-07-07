@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 
@@ -224,9 +225,9 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 			connectPath = newRootDirectory + "/" + cfg.TmuxConnect
 		}
 		opts := models.ConnectOpts{Switch: false}
-		if err := connector.Connect(connectPath, opts); err != nil {
+		if err := connector.ConnectWithConfig(connectPath, opts, cfg.PostScriptPath, cfg.RunPostScript); err != nil {
 			log.Warn("Subdirectory not found, connecting to root instead", "subdirectory", cfg.TmuxConnect)
-			if err := connector.Connect(newRootDirectory, opts); err != nil {
+			if err := connector.ConnectWithConfig(newRootDirectory, opts, cfg.PostScriptPath, cfg.RunPostScript); err != nil {
 				log.Error("Failed to connect to tmux session", "error", err)
 			}
 		}
@@ -240,11 +241,22 @@ func AddWorktree(connector connector.Connector, shell shell.Shell, cfg config.Ap
 		connector.VsCodeConnect(newRootDirectory)
 	}
 
-	//TODO: allow the user to set where this is run?
-	if cfg.RunPostScript {
-		log.Info("Runnning post script")
+	// Post-script execution is handled by ConnectWithConfig when using tmux connect flag
+	// If not connecting to a new session, run the script in the current context
+	if cfg.RunPostScript && cfg.TmuxConnect == "" && !cfg.CursorConnect && !cfg.VsCodeConnect {
+		log.Info("Running post script in current session")
 		script := cfg.PostScriptPath
-		shell.CmdWithDir(newRootDirectory, "sh", "-c", script)
-		log.Info("post script run", "command", script)
+		// Expand tilde in script path
+		expandedPath := script
+		if len(script) > 2 && script[0] == '~' && script[1] == '/' {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				expandedPath = homeDir + script[1:]
+			}
+		}
+		// Run the script in a subshell so the user stays in their current directory
+		command := fmt.Sprintf("(cd %s && sh %s)", newRootDirectory, expandedPath)
+		shell.Cmd("tmux", "send-keys", "-t", ".", command, "Enter")
+		log.Info("Post script command sent to current session")
 	}
 }
