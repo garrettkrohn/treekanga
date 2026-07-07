@@ -37,6 +37,8 @@ type AppConfig struct {
 	NewWorktreeName          string
 	NewBranchName            string
 	UseFormToSetBaseBranch   bool
+	CheckoutRemote           bool
+	CheckoutLocal            bool
 	NewBranchExistsLocally   bool
 	NewBranchExistsRemotely  bool
 	BaseBranchExistsLocally  bool
