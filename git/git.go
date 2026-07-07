@@ -74,6 +74,17 @@ func ListWorktrees(bareRepoPath string) ([]string, error) {
 	return strings.Split(strings.TrimSpace(output), "\n"), nil
 }
 
+// Fetch fetches updates for a specific branch from remote
+func Fetch(bareRepoPath, branch string) error {
+	args := []string{"-C", bareRepoPath, "fetch", "origin", branch}
+	err := runCommand("git", args...)
+	if err != nil {
+		return fmt.Errorf("failed to fetch branch %s: %w", branch, err)
+	}
+	log.Debug("Fetched latest state from remote", "branch", branch)
+	return nil
+}
+
 // GetRemoteBranches lists remote branches (without fetching)
 func GetRemoteBranches(bareRepoPath string) ([]string, error) {
 	args := []string{"-C", bareRepoPath, "branch", "-r", "--format=%(refname:short)"}

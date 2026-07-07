@@ -134,3 +134,57 @@ func TestGetCurrentBranch(t *testing.T) {
 	// This may or may not error depending on git version, so we just ensure the function completes
 	t.Logf("GetCurrentBranch from bare repo returned: %v", err)
 }
+
+func TestFetch(t *testing.T) {
+	// Skip if running in CI without git
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	// Create a temporary directory for test repo
+	tempDir, err := os.MkdirTemp("", "treekanga-fetch-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// Clone a real repo to have remote branches
+	bareRepoPath := filepath.Join(tempDir, "test.git")
+	err = CloneBare("https://github.com/octocat/Hello-World.git", bareRepoPath)
+	require.NoError(t, err)
+
+	// Configure the bare repo
+	err = ConfigureBare(bareRepoPath)
+	require.NoError(t, err)
+
+	// Fetch a specific branch
+	err = Fetch(bareRepoPath, "master")
+	assert.NoError(t, err, "Should successfully fetch branch from remote")
+
+	// Verify the branch exists after fetch
+	remoteBranches, err := GetRemoteBranches(bareRepoPath)
+	require.NoError(t, err)
+	assert.Contains(t, remoteBranches, "master", "Master branch should exist after fetch")
+}
+
+func TestFetchNonExistentBranch(t *testing.T) {
+	// Skip if running in CI without git
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	// Create a temporary directory for test repo
+	tempDir, err := os.MkdirTemp("", "treekanga-fetch-error-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// Clone a real repo
+	bareRepoPath := filepath.Join(tempDir, "test.git")
+	err = CloneBare("https://github.com/octocat/Hello-World.git", bareRepoPath)
+	require.NoError(t, err)
+
+	err = ConfigureBare(bareRepoPath)
+	require.NoError(t, err)
+
+	// Try to fetch a non-existent branch
+	err = Fetch(bareRepoPath, "this-branch-does-not-exist-12345")
+	assert.Error(t, err, "Should error when fetching non-existent branch")
+}
