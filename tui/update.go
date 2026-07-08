@@ -25,7 +25,48 @@ import (
 
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
-	return m.spinner.Tick
+	return tea.Batch(m.spinner.Tick, m.fetchDefaultBranchCmd())
+}
+
+// fetchDefaultBranchCmd fetches origin/<default-branch> once (R5) before any
+// per-worktree status is computed, so ahead/behind and merge comparisons
+// reflect the remote's current state. Log output is captured rather than
+// written to stderr, since stray output outside Bubble Tea's renderer
+// corrupts the alt-screen display.
+func (m Model) fetchDefaultBranchCmd() tea.Cmd {
+	return func() tea.Msg {
+		var logBuffer bytes.Buffer
+		log.SetOutput(&logBuffer)
+		err := services.FetchDefaultBranch(m.appConfig.BareRepoPath, m.appConfig.BaseBranch)
+		log.SetOutput(os.Stderr)
+
+		if err != nil {
+			log.Debug("Failed to fetch default branch", "branch", m.appConfig.BaseBranch, "error", err, "output", logBuffer.String())
+		}
+		return statusFetchDoneMsg{}
+	}
+}
+
+// loadWorktreeStatusCmd computes R1-R4 status for a single worktree in the
+// background and reports it without blocking the rest of the table (R9).
+func (m Model) loadWorktreeStatusCmd(worktree models.Worktree) tea.Cmd {
+	return func() tea.Msg {
+		updated := services.ComputeWorktreeStatus(worktree, m.appConfig.BaseBranch)
+		return worktreeStatusMsg{fullPath: updated.FullPath, worktree: updated}
+	}
+}
+
+// refreshWorktrees re-fetches the worktree list, resets the table to
+// placeholder status, and returns a Cmd that re-triggers background status
+// loading (via statusFetchDoneMsg) for the refreshed set.
+func (m *Model) refreshWorktrees() (tea.Cmd, error) {
+	worktrees, err := FetchWorktrees(m.appConfig)
+	if err != nil {
+		return nil, err
+	}
+	m.worktrees = worktrees
+	m.table.SetRows(WorktreeTableRows(worktrees))
+	return m.fetchDefaultBranchCmd(), nil
 }
 
 // Update handles all events and updates the model state
@@ -51,6 +92,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logsViewport.Height = logsHeight
 
 		return m, nil
+	case statusFetchDoneMsg:
+		// Default branch is fetched - now compute each worktree's status
+		// concurrently; each one patches its own row as it resolves (R9).
+		cmds := make([]tea.Cmd, 0, len(m.worktrees))
+		for _, worktree := range m.worktrees {
+			cmds = append(cmds, m.loadWorktreeStatusCmd(worktree))
+		}
+		return m, tea.Batch(cmds...)
+	case worktreeStatusMsg:
+		for i, worktree := range m.worktrees {
+			if worktree.FullPath == msg.fullPath {
+				m.worktrees[i] = msg.worktree
+				break
+			}
+		}
+		m.table.SetRows(WorktreeTableRows(m.worktrees))
+		return m, nil
 	case deleteCompleteMsg:
 		m.isDeleting = false
 		// Log the success
@@ -63,12 +121,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.appConfig)
+		refreshCmd, err := m.refreshWorktrees()
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
-		m.table.SetRows(rows)
-		return m, tea.Printf("Deleted worktree: %s", msg.worktreeName)
+		return m, tea.Batch(refreshCmd, tea.Printf("Deleted worktree: %s", msg.worktreeName))
 	case deleteErrorMsg:
 		m.isDeleting = false
 		m.showDeleteConfirm = true
@@ -182,12 +239,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Message:   msg.output,
 		})
 		// Rebuild the table with updated data
-		rows, err := BuildWorktreeTableRows(m.appConfig)
+		refreshCmd, err := m.refreshWorktrees()
 		if err != nil {
 			return m, tea.Printf("Error refreshing worktrees: %v", err)
 		}
-		m.table.SetRows(rows)
-		return m, tea.Printf("Added worktree: %s", msg.branchName)
+		return m, tea.Batch(refreshCmd, tea.Printf("Added worktree: %s", msg.branchName))
 	case addErrorMsg:
 		m.isAdding = false
 		m.addError = msg.err.Error()

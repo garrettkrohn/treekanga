@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -213,6 +214,180 @@ func GetProjectName() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(output), nil
+}
+
+// GetWorkingTreeStatus reports whether a worktree has staged, modified
+// (unstaged), or untracked changes.
+func GetWorkingTreeStatus(worktreePath string) (staged, modified, untracked bool, err error) {
+	output, err := runCommandOutput("git", "-C", worktreePath, "status", "--porcelain=v1", "--untracked-files=all")
+	if err != nil {
+		return false, false, false, fmt.Errorf("failed to get status for %s: %w", worktreePath, err)
+	}
+
+	if output == "" {
+		return false, false, false, nil
+	}
+
+	for _, line := range strings.Split(output, "\n") {
+		if len(line) < 2 {
+			continue
+		}
+		x, y := line[0], line[1]
+		if x == '?' && y == '?' {
+			untracked = true
+			continue
+		}
+		if x != ' ' {
+			staged = true
+		}
+		if y != ' ' {
+			modified = true
+		}
+	}
+
+	return staged, modified, untracked, nil
+}
+
+// GetAheadBehind returns how many commits HEAD is ahead/behind compareRef
+// in a given worktree.
+func GetAheadBehind(worktreePath, compareRef string) (ahead, behind int, err error) {
+	output, err := runCommandOutput("git", "-C", worktreePath, "rev-list", "--left-right", "--count", "HEAD..."+compareRef)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to compute ahead/behind for %s against %s: %w", worktreePath, compareRef, err)
+	}
+
+	fields := strings.Fields(output)
+	if len(fields) != 2 {
+		return 0, 0, fmt.Errorf("unexpected rev-list output for %s: %q", worktreePath, output)
+	}
+
+	ahead, err = strconv.Atoi(fields[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse ahead count: %w", err)
+	}
+	behind, err = strconv.Atoi(fields[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse behind count: %w", err)
+	}
+
+	return ahead, behind, nil
+}
+
+// GetUpstreamBranch returns the upstream (remote-tracking) branch for a
+// worktree's current branch, or "" if no upstream is configured.
+func GetUpstreamBranch(worktreePath string) (string, error) {
+	output, err := runCommandOutput("git", "-C", worktreePath, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	if err != nil {
+		// No upstream configured - not an error condition for callers.
+		return "", nil
+	}
+	return strings.TrimSpace(output), nil
+}
+
+// IsMerged reports whether branchName's content is already present in
+// targetRef: either as a literal ancestor, or via a squash-merge content
+// match (the branch's aggregate diff since its merge-base matches the
+// patch-id of some commit in targetRef since that same merge-base).
+func IsMerged(worktreePath, branchName, targetRef string) (bool, error) {
+	isAncestor, err := isAncestor(worktreePath, branchName, targetRef)
+	if err != nil {
+		return false, err
+	}
+	if isAncestor {
+		return true, nil
+	}
+
+	base, err := mergeBase(worktreePath, branchName, targetRef)
+	if err != nil {
+		// No common ancestor - branch and target share no history.
+		return false, nil
+	}
+
+	branchPatchID, err := patchID(worktreePath, base, branchName)
+	if err != nil {
+		return false, err
+	}
+	if branchPatchID == "" {
+		// Branch has no changes relative to the merge-base.
+		return false, nil
+	}
+
+	commits, err := commitsSince(worktreePath, base, targetRef)
+	if err != nil {
+		return false, err
+	}
+
+	for _, commit := range commits {
+		pid, err := patchID(worktreePath, commit+"^", commit)
+		if err != nil {
+			continue
+		}
+		if pid != "" && pid == branchPatchID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func isAncestor(worktreePath, ancestorRef, ref string) (bool, error) {
+	command := exec.Command("git", "-C", worktreePath, "merge-base", "--is-ancestor", ancestorRef, ref)
+	command.SysProcAttr = setSysProcAttr()
+	err := command.Run()
+	if err == nil {
+		return true, nil
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to check ancestry of %s in %s: %w", ancestorRef, ref, err)
+}
+
+func mergeBase(worktreePath, refA, refB string) (string, error) {
+	output, err := runCommandOutput("git", "-C", worktreePath, "merge-base", refA, refB)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(output), nil
+}
+
+func commitsSince(worktreePath, base, ref string) ([]string, error) {
+	output, err := runCommandOutput("git", "-C", worktreePath, "log", "--format=%H", base+".."+ref)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list commits between %s and %s: %w", base, ref, err)
+	}
+	if output == "" {
+		return nil, nil
+	}
+	return strings.Split(output, "\n"), nil
+}
+
+// patchID returns the stable patch-id for the diff between fromRef and
+// toRef, or "" if the diff is empty.
+func patchID(worktreePath, fromRef, toRef string) (string, error) {
+	diffCmd := exec.Command("git", "-C", worktreePath, "diff", fromRef, toRef)
+	diffCmd.SysProcAttr = setSysProcAttr()
+	diffOutput, err := diffCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to diff %s..%s: %w", fromRef, toRef, err)
+	}
+	if len(strings.TrimSpace(string(diffOutput))) == 0 {
+		return "", nil
+	}
+
+	patchIDCmd := exec.Command("git", "-C", worktreePath, "patch-id", "--stable")
+	patchIDCmd.SysProcAttr = setSysProcAttr()
+	patchIDCmd.Stdin = strings.NewReader(string(diffOutput))
+	patchIDOutput, err := patchIDCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to compute patch-id: %w", err)
+	}
+
+	fields := strings.Fields(string(patchIDOutput))
+	if len(fields) == 0 {
+		return "", nil
+	}
+	return fields[0], nil
 }
 
 // Helper functions

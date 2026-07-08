@@ -36,18 +36,23 @@ var tuiCmd = &cobra.Command{
     - Press 'q' to quit`,
 	Run: func(cmd *cobra.Command, args []string) {
 		columns := []table.Column{
-			{Title: "Name", Width: 45},
-			{Title: "Branch", Width: 45},
-			{Title: "fullPath", Width: 70},
-			{Title: "CommitHash", Width: 25},
+			{Title: "Name", Width: 30},
+			{Title: "Branch", Width: 30},
+			{Title: "fullPath", Width: 50},
+			{Title: "CommitHash", Width: 12},
+			{Title: "Status", Width: 10},
+			{Title: "Default", Width: 8},
+			{Title: "Remote", Width: 8},
+			{Title: "Merged", Width: 8},
 		}
 
 		// Temporarily suppress logs during initial load to keep display clean
 		originalLevel := charmbraceletLog.GetLevel()
 		charmbraceletLog.SetLevel(charmbraceletLog.FatalLevel)
 
-		rows, err := tui.BuildWorktreeTableRows(deps.AppConfig)
+		worktrees, err := tui.FetchWorktrees(deps.AppConfig)
 		utility.CheckError(err)
+		rows := tui.WorktreeTableRows(worktrees)
 
 		// Restore log level for operation logging
 		charmbraceletLog.SetLevel(originalLevel)
@@ -79,7 +84,7 @@ var tuiCmd = &cobra.Command{
 		sp.Spinner = spinner.Dot
 		sp.Style = lipgloss.NewStyle().Foreground(theme.Accent)
 
-		m := tui.NewModel(t, sp, deps.Connector, deps.Shell, deps.AppConfig, deps.DirectoryReader)
+		m := tui.NewModel(t, sp, deps.Connector, deps.Shell, deps.AppConfig, deps.DirectoryReader, worktrees)
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			fmt.Println("Error running program:", err)

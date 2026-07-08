@@ -3,6 +3,20 @@ Copyright © 2024 Garrett Krohn <garrettkrohn@gmail.com>
 */
 package tui
 
+import "github.com/garrettkrohn/treekanga/models"
+
+// statusFetchDoneMsg is sent once the default branch has been fetched from
+// origin (R5), signalling it's safe to start computing per-worktree status.
+type statusFetchDoneMsg struct{}
+
+// worktreeStatusMsg is sent when a single worktree's status (R1-R4) has
+// finished computing in the background, so its table row can be updated
+// without blocking the rest of the table (R9).
+type worktreeStatusMsg struct {
+	fullPath string
+	worktree models.Worktree
+}
+
 // deleteCompleteMsg is sent when deletion is complete
 type deleteCompleteMsg struct {
 	err          error
