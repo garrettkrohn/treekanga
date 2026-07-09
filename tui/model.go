@@ -66,6 +66,10 @@ type Model struct {
 	shell     shell.Shell
 	appConfig config.AppConfig
 	dirReader directoryReader.DirectoryReader
+
+	// worktrees tracks the underlying data behind each table row, keyed by
+	// FullPath, so background status updates (R9) can patch the right row.
+	worktrees []models.Worktree
 }
 
 // theme returns the theme from the app config
@@ -81,6 +85,7 @@ func NewModel(
 	shell shell.Shell,
 	appConfig config.AppConfig,
 	dirReader directoryReader.DirectoryReader,
+	worktrees []models.Worktree,
 ) Model {
 	// Initialize text input for add command
 	ti := textinput.New()
@@ -110,5 +115,6 @@ func NewModel(
 		shell:               shell,
 		appConfig:           appConfig,
 		dirReader:           dirReader,
+		worktrees:           worktrees,
 	}
 }

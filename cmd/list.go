@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/transformer"
 	utilpkg "github.com/garrettkrohn/treekanga/utility"
 )
 
@@ -43,7 +44,10 @@ var listCmd = &cobra.Command{
     branch names and directory names.
 
     Use the -a/--all flag to show all worktrees plus subdirectories
-    defined in the zoxideFolders configuration.`,
+    defined in the zoxideFolders configuration.
+
+    Verbose output includes a compact git status indicator:
+      ` + transformer.StatusLegend,
 	Run: func(cmd *cobra.Command, args []string) {
 		verbose, err := cmd.Flags().GetBool("verbose")
 		utilpkg.CheckError(err)

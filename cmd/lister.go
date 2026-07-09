@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/garrettkrohn/treekanga/models"
+	"github.com/garrettkrohn/treekanga/services"
 	"github.com/garrettkrohn/treekanga/transformer"
 )
 
@@ -58,9 +59,12 @@ func (t *simpleTransformer) Transform(worktrees []models.Worktree) ([]string, er
 type verboseTransformer struct{}
 
 func (t *verboseTransformer) Transform(worktrees []models.Worktree) ([]string, error) {
+	worktrees = services.ComputeAllWorktreeStatuses(deps.AppConfig.BareRepoPath, deps.AppConfig.BaseBranch, worktrees)
+
 	var worktreeBranches []string
 	for _, worktree := range worktrees {
-		branchDisplay := fmt.Sprintf("worktree: %s, branch: %s, fullPath: %s, commitHash: %s", worktree.Folder, worktree.BranchName, worktree.FullPath, worktree.CommitHash)
+		branchDisplay := fmt.Sprintf("worktree: %s, branch: %s, fullPath: %s, commitHash: %s, status: %s",
+			worktree.Folder, worktree.BranchName, worktree.FullPath, worktree.CommitHash, transformer.WorktreeStatusSymbols(worktree))
 		worktreeBranches = append(worktreeBranches, branchDisplay)
 	}
 	return worktreeBranches, nil
