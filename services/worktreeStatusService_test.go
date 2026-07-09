@@ -33,6 +33,7 @@ func setupComputeStatusRepo(t *testing.T) (bareRepoPath, worktreePath string) {
 
 	worktreePath = filepath.Join(tempDir, "main")
 	require.NoError(t, git.AddWorktree(bareRepoPath, tempDir, "main", []string{"-b", "main"}))
+	run(t, "git", "-C", bareRepoPath, "symbolic-ref", "HEAD", "refs/heads/main")
 
 	run(t, "git", "-C", worktreePath, "config", "user.email", "test@example.com")
 	run(t, "git", "-C", worktreePath, "config", "user.name", "Test User")
