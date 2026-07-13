@@ -36,6 +36,16 @@ func SetConfigForAddService(cfg config.AppConfig, args []string) config.AppConfi
 	// Sanitize worktree name by replacing slashes with dashes to prevent nested directory issues
 	cfg.NewWorktreeName = strings.ReplaceAll(cfg.NewWorktreeName, "/", "-")
 
+	// When checking out an existing remote branch, fetch it first so a branch
+	// pushed after the last fetch is still found. A fetch failure here (e.g.
+	// the branch doesn't exist at all) isn't fatal on its own - the existence
+	// check further down will catch a genuinely missing branch.
+	if cfg.CheckoutRemote {
+		if err := git.Fetch(cfg.BareRepoPath, cfg.NewBranchName); err != nil {
+			log.Debug("Failed to fetch target branch from remote, falling back to cached remote-tracking refs", "branch", cfg.NewBranchName, "error", err)
+		}
+	}
+
 	remoteBranches, err := git.GetRemoteBranches(cfg.BareRepoPath)
 	utility.CheckError(err)
 	log.Debug("Remote branches", "branches", remoteBranches)
