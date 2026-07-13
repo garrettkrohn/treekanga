@@ -122,6 +122,115 @@ func TestAddWorktreeWithPullFlag(t *testing.T) {
 	})
 }
 
+func TestSetConfigForAddServiceFetchesRemoteBranchForCheckoutRemote(t *testing.T) {
+	// Skip if running in CI without git
+	if os.Getenv("SKIP_INTEGRATION_TESTS") != "" {
+		t.Skip("Skipping integration test")
+	}
+
+	// setupOriginAndBareClone creates a local "origin" repo with an initial
+	// commit on main, then bare-clones it the way treekanga does. Returns
+	// paths to both so a test can push further commits/branches to origin
+	// after the bare clone's initial fetch has already happened.
+	setupOriginAndBareClone := func(t *testing.T, tempDir string) (originPath, bareRepoPath string) {
+		originPath = filepath.Join(tempDir, "origin")
+		_, err := runCommandOutput("git", "init", "-b", "main", originPath)
+		require.NoError(t, err)
+
+		readmePath := filepath.Join(originPath, "README.md")
+		require.NoError(t, os.WriteFile(readmePath, []byte("hello"), 0644))
+		_, err = runCommandOutput("git", "-C", originPath, "add", "README.md")
+		require.NoError(t, err)
+		_, err = runCommandOutput("git", "-C", originPath, "-c", "user.email=test@test.com", "-c", "user.name=test", "commit", "-m", "initial commit")
+		require.NoError(t, err)
+
+		bareRepoPath = filepath.Join(tempDir, "test.git")
+		err = git.CloneBare(originPath, bareRepoPath)
+		require.NoError(t, err)
+		err = git.ConfigureBare(bareRepoPath)
+		require.NoError(t, err)
+
+		return originPath, bareRepoPath
+	}
+
+	t.Run("finds branch pushed to remote after last fetch when --remote flag is used", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "treekanga-add-fetch-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		originPath, bareRepoPath := setupOriginAndBareClone(t, tempDir)
+
+		// Push a new branch to origin *after* the bare repo's initial fetch.
+		_, err = runCommandOutput("git", "-C", originPath, "checkout", "-b", "feature/late-push")
+		require.NoError(t, err)
+		readmePath := filepath.Join(originPath, "README.md")
+		require.NoError(t, os.WriteFile(readmePath, []byte("hello again"), 0644))
+		_, err = runCommandOutput("git", "-C", originPath, "add", "README.md")
+		require.NoError(t, err)
+		_, err = runCommandOutput("git", "-C", originPath, "-c", "user.email=test@test.com", "-c", "user.name=test", "commit", "-m", "late push")
+		require.NoError(t, err)
+
+		// Sanity check: the bare repo's cached remote-tracking refs don't know about it yet.
+		cachedBranches, err := git.GetRemoteBranches(bareRepoPath)
+		require.NoError(t, err)
+		assert.NotContains(t, cachedBranches, "feature/late-push", "branch should not be visible without a fetch")
+
+		cfg := config.AppConfig{
+			BareRepoPath:   bareRepoPath,
+			CheckoutRemote: true,
+		}
+
+		cfg = SetConfigForAddService(cfg, []string{"feature/late-push"})
+
+		assert.True(t, cfg.NewBranchExistsRemotely, "branch pushed after last fetch should be found once --remote triggers a fetch")
+	})
+
+	t.Run("does not fatal and leaves branch missing when it truly doesn't exist remotely", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "treekanga-add-fetch-missing-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		_, bareRepoPath := setupOriginAndBareClone(t, tempDir)
+
+		cfg := config.AppConfig{
+			BareRepoPath:   bareRepoPath,
+			CheckoutRemote: true,
+		}
+
+		cfg = SetConfigForAddService(cfg, []string{"does-not-exist-anywhere"})
+
+		assert.False(t, cfg.NewBranchExistsRemotely, "nonexistent branch should not be found, and the failed targeted fetch should not crash config setup")
+	})
+
+	t.Run("does not fetch when --remote flag is not used", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "treekanga-add-no-fetch-test-*")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		originPath, bareRepoPath := setupOriginAndBareClone(t, tempDir)
+
+		// Push a new branch to origin after the bare repo's initial fetch.
+		_, err = runCommandOutput("git", "-C", originPath, "checkout", "-b", "feature/late-push")
+		require.NoError(t, err)
+		readmePath := filepath.Join(originPath, "README.md")
+		require.NoError(t, os.WriteFile(readmePath, []byte("hello again"), 0644))
+		_, err = runCommandOutput("git", "-C", originPath, "add", "README.md")
+		require.NoError(t, err)
+		_, err = runCommandOutput("git", "-C", originPath, "-c", "user.email=test@test.com", "-c", "user.name=test", "commit", "-m", "late push")
+		require.NoError(t, err)
+
+		cfg := config.AppConfig{
+			BareRepoPath:   bareRepoPath,
+			CheckoutRemote: false,
+			BaseBranch:     "main",
+		}
+
+		cfg = SetConfigForAddService(cfg, []string{"feature/late-push"})
+
+		assert.False(t, cfg.NewBranchExistsRemotely, "branch pushed after last fetch should stay hidden when --remote isn't used, since no fetch should be triggered")
+	})
+}
+
 func TestGetAddWorktreeArguments(t *testing.T) {
 	t.Run("default mode creates from local branch when pull flag is false", func(t *testing.T) {
 		params := AddWorktreeConfig{
