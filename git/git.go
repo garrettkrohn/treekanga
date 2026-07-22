@@ -49,6 +49,22 @@ func SetUpstream(worktreePath, branchName string) error {
 	return nil
 }
 
+// UnsetUpstream removes the upstream tracking config for a branch in a worktree
+func UnsetUpstream(worktreePath, branchName string) error {
+	for _, key := range []string{"branch." + branchName + ".remote", "branch." + branchName + ".merge"} {
+		err := runCommand("git", "-C", worktreePath, "config", "--unset", key)
+		if err != nil {
+			// exit code 5 means the key didn't exist — not an error
+			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 5 {
+				continue
+			}
+			return fmt.Errorf("failed to unset %s: %w", key, err)
+		}
+	}
+	log.Debug("Unset upstream config for branch", "branch", branchName)
+	return nil
+}
+
 // RemoveWorktree removes a worktree (worktreePath can be name or path)
 func RemoveWorktree(bareRepoPath, worktreePath string, force bool) error {
 	args := []string{"-C", bareRepoPath, "worktree", "remove", worktreePath}

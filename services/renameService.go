@@ -91,6 +91,17 @@ func RenameWorktree(
 		return fmt.Errorf("failed to move worktree: %w", err)
 	}
 
+	// Update upstream tracking: point to origin/<newBranch> if it exists, otherwise unset
+	if slices.Contains(remoteBranches, newBranchName) {
+		if upstreamErr := git.SetUpstream(newWorktreePath, newBranchName); upstreamErr != nil {
+			log.Warn("Failed to set upstream after rename", "error", upstreamErr)
+		}
+	} else {
+		if upstreamErr := git.UnsetUpstream(newWorktreePath, newBranchName); upstreamErr != nil {
+			log.Warn("Failed to unset upstream after rename", "error", upstreamErr)
+		}
+	}
+
 	log.Info("Worktree renamed successfully",
 		"oldBranch", currentBranch,
 		"newBranch", newBranchName,
