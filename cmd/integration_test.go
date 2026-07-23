@@ -374,7 +374,7 @@ func TestRenameWorktreeIntegration(t *testing.T) {
 	}
 
 	// Execute rename (pass nil for connector and confirmer since we don't need tmux handling in tests)
-	err = services.RenameWorktree(cfg, newBranchName, worktreePath, nil, nil, false)
+	err = services.RenameWorktree(cfg, newBranchName, worktreePath, nil, nil, false, false)
 	assert.NoError(t, err, "Should successfully rename worktree")
 
 	t.Log("Step 4: Verifying the rename...")
