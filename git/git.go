@@ -162,12 +162,63 @@ func RenameBranch(bareRepoPath, oldName, newName string) error {
 }
 
 // MoveWorktree moves a worktree to a new location
-func MoveWorktree(bareRepoPath, oldPath, newPath string) error {
+// If forceSubmodules is true, manually moves the directory and updates git's worktree config
+func MoveWorktree(bareRepoPath, oldPath, newPath string, forceSubmodules bool) error {
+	// If forceSubmodules is enabled, skip the git command and go straight to manual move
+	if forceSubmodules {
+		log.Info("Force submodules enabled, using manual move workaround")
+		return moveWorktreeManually(bareRepoPath, oldPath, newPath)
+	}
+
 	args := []string{"-C", bareRepoPath, "worktree", "move", oldPath, newPath}
 	err := runCommand("git", args...)
 	if err != nil {
 		return fmt.Errorf("failed to move worktree from %s to %s: %w", oldPath, newPath, err)
 	}
+	return nil
+}
+
+// moveWorktreeManually manually moves a worktree directory and updates git's internal references
+// This is a workaround for git's limitation with submodules
+func moveWorktreeManually(bareRepoPath, oldPath, newPath string) error {
+	// Step 1: Move the directory
+	log.Debug("Manually moving directory", "from", oldPath, "to", newPath)
+	err := os.Rename(oldPath, newPath)
+	if err != nil {
+		return fmt.Errorf("failed to move directory: %w", err)
+	}
+
+	// Step 2: Update the worktree's gitdir file to point to the correct location
+	gitdirPath := filepath.Join(newPath, ".git")
+	gitdirContent, err := os.ReadFile(gitdirPath)
+	if err != nil {
+		// Try to rollback the directory move
+		os.Rename(newPath, oldPath)
+		return fmt.Errorf("failed to read .git file: %w", err)
+	}
+
+	// The .git file contains: "gitdir: /path/to/bare/.git/worktrees/name"
+	// We need to extract the worktree name and verify it's correct
+	gitdirLine := strings.TrimSpace(string(gitdirContent))
+	if !strings.HasPrefix(gitdirLine, "gitdir: ") {
+		os.Rename(newPath, oldPath)
+		return fmt.Errorf("unexpected .git file format: %s", gitdirLine)
+	}
+
+	worktreeGitDir := strings.TrimPrefix(gitdirLine, "gitdir: ")
+
+	// Step 3: Update the worktree's gitdir location in the bare repo
+	gitdirLocationFile := filepath.Join(worktreeGitDir, "gitdir")
+	log.Debug("Updating gitdir location", "file", gitdirLocationFile, "newPath", newPath)
+
+	err = os.WriteFile(gitdirLocationFile, []byte(filepath.Join(newPath, ".git")), 0644)
+	if err != nil {
+		// Try to rollback
+		os.Rename(newPath, oldPath)
+		return fmt.Errorf("failed to update gitdir location: %w", err)
+	}
+
+	log.Info("Successfully moved worktree manually", "from", oldPath, "to", newPath)
 	return nil
 }
 

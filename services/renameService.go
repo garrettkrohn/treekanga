@@ -27,6 +27,7 @@ func RenameWorktree(
 	conn connector.Connector,
 	conf confirmer.Confirmer,
 	autoSwitchTmux bool,
+	forceSubmodules bool,
 ) error {
 	log.Debug("Starting worktree rename", "newBranchName", newBranchName)
 
@@ -81,7 +82,7 @@ func RenameWorktree(
 	log.Debug("Moving worktree", "from", currentWorktreePath, "to", newWorktreePath)
 
 	// Move the worktree folder
-	err = git.MoveWorktree(cfg.BareRepoPath, currentWorktreePath, newWorktreePath)
+	err = git.MoveWorktree(cfg.BareRepoPath, currentWorktreePath, newWorktreePath, forceSubmodules)
 	if err != nil {
 		// Try to rollback the branch rename
 		rollbackErr := git.RenameBranch(cfg.BareRepoPath, newBranchName, currentBranch)
@@ -193,6 +194,7 @@ func ExecuteRename(
 	conn connector.Connector,
 	conf confirmer.Confirmer,
 	autoSwitchTmux bool,
+	forceSubmodules bool,
 ) error {
 	// Validate arguments
 	newBranchName, err := ValidateRenameArgs(args)
@@ -213,7 +215,7 @@ func ExecuteRename(
 	}
 
 	// Execute rename
-	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf, autoSwitchTmux)
+	err = RenameWorktree(cfg, newBranchName, currentWorktreePath, conn, conf, autoSwitchTmux, forceSubmodules)
 	utility.CheckError(err)
 
 	return nil
