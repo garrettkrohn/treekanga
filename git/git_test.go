@@ -87,7 +87,7 @@ func TestMoveWorktree(t *testing.T) {
 
 	// Move the worktree
 	newPath := filepath.Join(tempDir, "new-folder")
-	err = MoveWorktree(bareRepoPath, oldPath, newPath)
+	err = MoveWorktree(bareRepoPath, oldPath, newPath, false)
 	assert.NoError(t, err, "Should successfully move worktree")
 
 	// Verify new path exists and old path doesn't
